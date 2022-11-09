@@ -48,7 +48,7 @@ parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
                     help='learning rate (default: 0.1)')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum (default: 0.9)')
-parser.add_argument('--decay-epoch', type=float, nargs='*', default=[0.5, 0.75],
+parser.add_argument('--decay-epoch', type=float, nargs='*', default=[],
                     help="the epoch to decay the learning rate (default 0.5, 0.75)")
 parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
@@ -62,7 +62,7 @@ parser.add_argument('--save', type=str, metavar='PATH', required=True,
                     help='path to save prune model')
 parser.add_argument('--arch', default='vgg', type=str,
                     help='architecture to use')
-parser.add_argument('--gammas', type=float, nargs='+', default=[0.1, 0.1],
+parser.add_argument('--gammas', type=float, nargs='+', default=[],
                     help='LR is multiplied by gamma on decay-epoch, number of gammas should be equal to decay-epoch')
 parser.add_argument('--bn-init-value', default=0.5, type=float,
                     help='initial value of bn weight (default: 0.5, following NetworkSlimming)')

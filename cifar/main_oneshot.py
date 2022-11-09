@@ -109,6 +109,8 @@ parser.add_argument('--load_enhance', action='store_true',
                     help='load enhancement for different subnets')
 parser.add_argument('--OFA', action='store_true',
                     help='OFA training')
+parser.add_argument('--partition_ratio', default=0.5, type=float,
+                    help="The partition ratio")
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -479,6 +481,102 @@ def bn_sparsity(model, loss_type, sparsity, t, alpha,
             return sparsity_loss
     else:
         raise ValueError()
+
+def gen_partition_mask(net_id,mask_size):
+    # different net_id map to different nets
+    # different layer map to differnet subnets
+    mask = torch.zeros(mask_size).long().cuda()
+    c1,c2 = mask_size
+    r = args.partition_ratio
+    # 1st accurate
+    if net_id == 0:
+        mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+        mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
+    elif net_id == 1:
+        mask[:int(c1*r),:int(c2*r)] = 1
+        mask[int(c1*r):,int(c2*r):] = 1
+    # 2nd accurate
+    elif net_id == 2:
+        # upper part
+        mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+    elif net_id == 3:
+        # lower part
+        mask[int(c1*r):,int(c2*r):] = 1
+    return mask.view(*mask_size,1,1)
+
+def sample_partition_network(old_model,net_id=None,eval=False):
+    if eval:
+        dynamic_model = copy.deepcopy(old_model)
+    else:
+        dynamic_model = old_model
+    for module_name,bn_module in dynamic_model.named_modules():
+        if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
+        if args.split_running_stat:
+            bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
+            bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
+
+    for module_name,sub_module in dynamic_model.named_modules():
+        with torch.no_grad():
+            if isinstance(sub_module, nn.Conv2d): 
+                mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
+                if mask_size[0]<=3 or mask_size[1]<=3:continue
+                mask = gen_partition_mask(net_id,mask_size)
+                sub_module.weight.data *= mask
+    return dynamic_model
+
+def update_partitioned_model(old_model,new_model,net_id,batch_idx):
+    def copy_module_grad(old_module,new_module,subnet_mask=None):
+        # copy running mean/var
+        if isinstance(new_module,nn.BatchNorm2d) or isinstance(new_module,nn.BatchNorm1d):
+            if args.split_running_stat:
+                old_module._buffers[f"mean{net_id}"] = new_module.running_mean.data.clone().detach()
+                old_module._buffers[f"var{net_id}"] = new_module.running_var.data.clone().detach()
+            else:
+                old_module.running_mean.data = new_module.running_mean.data
+                old_module.running_var.data = new_module.running_var.data
+
+        # weight
+        w_grad0 = new_module.weight.grad.clone().detach()
+        if subnet_mask is not None:
+            w_grad0.data *= subnet_mask
+
+        copy_param_grad(old_module.weight,w_grad0)
+        # only update grad for specific targets
+        if batch_idx%args.ps_batch == args.ps_batch-1:
+            old_module.weight.grad = old_module.weight.grad_tmp.clone().detach()
+            old_module.weight.grad_tmp = None
+
+        # bias
+        if hasattr(new_module,'bias') and new_module.bias is not None:
+            b_grad0 = new_module.bias.grad.clone().detach()
+            copy_param_grad(old_module.bias,b_grad0)
+            if batch_idx%args.ps_batch == args.ps_batch-1:
+                old_module.bias.grad = old_module.bias.grad_tmp.clone().detach()
+                old_module.bias.grad_tmp = None
+            
+    def copy_param_grad(old_param,new_grad):
+        new_grad *= args.alphas[net_id]
+        if not hasattr(old_param,'grad_tmp') or old_param.grad_tmp is None:
+            old_param.grad_tmp = new_grad
+        else:
+            old_param.grad_tmp += new_grad
+
+    bns1,convs1 = old_model.get_sparse_layers_and_convs()
+    bns2,convs2 = new_model.get_sparse_layers_and_convs()
+    ch_start = 0
+    for conv1,bn1,conv2,bn2 in zip(convs1,bns1,convs2,bns2):
+        with torch.no_grad():
+            mask_size = (conv1.weight.size(0),conv1.weight.size(1))
+            if mask_size[0]<=3 or mask_size[1]<=3:continue
+            subnet_mask = gen_partition_mask(net_id,mask_size)
+            copy_module_grad(conv1,conv2,subnet_mask)
+            copy_module_grad(bn1,bn2)
+    
+    with torch.no_grad():
+        old_non_sparse_modules = get_non_sparse_modules(old_model)
+        new_non_sparse_modules = get_non_sparse_modules(new_model)
+        for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
+            copy_module_grad(old_module,new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):
     num_subnets = len(args.alphas)
@@ -686,6 +784,30 @@ def prune_while_training(model, arch, prune_mode, num_classes, avg_loss=None, in
         f.write(log_str+'\n')
     return prec1,prune_str,saved_prec1s
 
+def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True):
+    model.eval()
+    saved_prec1s = []
+    if arch == "resnet56":
+        for i in range(len(args.alphas)):
+            masked_model = sample_partition_network(model,net_id=i,eval=True)
+            prec1 = test(masked_model)
+            saved_prec1s += [prec1]
+    else:
+        # not available
+        raise NotImplementedError(f"do not support arch {arch}")
+
+    prune_str = ''
+    for prec1 in saved_prec1s:
+        prune_str += f"{prec1:.4f},"
+    log_str = ''
+    if avg_loss is not None:
+        log_str += f"{avg_loss:.3f} "
+    for prec1 in saved_prec1s:
+        log_str += f"{prec1:.4f} "
+    with open(os.path.join(args.save,'train.log'),'a+') as f:
+        f.write(log_str+'\n')
+    return prec1,prune_str,saved_prec1s
+
 def cross_entropy_loss_with_soft_target(pred, soft_target):
     logsoftmax = nn.LogSoftmax()
     return torch.mean(torch.sum(-soft_target * logsoftmax(pred), 1))
@@ -707,15 +829,20 @@ def train(epoch):
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(model,net_id)
             else:
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(model)
+        elif args.loss in {LossType.PARTITION}:
+            nonzero = torch.nonzero(torch.tensor(args.alphas))
+            net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            dynamic_model = sample_partition_network(model,net_id)
+
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
             output = dynamic_model(data)
         else:
             output = model(data)
         if isinstance(output, tuple):
             output, output_aux = output
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
             soft_logits = teacher_model(data)
             if isinstance(soft_logits, tuple):
                 soft_logits, _ = soft_logits
@@ -743,7 +870,7 @@ def train(epoch):
             updateBN()
         if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
             update_shared_model(model,dynamic_model,freeze_mask,batch_idx,ch_indices,net_id)
-        if args.loss not in {LossType.PROGRESSIVE_SHRINKING} or batch_idx%args.ps_batch==(args.ps_batch-1):
+        if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1):
             optimizer.step()
         if args.loss in {LossType.POLARIZATION,
                          LossType.L2_POLARIZATION}:
@@ -808,7 +935,10 @@ def save_checkpoint(state, is_best, filepath, backup: bool, backup_path: str, ep
 
 
 if args.evaluate:
-    prec1,prune_str,_ = prune_while_training(model, arch=args.arch, prune_mode="default", num_classes=num_classes)
+    if args.loss in {LossType.PARTITION}:
+        prec1,prune_str,_ = partition_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
+    else:
+        prec1,prune_str,_ = prune_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
     print(prec1,prune_str)
     exit(0)
 
@@ -820,7 +950,10 @@ for epoch in range(args.start_epoch, args.epochs):
 
     avg_loss = train(epoch) # train with regularization
 
-    prec1,prune_str,saved_prec1s = prune_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss)
+    if args.loss in {LossType.PARTITION}:
+        prec1,prune_str,saved_prec1s = partition_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss)
+    else:
+        prec1,prune_str,saved_prec1s = prune_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss)
     print(f"Epoch {epoch}/{args.epochs} learning rate {args.current_lr:.4f}",args.arch,args.save,prune_str,args.alphas)
     is_best = prec1 > best_prec1
     best_prec1 = max(prec1, best_prec1)

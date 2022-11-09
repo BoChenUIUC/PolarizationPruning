@@ -9,7 +9,7 @@ class LossType(Enum):
     L1_SPARSITY_REGULARIZATION = 1
     POLARIZATION = 4
     L2_POLARIZATION = 6
-    LOG_QUANTIZATION = 8
+    PARTITION = 9
     PROGRESSIVE_SHRINKING = 10
 
     @staticmethod
@@ -23,7 +23,7 @@ class LossType(Enum):
                 "sr": LossType.L1_SPARSITY_REGULARIZATION,
                 "zol": LossType.POLARIZATION,
                 "zol2": LossType.L2_POLARIZATION,
-                "logq": LossType.LOG_QUANTIZATION,
+                "par": LossType.PARTITION,
                 "ps": LossType.PROGRESSIVE_SHRINKING,
                 }
 

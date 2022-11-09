@@ -298,6 +298,13 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
         teacher_path = './original/vgg/model_best.pth.tar'
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
+# test
+for module_name,module in model.named_modules():
+    if not isinstance(module, nn.BatchNorm2d) and not isinstance(module, nn.BatchNorm1d) and not isinstance(module, nn.Conv2d): continue
+    print(module_name,module.weight.size())
+exit(0)
+# test
+
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
@@ -318,7 +325,7 @@ if args.resume:
             if args.cuda:
                 model.cuda()
 
-        args.start_epoch = 0#checkpoint['epoch']
+        args.start_epoch = checkpoint['epoch']
         best_prec1 = checkpoint['best_prec1']
         if args.evaluate:
             model.load_state_dict(checkpoint['state_dict'])

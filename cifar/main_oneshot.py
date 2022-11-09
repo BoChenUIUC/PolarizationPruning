@@ -519,7 +519,10 @@ def gen_partition_mask(net_id,mask_size):
     return mask.view(*mask_size,1,1)
 
 def sample_partition_network(old_model,net_id=None,eval=False):
-    dynamic_model = copy.deepcopy(old_model)
+    if eval:
+        dynamic_model = copy.deepcopy(old_model)
+    else:
+        dynamic_model = old_model
     for module_name,bn_module in dynamic_model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:
@@ -662,7 +665,7 @@ def sample_network(old_model,net_id=None,eval=False,check_size=False):
     else:
         return dynamic_model
 
-args.ps_batch = len(args.alphas)*4
+args.ps_batch = len(args.alphas)
     
 def update_shared_model(old_model,new_model,mask,batch_idx,ch_indices,net_id):
     def copy_module_grad(old_module,new_module,subnet_mask=None,enhance_mask=None):
@@ -881,8 +884,8 @@ def train(epoch):
             updateBN()
         if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
             update_shared_model(model,dynamic_model,freeze_mask,batch_idx,ch_indices,net_id)
-        if args.loss in {LossType.PARTITION}:
-            update_partitioned_model(model,dynamic_model,net_id,batch_idx)
+        # if args.loss in {LossType.PARTITION}:
+        #     update_partitioned_model(model,dynamic_model,net_id,batch_idx)
         if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1):
             optimizer.step()
         if args.loss in {LossType.POLARIZATION,

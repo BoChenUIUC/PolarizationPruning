@@ -302,7 +302,7 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
 input_list = []
 def bn_hook(self, input, output):
     input_list.append(input)
-    print(input.size())
+    print(input[0].size())
 feature_len = 0
 for module_name,module in model.named_modules():
     if not isinstance(module, nn.BatchNorm2d) and not isinstance(module, nn.BatchNorm1d): continue

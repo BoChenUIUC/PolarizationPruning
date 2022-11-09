@@ -299,17 +299,17 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
 # test
-input_list = []
-def bn_hook(self, input, output):
-    input_list.append(input)
-    print(input[0].size())
-feature_len = 0
-for module_name,module in model.named_modules():
-    if not isinstance(module, nn.BatchNorm2d) and not isinstance(module, nn.BatchNorm1d): continue
-    print(module_name,module.weight.size(0))
-    feature_len += module.weight.size(0)
-    module.register_forward_hook(bn_hook)
-print(feature_len)
+# input_list = []
+# def bn_hook(self, input, output):
+#     input_list.append(input)
+#     print(input[0].size())
+# feature_len = 0
+# for module_name,module in model.named_modules():
+#     if not isinstance(module, nn.BatchNorm2d) and not isinstance(module, nn.BatchNorm1d): continue
+#     print(module_name,module.weight.size(0))
+#     feature_len += module.weight.size(0)
+#     module.register_forward_hook(bn_hook)
+# print(feature_len)
 # test
 
 if args.split_running_stat:
@@ -852,7 +852,6 @@ def train(epoch):
             data, target = data.cuda(), target.cuda()
         if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
             output = dynamic_model(data)
-            exit(0)
         else:
             output = model(data)
         if isinstance(output, tuple):

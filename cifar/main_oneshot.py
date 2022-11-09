@@ -290,7 +290,7 @@ if args.debug:
 
             print(f"{name} remains {one_num}")
 
-if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
+if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     teacher_model = copy.deepcopy(model)
     if args.arch == 'resnet56':
         teacher_path = './original/resnet/model_best.pth.tar'

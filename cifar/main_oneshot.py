@@ -299,9 +299,12 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
 # test
+feature_len = 0
 for module_name,module in model.named_modules():
-    if not isinstance(module, nn.BatchNorm2d) and not isinstance(module, nn.BatchNorm1d) and not isinstance(module, nn.Conv2d): continue
-    print(module_name,module.weight.size())
+    if not isinstance(module, nn.BatchNorm2d) and not isinstance(module, nn.BatchNorm1d): continue
+    print(module_name,module.weight.size(0))
+    feature_len += module.weight.size(0)
+print(feature_len)
 exit(0)
 # test
 

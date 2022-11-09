@@ -519,10 +519,7 @@ def gen_partition_mask(net_id,mask_size):
     return mask.view(*mask_size,1,1)
 
 def sample_partition_network(old_model,net_id=None,eval=False):
-    if eval:
-        dynamic_model = copy.deepcopy(old_model)
-    else:
-        dynamic_model = old_model
+    dynamic_model = copy.deepcopy(old_model)
     for module_name,bn_module in dynamic_model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:

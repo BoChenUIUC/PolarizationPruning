@@ -322,10 +322,11 @@ if args.VLB:
 
         out_aux = None
 
-        out = self.layer3(out)
+        # out = self.layer3(out)
         for l in self.layer3:
-            print(type(l))
-        print(out.size())
+            out = l(out)
+            print(out.size())
+        print('...')
         out = F.avg_pool2d(out, out.size()[3])
         print(out.size())
         out = out.view(out.size(0), -1)

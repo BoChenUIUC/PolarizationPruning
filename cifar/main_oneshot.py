@@ -333,8 +333,8 @@ if args.VLB:
         return out, None
     model.forward = MethodType(modified_forward, model)
     # model.linear = nn.Linear(576, 10)
-    model.linear = nn.Sequential([nn.Conv2d(576, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                model.linear])
+    model.linear = nn.Sequential(nn.Conv2d(576, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                model.linear)
     if args.cuda:
         model.linear.cuda()
 

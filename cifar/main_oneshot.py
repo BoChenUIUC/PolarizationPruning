@@ -316,19 +316,19 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
 if args.VLB:
     from types import MethodType
     def modified_forward(self,x):
+        out_list = []
         out = F.relu(self.bn1(self.conv1(x)))
         # out = self.layer1(out)
         # out = self.layer2(out)
         # out = self.layer3(out)
-        out_list = []
+        out_list.append(F.avg_pool2d(out, out.size()[3]))
         for l in (*self.layer1,*self.layer2,*self.layer3):
             out = l(out)
-            print(out.size())
-            out_list.append(out)
-        exit(0)
+            out_list.append(F.avg_pool2d(out, out.size()[3]))
         tmp = torch.cat(out_list,1)
-        out = F.avg_pool2d(tmp, tmp.size()[3])
-        out = out.view(out.size(0), -1)
+        out = tmp.view(tmp.size(0), -1)
+        print(out.size())
+        exit(0)
         out = self.linear(out)
         return out, None
     model.forward = MethodType(modified_forward, model)

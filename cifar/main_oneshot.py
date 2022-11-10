@@ -314,7 +314,7 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
 # print(feature_len)
 # test
 if args.VLB:
-    def my_forward(self, x):
+    def modified_forward(x):
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
@@ -331,7 +331,7 @@ if args.VLB:
         print(out.size())
         exit(0)
         return out, out_aux
-    model.forward = my_forward
+    model.forward = modified_forward
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

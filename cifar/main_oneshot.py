@@ -333,7 +333,9 @@ if args.VLB:
         out = self.linear(out)
         return out, out_aux
     model.forward = MethodType(modified_forward, model)
-    model.linear = nn.Linear(576, 10)
+    # model.linear = nn.Linear(576, 10)
+    model.linear = nn.Sequential([nn.Conv2d(576, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                model.linear])
     if args.cuda:
         model.linear.cuda()
 
@@ -871,7 +873,7 @@ def train(epoch):
         elif args.loss in {LossType.PARTITION}:
             nonzero = torch.nonzero(torch.tensor(args.alphas))
             net_id = int(nonzero[batch_idx%len(nonzero)][0])
-            dynamic_model = sample_partition_network(model,net_id)
+            dynamic_model = sample_partition_network(model,net_id,eval=False)
 
         if args.cuda:
             data, target = data.cuda(), target.cuda()

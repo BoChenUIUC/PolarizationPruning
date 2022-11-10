@@ -873,7 +873,7 @@ def train(epoch):
         elif args.loss in {LossType.PARTITION}:
             nonzero = torch.nonzero(torch.tensor(args.alphas))
             net_id = int(nonzero[batch_idx%len(nonzero)][0])
-            dynamic_model = sample_partition_network(model,net_id,eval=False)
+            dynamic_model = sample_partition_network(model,net_id,eval=True)
 
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -911,8 +911,8 @@ def train(epoch):
             updateBN()
         if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
             update_shared_model(model,dynamic_model,freeze_mask,batch_idx,ch_indices,net_id)
-        # if args.loss in {LossType.PARTITION}:
-        #     update_partitioned_model(model,dynamic_model,net_id,batch_idx)
+        if args.loss in {LossType.PARTITION}:
+            update_partitioned_model(model,dynamic_model,net_id,batch_idx)
         if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1):
             optimizer.step()
         if args.loss in {LossType.POLARIZATION,

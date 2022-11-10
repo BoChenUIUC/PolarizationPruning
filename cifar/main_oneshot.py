@@ -349,6 +349,7 @@ if args.VLB_conv:
             out = l(out)
             out_list.append(out)
         out = torch.cat(out_list,1)
+        out = self.aggr(out)
         out = self.linear(out)
         return out, None
     class Flatten(nn.Module):
@@ -357,10 +358,10 @@ if args.VLB_conv:
             out = input.view(batch_size,-1)
             return out 
     model.forward = MethodType(modified_forward, model)
-    model.linear = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+    model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                 nn.BatchNorm2d(model.in_planes),
-                                nn.ReLU(),
-                                nn.AvgPool2d(8),
+                                nn.ReLU())
+    model.linear = nn.Sequential(nn.AvgPool2d(8),
                                 Flatten(),
                                 nn.Linear(model.in_planes, 10))
     if args.cuda:
@@ -852,7 +853,7 @@ def prune_while_training(model, arch, prune_mode, num_classes, avg_loss=None, in
         f.write(log_str+'\n')
     return prec1,prune_str,saved_prec1s
 
-def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True):
+def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0):
     model.eval()
     saved_prec1s = []
     if arch == "resnet56":
@@ -867,7 +868,7 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
     prune_str = ''
     for prec1 in saved_prec1s:
         prune_str += f"{prec1:.4f},"
-    log_str = ''
+    log_str = f'{epoch} '
     if avg_loss is not None:
         log_str += f"{avg_loss:.3f} "
     for prec1 in saved_prec1s:
@@ -1021,7 +1022,7 @@ for epoch in range(args.start_epoch, args.epochs):
     avg_loss = train(epoch) # train with regularization
 
     if args.loss in {LossType.PARTITION}:
-        prec1,prune_str,saved_prec1s = partition_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss)
+        prec1,prune_str,saved_prec1s = partition_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss,epoch=epoch)
     else:
         prec1,prune_str,saved_prec1s = prune_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss)
     print(f"Epoch {epoch}/{args.epochs} learning rate {args.current_lr:.4f}",args.arch,args.save,prune_str,args.alphas)

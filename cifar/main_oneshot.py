@@ -366,12 +366,10 @@ if args.VLB_conv:
                                 nn.ReLU(),
                                 nn.Conv2d(256, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                 nn.BatchNorm2d(model.in_planes),
-                                nn.ReLU())
+                                nn.ReLU()).cuda()
     model.linear = nn.Sequential(nn.AvgPool2d(8),
                                 Flatten(),
-                                nn.Linear(model.in_planes, 10))
-    if args.cuda:
-        model.linear.cuda()
+                                nn.Linear(model.in_planes, 10)).cuda()
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

@@ -323,11 +323,13 @@ if args.VLB:
         out_aux = None
 
         # out = self.layer3(out)
+        out_list = []
         for l in self.layer3:
             out = l(out)
-            print(out.size())
-        print('...')
-        out = F.avg_pool2d(out, out.size()[3])
+            out_list.append(out)
+        tmp = torch.cat(out_list,1)
+        print(tmp.size())
+        out = F.avg_pool2d(tmp, tmp.size()[3])
         print(out.size())
         out = out.view(out.size(0), -1)
         print(out.size())

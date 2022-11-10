@@ -111,7 +111,9 @@ parser.add_argument('--OFA', action='store_true',
                     help='OFA training')
 parser.add_argument('--partition_ratio', default=0.5, type=float,
                     help="The partition ratio")
-parser.add_argument('--VLB', action='store_true',
+parser.add_argument('--VLB_linear', action='store_true',
+                    help='enable VLB linear')
+parser.add_argument('--VLB_conv', action='store_true',
                     help='enable VLB')
 
 args = parser.parse_args()
@@ -313,22 +315,26 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
 #     module.register_forward_hook(bn_hook)
 # print(feature_len)
 # test
-if args.VLB:
+if args.VLB_linear:
     from types import MethodType
-    # def modified_forward(self,x):
-    #     out_list = []
-    #     out = F.relu(self.bn1(self.conv1(x)))
-    #     out_list.append(F.avg_pool2d(out, out.size()[3]))
-    #     for l in (*self.layer1,*self.layer2,*self.layer3):
-    #         out = l(out)
-    #         out_list.append(F.avg_pool2d(out, out.size()[3]))
-    #     tmp = torch.cat(out_list,1)
-    #     out = tmp.view(tmp.size(0), -1)
-    #     out = self.linear(out)
-    #     return out, None
-    # model.forward = MethodType(modified_forward, model)
-    # model.linear = nn.Linear(1024, 10)
+    def modified_forward(self,x):
+        out_list = []
+        out = F.relu(self.bn1(self.conv1(x)))
+        out_list.append(F.avg_pool2d(out, out.size()[3]))
+        for l in (*self.layer1,*self.layer2,*self.layer3):
+            out = l(out)
+            out_list.append(F.avg_pool2d(out, out.size()[3]))
+        tmp = torch.cat(out_list,1)
+        out = tmp.view(tmp.size(0), -1)
+        out = self.linear(out)
+        return out, None
+    model.forward = MethodType(modified_forward, model)
+    model.linear = nn.Linear(1024, 10)
+    if args.cuda:
+        model.linear.cuda()
 
+if args.VLB_conv:
+    from types import MethodType
     def modified_forward(self,x):
         out_list = []
         out = F.relu(self.bn1(self.conv1(x)))
@@ -351,12 +357,12 @@ if args.VLB:
             out = input.view(batch_size,-1)
             return out 
     model.forward = MethodType(modified_forward, model)
-    # model.linear = nn.Linear(1024, 10)
     model.linear = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                nn.BatchNorm2d(model.in_planes),
+                                nn.ReLU(),
                                 nn.AvgPool2d(8),
                                 Flatten(),
                                 nn.Linear(model.in_planes, 10))
-
     if args.cuda:
         model.linear.cuda()
 

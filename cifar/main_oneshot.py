@@ -327,14 +327,12 @@ if args.VLB:
             out_list.append(F.avg_pool2d(out, out.size()[3]))
         tmp = torch.cat(out_list,1)
         out = tmp.view(tmp.size(0), -1)
-        print(out.size())
-        exit(0)
         out = self.linear(out)
         return out, None
     model.forward = MethodType(modified_forward, model)
-    # model.linear = nn.Linear(576, 10)
-    model.linear = nn.Sequential(nn.Conv2d(576, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                model.linear)
+    model.linear = nn.Linear(1024, 10)
+    # model.linear = nn.Sequential(nn.Conv2d(576, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+    #                             model.linear)
     if args.cuda:
         model.linear.cuda()
 

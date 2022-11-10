@@ -317,36 +317,22 @@ if args.VLB:
     from types import MethodType
     def modified_forward(self,x):
         out_list = []
-        out_list.append(F.avg_pool2d(out, 4))
-        for l in self.layer1:
+        out = F.relu(self.bn1(self.conv1(x)))
+        # out = self.layer1(out)
+        # out = self.layer2(out)
+        # out = self.layer3(out)
+        out_list.append(F.avg_pool2d(out, out.size()[3]))
+        for l in (*self.layer1,*self.layer2,*self.layer3):
             out = l(out)
-            out_list.append(F.avg_pool2d(out, 4))
-        for l in self.layer2:
-            out = l(out)
-            out_list.append(F.avg_pool2d(out, 2))
-        for l in self.layer3:
-            out = l(out)
-            out_list.append(out)
-        out = torch.cat(out_list,1)
-        # out = tmp.view(tmp.size(0), -1)
+            out_list.append(F.avg_pool2d(out, out.size()[3]))
+        tmp = torch.cat(out_list,1)
+        out = tmp.view(tmp.size(0), -1)
         out = self.linear(out)
         return out, None
-    class Flatten(nn.Module):
-        def forward(self, input):
-            '''
-            Note that input.size(0) is usually the batch size.
-            So what it does is that given any input with input.size(0) # of batches,
-            will flatten to be 1 * nb_elements.
-            '''
-            batch_size = input.size(0)
-            out = input.view(batch_size,-1)
-            return out # (batch_size, *size)
     model.forward = MethodType(modified_forward, model)
-    # model.linear = nn.Linear(1024, 10)
-    model.linear = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                nn.AvgPool2d(8),
-                                Flatten(),
-                                nn.Linear(model.in_planes, 10))
+    model.linear = nn.Linear(1024, 10)
+    # model.linear = nn.Sequential(nn.Conv2d(576, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+    #                             model.linear)
     if args.cuda:
         model.linear.cuda()
 

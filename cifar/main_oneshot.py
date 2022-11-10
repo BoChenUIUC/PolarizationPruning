@@ -111,6 +111,8 @@ parser.add_argument('--OFA', action='store_true',
                     help='OFA training')
 parser.add_argument('--partition_ratio', default=0.5, type=float,
                     help="The partition ratio")
+parser.add_argument('--VLB', action='store_true',
+                    help='enable VLB')
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -311,6 +313,25 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
 #     module.register_forward_hook(bn_hook)
 # print(feature_len)
 # test
+if args.VLB:
+    def my_forward(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+
+        out_aux = None
+
+        out = self.layer3(out)
+        print(out.size())
+        out = F.avg_pool2d(out, out.size()[3])
+        print(out.size())
+        out = out.view(out.size(0), -1)
+        print(out.size())
+        out = self.linear(out)
+        print(out.size())
+        exit(0)
+        return out, out_aux
+    model.forward = my_forward
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

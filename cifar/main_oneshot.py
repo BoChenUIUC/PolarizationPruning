@@ -338,6 +338,7 @@ if args.VLB:
         exit(0)
         return out, out_aux
     model.forward = MethodType(modified_forward, model)
+    model.linear = nn.Linear(576, 10)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

@@ -323,7 +323,7 @@ if args.VLB:
         out_list = []
         for l in (*self.layer1,*self.layer2,*self.layer3):
             out = l(out)
-            print(l.size())
+            print(out.size())
             out_list.append(out)
         exit(0)
         tmp = torch.cat(out_list,1)

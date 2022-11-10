@@ -276,6 +276,30 @@ def compute_flops_weight(cuda=False):
 if args.flops_weighted:
     flops_weight_string = compute_flops_weight(cuda=True)
 
+if args.cuda:
+    model.cuda()
+
+if args.debug:
+    # fake polarization to test pruning
+    for name, module in model.named_modules():
+        if isinstance(module, nn.BatchNorm1d) or \
+                isinstance(module, nn.BatchNorm2d) or \
+                isinstance(module, models.common.SparseGate):
+            module.weight.data.zero_()
+            total_weight_count = len(module.weight)
+            one_num = random.randint(3, total_weight_count - 2)
+            module.weight.data[:one_num] = 1.
+
+            print(f"{name} remains {one_num}")
+
+if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
+    teacher_model = copy.deepcopy(model)
+    if args.arch == 'resnet56':
+        teacher_path = './original/resnet/model_best.pth.tar'
+    else:
+        teacher_path = './original/vgg/model_best.pth.tar'
+    teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+
 # test
 # input_list = []
 # def bn_hook(self, input, output):
@@ -315,17 +339,8 @@ if args.VLB:
         return out, out_aux
     model.forward = MethodType(modified_forward, model)
     model.linear = nn.Linear(576, 10)
-
-if args.cuda:
-    model.cuda()
-
-if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
-    teacher_model = copy.deepcopy(model)
-    if args.arch == 'resnet56':
-        teacher_path = './original/resnet/model_best.pth.tar'
-    else:
-        teacher_path = './original/vgg/model_best.pth.tar'
-    teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+    if args.cuda:
+        model.linear.cuda()
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
@@ -333,7 +348,7 @@ if args.split_running_stat:
         for nid in range(len(args.alphas)):
             bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
             bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
-    
+
 if args.resume:
     if os.path.isfile(args.resume):
         print("=> loading checkpoint '{}'".format(args.resume))

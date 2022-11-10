@@ -359,10 +359,10 @@ if args.VLB_conv:
             return out 
     model.forward = MethodType(modified_forward, model)
     model.aggr = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1, bias=False),
-                                nn.BatchNorm2d(model.in_planes),
+                                nn.BatchNorm2d(512),
                                 nn.ReLU(),
                                 nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                nn.BatchNorm2d(model.in_planes),
+                                nn.BatchNorm2d(256),
                                 nn.ReLU(),
                                 nn.Conv2d(256, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                 nn.BatchNorm2d(model.in_planes),

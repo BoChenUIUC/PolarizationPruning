@@ -457,6 +457,8 @@ if args.VLB_conv:
             out = l(out)
             out_list.append(out)
         out = torch.cat(out_list,1)
+        # aggregate layer
+        out = self.aggr(out)
         # attention
         if args.VLB_conv_type == 2:
             B,C,H,W = out.size()
@@ -466,7 +468,6 @@ if args.VLB_conv:
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = B, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
             out = out.view(B,H,W,C).permute(0,3,1,2).contiguous()
-        out = self.aggr(out)
         out = F.avg_pool2d(out, out.size()[3])
         out = out.view(out.size(0), -1)
         out = self.linear(out)
@@ -496,8 +497,12 @@ if args.VLB_conv:
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     elif args.VLB_conv_type == 2:
+        # conv
+        model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
         # attention
-        out_channels = 1024
+        out_channels = model.in_planes
         model.layers = nn.ModuleList([])
         depth = 12
         for _ in range(depth):
@@ -507,10 +512,6 @@ if args.VLB_conv:
             model.layers.append(nn.ModuleList([s_attn, ff]))
         model.layers.cuda()
         model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
-        # conv
-        model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
     elif args.VLB_conv_type == 3:
         model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),

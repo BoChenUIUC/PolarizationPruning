@@ -474,8 +474,8 @@ if args.VLB_conv:
         if args.VLB_conv_type == 2:
             B,C,H,W = out.size()
             # reduce dim
-            out = out.view(B,C,-1)
             out = self.aggr(out)
+            out = out.view(B,C,-1)
             # attention
             frame_pos_emb = self.frame_rot_emb(C,device=out.device)
             for (s_attn, ff) in self.layers:
@@ -527,7 +527,9 @@ if args.VLB_conv:
                 out = input.view(batch_size,-1)
                 return out # (batch_size, *size)
         # linear
-        model.aggr = nn.Linear(64, model.in_planes).cuda()
+        model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
@@ -544,7 +546,7 @@ if args.VLB_conv:
                         nn.LayerNorm((8,8)),
                         nn.AvgPool2d(8),
                         Flatten(),
-                        nn.Linear(1024, 10)
+                        nn.Linear(model.in_planes, 10)
                     ).cuda()
     else:
         exit(0)

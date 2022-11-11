@@ -512,7 +512,7 @@ if args.VLB_conv:
             ff = FeedForward(out_channels)
             s_attn = Attention(out_channels, dim_head = 64, heads = 8)
             s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
-            model.layers.append(nn.ModuleList([t_attn, s_attn, ff]))
+            model.layers.append(nn.ModuleList([s_attn, ff]))
         model.image_rot_emb = AxialRotaryEmbedding(64)
         # conv
         model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),

@@ -528,7 +528,7 @@ if args.VLB_conv:
         # linear
         model.linear = nn.Sequential(
                         nn.LayerNorm(model.in_planes),
-                        Flatten()
+                        Flatten(),
                         nn.Linear(model.in_planes*64, 10)
                     ).cuda()
     else:

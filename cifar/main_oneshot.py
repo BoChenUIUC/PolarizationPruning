@@ -109,12 +109,14 @@ parser.add_argument('--load_enhance', action='store_true',
                     help='load enhancement for different subnets')
 parser.add_argument('--OFA', action='store_true',
                     help='OFA training')
-parser.add_argument('--partition_ratio', default=0.5, type=float,
+parser.add_argument('--partition_ratio', default=0.25, type=float,
                     help="The partition ratio")
 parser.add_argument('--VLB_linear', action='store_true',
                     help='enable VLB linear')
 parser.add_argument('--VLB_conv', action='store_true',
                     help='enable VLB')
+parser.add_argument('--VLB_conv_type', default=0, type=int,
+                    help="Type of vlb conv")
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -350,6 +352,8 @@ if args.VLB_conv:
             out_list.append(out)
         out = torch.cat(out_list,1)
         out = self.aggr(out)
+        out = F.avg_pool2d(out, out.size()[3])
+        out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out, None
     class Flatten(nn.Module):
@@ -358,18 +362,42 @@ if args.VLB_conv:
             out = input.view(batch_size,-1)
             return out 
     model.forward = MethodType(modified_forward, model)
-    model.aggr = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                nn.BatchNorm2d(256),
-                                nn.ReLU(),
-                                nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                nn.BatchNorm2d(256),
-                                nn.ReLU(),
-                                nn.Conv2d(256, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                nn.BatchNorm2d(model.in_planes),
-                                nn.ReLU()).cuda()
-    model.linear = nn.Sequential(nn.AvgPool2d(8),
-                                Flatten(),
-                                nn.Linear(model.in_planes, 10)).cuda()
+    if args.VLB_conv_type == 0:
+        model.aggr = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
+    elif args.VLB_conv_type == 1:
+        model.aggr = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(512),
+                                    nn.ReLU(),
+                                    nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(128),
+                                    nn.ReLU(),
+                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
+    elif args.VLB_conv_type == 2:
+        model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU(),
+                                    nn.Conv2d(model.in_planes, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
+    elif args.VLB_conv_type == 3:
+        model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
+    else:
+        exit(0)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

@@ -441,6 +441,19 @@ class AxialRotaryEmbedding(nn.Module):
         sin, cos = map(lambda t: repeat(t, 'n d -> () n (d j)', j = 2), (sin, cos))
         return sin, cos
 
+class RotaryEmbedding(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        inv_freqs = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
+        self.register_buffer('inv_freqs', inv_freqs)
+
+    def forward(self, n, device):
+        seq = torch.arange(n, device = device)
+        freqs = einsum('i, j -> i j', seq, self.inv_freqs)
+        freqs = torch.cat((freqs, freqs), dim = -1)
+        freqs = rearrange(freqs, 'n d -> () n d')
+        return freqs.sin(), freqs.cos()
+
 if args.VLB_conv:
     from types import MethodType
     def modified_forward(self,x):
@@ -461,14 +474,15 @@ if args.VLB_conv:
         if args.VLB_conv_type == 2:
             B,C,H,W = out.size()
             # reduce dim
-            out = out.permute(0,2,3,1).view(B,-1,C).contiguous() # B:64,HW:64,C:64 
+            out = out.view(B,C,-1)
             out = self.aggr(out)
             # attention
-            image_pos_emb = self.image_rot_emb(H,W,device=out.device)
+            frame_pos_emb = self.frame_rot_emb(C,device=out.device)
             for (s_attn, ff) in self.layers:
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
             # linear
+            out = out.view(B,C,H,W)
             out = self.linear(out)
         else:
             # aggregate layer
@@ -524,12 +538,13 @@ if args.VLB_conv:
             s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
             model.layers.append(nn.ModuleList([s_attn, ff]))
         model.layers.cuda()
-        model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
+        model.frame_rot_emb = RotaryEmbedding(64).cuda()
         # linear
         model.linear = nn.Sequential(
-                        nn.LayerNorm(model.in_planes),
+                        nn.LayerNorm((8,8)),
+                        nn.Avg_pool2d(8)
                         Flatten(),
-                        nn.Linear(model.in_planes*64, 10)
+                        nn.Linear(model.in_planes, 10)
                     ).cuda()
     else:
         exit(0)

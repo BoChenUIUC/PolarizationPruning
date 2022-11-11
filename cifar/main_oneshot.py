@@ -488,7 +488,7 @@ if args.VLB_conv:
         # attention
         out_channels = 64
         model.layers = nn.ModuleList([])
-        depth = 1
+        depth = 12
         for _ in range(depth):
             ff = FeedForward(out_channels)
             t_attn = Attention(out_channels, dim_head = 64, heads = 8)

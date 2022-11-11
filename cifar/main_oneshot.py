@@ -317,6 +317,11 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
 #     module.register_forward_hook(bn_hook)
 # print(feature_len)
 # test
+
+
+from einops import rearrange, repeat
+from torch import einsum
+from math import log, pi
 # classes
 
 class PreNorm(nn.Module):
@@ -405,7 +410,7 @@ class Attention(nn.Module):
 
         # combine heads out
         return self.to_out(out)
-from math import log, pi
+
 class AxialRotaryEmbedding(nn.Module):
     def __init__(self, dim, max_freq = 10):
         super().__init__()

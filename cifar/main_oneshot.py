@@ -463,9 +463,9 @@ if args.VLB_conv:
         if args.VLB_conv_type == 2:
             B,C,H,W = out.size()
             image_pos_emb = self.image_rot_emb(H,W,device=out.device)
-            out = out.permute(0,2,3,1).reshape(1,-1,C).contiguous() 
+            out = out.permute(0,2,3,1).reshape(B,-1,C).contiguous() # B,H,W,C
             for (s_attn, ff) in self.layers:
-                out = s_attn(out, 'b (f n) d', '(b f) n d', f = B, rot_emb = image_pos_emb) + out
+                out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
             out = out.view(B,H,W,C).permute(0,3,1,2).contiguous()
         out = F.avg_pool2d(out, out.size()[3])
@@ -504,7 +504,7 @@ if args.VLB_conv:
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
-        depth = 4
+        depth = 12
         for _ in range(depth):
             ff = FeedForward(out_channels)
             s_attn = Attention(out_channels, dim_head = 64, heads = 8)

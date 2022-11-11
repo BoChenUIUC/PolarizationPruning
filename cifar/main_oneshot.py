@@ -466,8 +466,6 @@ if args.VLB_conv:
             # add cls token
             cls_token = repeat(self.cls_token, 'n d -> b n d', b = out.size(0))
             out = torch.cat((cls_token, out), dim = 1)
-            print(out.size())
-            exit(0)
             # attention
             image_pos_emb = self.image_rot_emb(H,W,device=out.device)
             for (s_attn, ff) in self.layers:

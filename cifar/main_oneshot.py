@@ -544,7 +544,7 @@ if args.VLB_conv:
                         nn.LayerNorm((8,8)),
                         nn.AvgPool2d(8),
                         Flatten(),
-                        nn.Linear(model.in_planes, 10)
+                        nn.Linear(1024, 10)
                     ).cuda()
     else:
         exit(0)

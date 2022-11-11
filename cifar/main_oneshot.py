@@ -526,14 +526,14 @@ if args.VLB_conv:
                 batch_size = input.size(0)
                 out = input.view(batch_size,-1)
                 return out # (batch_size, *size)
-        # linear
+        # conv
         model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
-        depth = 1
+        depth = 12
         for _ in range(depth):
             ff = FeedForward(out_channels)
             t_attn = Attention(out_channels, dim_head = 64, heads = 8)

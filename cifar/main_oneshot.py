@@ -542,7 +542,7 @@ if args.VLB_conv:
         # linear
         model.linear = nn.Sequential(
                         nn.LayerNorm((8,8)),
-                        nn.Avg_pool2d(8),
+                        nn.AvgPool2d(8),
                         Flatten(),
                         nn.Linear(model.in_planes, 10)
                     ).cuda()

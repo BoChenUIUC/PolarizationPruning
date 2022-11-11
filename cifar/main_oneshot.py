@@ -581,14 +581,14 @@ for module_name, sub_module in model.named_modules():
             for param_name, param in sub_module.named_parameters():
                 if not isinstance(sub_module, models.common.SparseGate): continue
                 no_wd_params.append(param)
-                #print(f"No weight decay param: module {module_name} param {param_name}")
+                print(f"No weight decay param: module {module_name} param {param_name}")
 
 no_wd_params_set = set(no_wd_params)  # apply weight decay on the rest of parameters
 wd_params = []
 for param_name, model_p in model.named_parameters():
     if model_p not in no_wd_params_set:
         wd_params.append(model_p)
-        #print(f"Weight decay param: parameter name {param_name}")
+        print(f"Weight decay param: parameter name {param_name}")
 
 optimizer = torch.optim.SGD([{'params': list(no_wd_params), 'weight_decay': 0.},
                              {'params': list(wd_params), 'weight_decay': args.weight_decay}],
@@ -811,7 +811,6 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
         old_non_sparse_modules = get_non_sparse_modules(old_model)
         new_non_sparse_modules = get_non_sparse_modules(new_model)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
-            print(old_module,new_module)
             copy_module_grad(old_module,new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):

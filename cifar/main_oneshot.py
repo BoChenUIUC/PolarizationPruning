@@ -468,9 +468,7 @@ if args.VLB_conv:
             for (s_attn, ff) in self.layers:
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
-            cls_token = out[:, 0]
             # linear
-            out = out.view(out.size(0), -1)
             out = self.linear(out)
         else:
             # aggregate layer
@@ -504,6 +502,16 @@ if args.VLB_conv:
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     elif args.VLB_conv_type == 2:
+        class Flatten(nn.Module):
+            def forward(self, input):
+                '''
+                Note that input.size(0) is usually the batch size.
+                So what it does is that given any input with input.size(0) # of batches,
+                will flatten to be 1 * nb_elements.
+                '''
+                batch_size = input.size(0)
+                out = input.view(batch_size,-1)
+                return out # (batch_size, *size)
         # linear
         model.aggr = nn.Linear(1024, model.in_planes).cuda()
         # attention
@@ -519,7 +527,8 @@ if args.VLB_conv:
         model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
         # linear
         model.linear = nn.Sequential(
-                        nn.LayerNorm(model.in_planes*64),
+                        nn.LayerNorm(model.in_planes),
+                        Flatten()
                         nn.Linear(model.in_planes*64, 10)
                     ).cuda()
     else:

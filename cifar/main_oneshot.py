@@ -331,6 +331,9 @@ class PreNorm(nn.Module):
         self.norm = nn.LayerNorm(dim)
 
     def forward(self, x, *args, **kwargs):
+        print(x.size())
+        print(self.norm)
+        exit(0)
         x = self.norm(x)
         return self.fn(x, *args, **kwargs)
         
@@ -448,8 +451,6 @@ if args.VLB_conv:
             B,C,H,W = out.size()
             frame_pos_emb = self.frame_rot_emb(C,device=x.device)
             out = out.reshape(B,C,-1).contiguous()
-            print(out.size())
-            exit(0)
             for (t_attn, ff) in self.layers:
                 out = t_attn(x, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
                 out = ff(out) + out
@@ -488,7 +489,7 @@ if args.VLB_conv:
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
         # attention
-        out_channels = model.in_planes
+        out_channels = 64
         model.layers = nn.ModuleList([])
         depth = 1
         for _ in range(depth):

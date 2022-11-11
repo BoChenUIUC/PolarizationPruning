@@ -331,9 +331,6 @@ class PreNorm(nn.Module):
         self.norm = nn.LayerNorm(dim)
 
     def forward(self, x, *args, **kwargs):
-        print(x.size())
-        print(self.norm)
-        exit(0)
         x = self.norm(x)
         return self.fn(x, *args, **kwargs)
         
@@ -452,7 +449,7 @@ if args.VLB_conv:
             frame_pos_emb = self.frame_rot_emb(C,device=x.device)
             out = out.reshape(B,C,-1).contiguous()
             for (t_attn, ff) in self.layers:
-                out = t_attn(x, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
+                out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
                 out = ff(out) + out
             out = out.view(B,C,H,W).contiguous()
         out = F.avg_pool2d(out, out.size()[3])

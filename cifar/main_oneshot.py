@@ -441,19 +441,6 @@ class AxialRotaryEmbedding(nn.Module):
         sin, cos = map(lambda t: repeat(t, 'n d -> () n (d j)', j = 2), (sin, cos))
         return sin, cos
 
-class RotaryEmbedding(nn.Module):
-    def __init__(self, dim):
-        super().__init__()
-        inv_freqs = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
-        self.register_buffer('inv_freqs', inv_freqs)
-
-    def forward(self, n, device):
-        seq = torch.arange(n, device = device)
-        freqs = einsum('i, j -> i j', seq, self.inv_freqs)
-        freqs = torch.cat((freqs, freqs), dim = -1)
-        freqs = rearrange(freqs, 'n d -> () n d')
-        return freqs.sin(), freqs.cos()
-
 if args.VLB_conv:
     from types import MethodType
     def modified_forward(self,x):
@@ -518,7 +505,8 @@ if args.VLB_conv:
             s_attn = Attention(out_channels, dim_head = 64, heads = 8)
             s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
             model.layers.append(nn.ModuleList([s_attn, ff]))
-        model.image_rot_emb = AxialRotaryEmbedding(64)
+        model.layers.cuda()
+        model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
         # conv
         model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),

@@ -317,23 +317,137 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
 #     module.register_forward_hook(bn_hook)
 # print(feature_len)
 # test
-if args.VLB_linear:
-    from types import MethodType
-    def modified_forward(self,x):
-        out_list = []
-        out = F.relu(self.bn1(self.conv1(x)))
-        out_list.append(F.avg_pool2d(out, out.size()[3]))
-        for l in (*self.layer1,*self.layer2,*self.layer3):
-            out = l(out)
-            out_list.append(F.avg_pool2d(out, out.size()[3]))
-        tmp = torch.cat(out_list,1)
-        out = tmp.view(tmp.size(0), -1)
-        out = self.linear(out)
-        return out, None
-    model.forward = MethodType(modified_forward, model)
-    model.linear = nn.Linear(1024, 10)
-    if args.cuda:
-        model.linear.cuda()
+# classes
+
+class PreNorm(nn.Module):
+    def __init__(self, dim, fn):
+        super().__init__()
+        self.fn = fn
+        self.norm = nn.LayerNorm(dim)
+
+    def forward(self, x, *args, **kwargs):
+        x = self.norm(x)
+        return self.fn(x, *args, **kwargs)
+        
+# feedforward
+
+class GEGLU(nn.Module):
+    def forward(self, x):
+        x, gates = x.chunk(2, dim = -1)
+        return x * F.gelu(gates)
+
+class FeedForward(nn.Module):
+    def __init__(self, dim, mult = 4, dropout = 0.):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(dim, dim * mult * 2),
+            GEGLU(),
+            nn.Dropout(dropout),
+            nn.Linear(dim * mult, dim)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+        
+# attention
+def exists(val):
+    return val is not None
+
+def attn(q, k, v, mask = None):
+    sim = einsum('b i d, b j d -> b i j', q, k)
+
+    if exists(mask):
+        max_neg_value = -torch.finfo(sim.dtype).max
+        sim.masked_fill_(~mask, max_neg_value)
+
+    attn = sim.softmax(dim = -1)
+    out = einsum('b i j, b j d -> b i d', attn, v)
+    return out
+
+class Attention(nn.Module):
+    def __init__(
+        self,
+        dim,
+        dim_head = 64,
+        heads = 8,
+        dropout = 0.
+    ):
+        super().__init__()
+        self.heads = heads
+        self.scale = dim_head ** -0.5
+        inner_dim = dim_head * heads
+
+        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+        self.to_out = nn.Sequential(
+            nn.Linear(inner_dim, dim),
+            nn.Dropout(dropout)
+        )
+
+    def forward(self, x, einops_from, einops_to, mask = None, cls_mask = None, rot_emb = None, **einops_dims):
+        h = self.heads
+        q, k, v = self.to_qkv(x).chunk(3, dim = -1)
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
+
+        q = q * self.scale
+
+        # rearrange across time or space
+        (q_, k_, v_) = q, k, v
+        q_, k_, v_ = map(lambda t: rearrange(t, f'{einops_from} -> {einops_to}', **einops_dims), (q_, k_, v_))
+
+        # attention
+        out = attn(q_, k_, v_, mask = mask)
+
+        # merge back time or space
+        out = rearrange(out, f'{einops_to} -> {einops_from}', **einops_dims)
+
+        # merge back the heads
+        out = rearrange(out, '(b h) n d -> b n (h d)', h = h)
+
+        # combine heads out
+        return self.to_out(out)
+
+class AxialRotaryEmbedding(nn.Module):
+    def __init__(self, dim, max_freq = 10):
+        super().__init__()
+        self.dim = dim
+        scales = torch.logspace(0., log(max_freq / 2) / log(2), self.dim // 4, base = 2)
+        self.register_buffer('scales', scales)
+
+    def forward(self, h, w, device):
+        scales = rearrange(self.scales, '... -> () ...')
+        scales = scales.to(device)
+
+        h_seq = torch.linspace(-1., 1., steps = h, device = device)
+        h_seq = h_seq.unsqueeze(-1)
+
+        w_seq = torch.linspace(-1., 1., steps = w, device = device)
+        w_seq = w_seq.unsqueeze(-1)
+
+        h_seq = h_seq * scales * pi
+        w_seq = w_seq * scales * pi
+
+        x_sinu = repeat(h_seq, 'i d -> i j d', j = w)
+        y_sinu = repeat(w_seq, 'j d -> i j d', i = h)
+
+        sin = torch.cat((x_sinu.sin(), y_sinu.sin()), dim = -1)
+        cos = torch.cat((x_sinu.cos(), y_sinu.cos()), dim = -1)
+
+        sin, cos = map(lambda t: rearrange(t, 'i j d -> (i j) d'), (sin, cos))
+        sin, cos = map(lambda t: repeat(t, 'n d -> () n (d j)', j = 2), (sin, cos))
+        return sin, cos
+
+class RotaryEmbedding(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        inv_freqs = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
+        self.register_buffer('inv_freqs', inv_freqs)
+
+    def forward(self, n, device):
+        seq = torch.arange(n, device = device)
+        freqs = einsum('i, j -> i j', seq, self.inv_freqs)
+        freqs = torch.cat((freqs, freqs), dim = -1)
+        freqs = rearrange(freqs, 'n d -> () n d')
+        return freqs.sin(), freqs.cos()
 
 if args.VLB_conv:
     from types import MethodType
@@ -351,16 +465,20 @@ if args.VLB_conv:
             out = l(out)
             out_list.append(out)
         out = torch.cat(out_list,1)
+        # attention
+        if args.VLB_conv_type == 2:
+            B,C,H,W = out.size()
+            image_pos_emb = self.image_rot_emb(H,W,device=out.device)
+            out = out.permute(0,2,3,1).reshape(1,-1,C).contiguous() 
+            for (s_attn, ff) in self.layers:
+                out = s_attn(out, 'b (f n) d', '(b f) n d', f = B, rot_emb = image_pos_emb) + out
+                out = ff(out) + out
+            out = out.view(B,H,W,C).permute(0,3,1,2).contiguous()
         out = self.aggr(out)
         out = F.avg_pool2d(out, out.size()[3])
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out, None
-    class Flatten(nn.Module):
-        def forward(self, input):
-            batch_size = input.size(0)
-            out = input.view(batch_size,-1)
-            return out 
     model.forward = MethodType(modified_forward, model)
     if args.VLB_conv_type == 0:
         model.aggr = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
@@ -386,10 +504,18 @@ if args.VLB_conv:
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     elif args.VLB_conv_type == 2:
+        # attention
+        out_channels = 1024
+        model.layers = nn.ModuleList([])
+        depth = 12
+        for _ in range(depth):
+            ff = FeedForward(out_channels)
+            s_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
+            model.layers.append(nn.ModuleList([t_attn, s_attn, ff]))
+        model.image_rot_emb = AxialRotaryEmbedding(64)
+        # conv
         model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU(),
-                                    nn.Conv2d(model.in_planes, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     elif args.VLB_conv_type == 3:

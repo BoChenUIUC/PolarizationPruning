@@ -460,6 +460,7 @@ if args.VLB_conv:
         # attention
         if args.VLB_conv_type == 2:
             # reduce dim
+            out = out.permute(0,2,3,1).contiguous() # B:64,HW:64,C:64 
             out = self.aggr(out)
             # add cls token
             cls_token = repeat(self.cls_token, 'n d -> b n d', b = out.size(0))
@@ -467,11 +468,9 @@ if args.VLB_conv:
             # attention
             B,C,H,W = out.size()
             image_pos_emb = self.image_rot_emb(H,W,device=out.device)
-            out = out.permute(0,2,3,1).reshape(B,-1,C).contiguous() 
             for (s_attn, ff) in self.layers:
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = B, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
-            out = out.view(B,H,W,C).permute(0,3,1,2).contiguous()
             cls_token = out[:, 0]
             # linear
             out = self.to_out(cls_token)

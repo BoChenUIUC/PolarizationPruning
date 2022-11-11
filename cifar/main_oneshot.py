@@ -411,35 +411,19 @@ class Attention(nn.Module):
         # combine heads out
         return self.to_out(out)
 
-class AxialRotaryEmbedding(nn.Module):
-    def __init__(self, dim, max_freq = 10):
+class RotaryEmbedding(nn.Module):
+    def __init__(self, dim):
         super().__init__()
-        self.dim = dim
-        scales = torch.logspace(0., log(max_freq / 2) / log(2), self.dim // 4, base = 2)
-        self.register_buffer('scales', scales)
+        inv_freqs = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
+        self.register_buffer('inv_freqs', inv_freqs)
 
-    def forward(self, h, w, device):
-        scales = rearrange(self.scales, '... -> () ...')
-        scales = scales.to(device)
+    def forward(self, n, device):
+        seq = torch.arange(n, device = device)
+        freqs = einsum('i, j -> i j', seq, self.inv_freqs)
+        freqs = torch.cat((freqs, freqs), dim = -1)
+        freqs = rearrange(freqs, 'n d -> () n d')
+        return freqs.sin(), freqs.cos()
 
-        h_seq = torch.linspace(-1., 1., steps = h, device = device)
-        h_seq = h_seq.unsqueeze(-1)
-
-        w_seq = torch.linspace(-1., 1., steps = w, device = device)
-        w_seq = w_seq.unsqueeze(-1)
-
-        h_seq = h_seq * scales * pi
-        w_seq = w_seq * scales * pi
-
-        x_sinu = repeat(h_seq, 'i d -> i j d', j = w)
-        y_sinu = repeat(w_seq, 'j d -> i j d', i = h)
-
-        sin = torch.cat((x_sinu.sin(), y_sinu.sin()), dim = -1)
-        cos = torch.cat((x_sinu.cos(), y_sinu.cos()), dim = -1)
-
-        sin, cos = map(lambda t: rearrange(t, 'i j d -> (i j) d'), (sin, cos))
-        sin, cos = map(lambda t: repeat(t, 'n d -> () n (d j)', j = 2), (sin, cos))
-        return sin, cos
 
 if args.VLB_conv:
     from types import MethodType
@@ -462,12 +446,12 @@ if args.VLB_conv:
         # attention
         if args.VLB_conv_type == 2:
             B,C,H,W = out.size()
-            image_pos_emb = self.image_rot_emb(H,W,device=out.device)
-            out = out.permute(0,2,3,1).reshape(B,-1,C).contiguous() # B,H,W,C
-            for (s_attn, ff) in self.layers:
-                out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
+            frame_pos_emb = self.frame_rot_emb(C,device=x.device)
+            out = out.reshape(B,C,-1).contiguous()
+            for (t_attn, ff) in self.layers:
+                out = t_attn(x, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
                 out = ff(out) + out
-            out = out.view(B,H,W,C).permute(0,3,1,2).contiguous()
+            out = out.view(B,C,H,W).contiguous()
         out = F.avg_pool2d(out, out.size()[3])
         out = out.view(out.size(0), -1)
         out = self.linear(out)
@@ -507,11 +491,11 @@ if args.VLB_conv:
         depth = 1
         for _ in range(depth):
             ff = FeedForward(out_channels)
-            s_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
-            model.layers.append(nn.ModuleList([s_attn, ff]))
+            t_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            t_attn, ff = map(lambda t: PreNorm(out_channels, t), (t_attn, ff))
+            model.layers.append(nn.ModuleList([t_attn, ff]))
         model.layers.cuda()
-        model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
+        model.frame_rot_emb = RotaryEmbedding(64).cuda()
     elif args.VLB_conv_type == 3:
         model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),

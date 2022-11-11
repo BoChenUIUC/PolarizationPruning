@@ -405,7 +405,7 @@ class Attention(nn.Module):
 
         # combine heads out
         return self.to_out(out)
-
+from math import log, pi
 class AxialRotaryEmbedding(nn.Module):
     def __init__(self, dim, max_freq = 10):
         super().__init__()

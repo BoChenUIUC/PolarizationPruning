@@ -479,7 +479,7 @@ if args.VLB_conv:
             # attention
             frame_pos_emb = self.frame_rot_emb(C,device=out.device)
             for (s_attn, ff) in self.layers:
-                out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
+                out = t_attn(x, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
                 out = ff(out) + out
             # linear
             out = out.view(B,C,H,W)
@@ -534,9 +534,9 @@ if args.VLB_conv:
         depth = 1
         for _ in range(depth):
             ff = FeedForward(out_channels)
-            s_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
-            model.layers.append(nn.ModuleList([s_attn, ff]))
+            t_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            t_attn, ff = map(lambda t: PreNorm(out_channels, t), (t_attn, ff))
+            model.layers.append(nn.ModuleList([t_attn, ff]))
         model.layers.cuda()
         model.frame_rot_emb = RotaryEmbedding(64).cuda()
         # linear

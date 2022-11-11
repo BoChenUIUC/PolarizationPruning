@@ -479,7 +479,7 @@ if args.VLB_conv:
             # attention
             frame_pos_emb = self.frame_rot_emb(C,device=out.device)
             for (s_attn, ff) in self.layers:
-                out = t_attn(x, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
+                out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
                 out = ff(out) + out
             # linear
             out = out.view(B,C,H,W)

@@ -513,7 +513,7 @@ if args.VLB_conv:
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
-        depth = 1
+        depth = 12
         for _ in range(depth):
             ff = FeedForward(out_channels)
             s_attn = Attention(out_channels, dim_head = 64, heads = 8)
@@ -525,7 +525,7 @@ if args.VLB_conv:
         model.to_out = nn.Sequential(
                         nn.LayerNorm(model.in_planes),
                         nn.Linear(model.in_planes, 10)
-                    )
+                    ).cuda()
     elif args.VLB_conv_type == 3:
         model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),

@@ -463,14 +463,17 @@ if args.VLB_conv:
             # reduce dim
             out = out.permute(0,2,3,1).view(B,-1,C).contiguous() # B:64,HW:64,C:64 
             out = self.aggr(out)
+            # add cls token
+            cls_token = repeat(self.cls_token, 'n d -> b n d', b = out.size(0))
+            out = torch.cat((cls_token, out), dim = 1)
             # attention
             image_pos_emb = self.image_rot_emb(H,W,device=out.device)
             for (s_attn, ff) in self.layers:
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
+            cls_token = out[:, 0]
             # linear
-            out = out.view(out.size(0), -1)
-            out = self.linear(out)
+            out = self.linear(cls_token)
         else:
             # aggregate layer
             out = self.aggr(out)
@@ -505,6 +508,8 @@ if args.VLB_conv:
     elif args.VLB_conv_type == 2:
         # linear
         model.aggr = nn.Linear(1024, model.in_planes).cuda()
+        # param??
+        model.register_parameter('cls_token',nn.Parameter(torch.randn(1, model.in_planes).cuda()))
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
@@ -518,8 +523,8 @@ if args.VLB_conv:
         model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
         # linear
         model.linear = nn.Sequential(
-                        nn.LayerNorm(model.in_planes*64),
-                        nn.Linear(model.in_planes*64, 10)
+                        nn.LayerNorm(model.in_planes),
+                        nn.Linear(model.in_planes, 10)
                     ).cuda()
     else:
         exit(0)
@@ -799,11 +804,15 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
             copy_module_grad(bn1,bn2)
     
     with torch.no_grad():
-        old_non_sparse_modules = get_non_sparse_modules(old_model,True)
+        old_non_sparse_modules = get_non_sparse_modules(old_model)
         new_non_sparse_modules = get_non_sparse_modules(new_model)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
-            print(old_module)
-            copy_module_grad(old_module[1],new_module)
+            copy_module_grad(old_module,new_module)
+        if args.VLB_conv_type == 2:
+            copy_param_grad(old_model.cls_token, new_model.cls_token.grad.clone().detach())
+            if batch_idx%args.ps_batch == args.ps_batch-1:
+                old_model.cls_token.grad = old_model.cls_token.grad_tmp.clone().detach()
+                old_model.cls_token.grad_tmp = None
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):
     num_subnets = len(args.alphas)

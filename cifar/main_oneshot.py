@@ -804,10 +804,11 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
             copy_module_grad(bn1,bn2)
     
     with torch.no_grad():
-        old_non_sparse_modules = get_non_sparse_modules(old_model)
+        old_non_sparse_modules = get_non_sparse_modules(old_model,True)
         new_non_sparse_modules = get_non_sparse_modules(new_model)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
-            copy_module_grad(old_module,new_module)
+            print(old_module)
+            copy_module_grad(old_module[1],new_module)
         if args.VLB_conv_type == 2:
             old_model.cls_token.grad = new_model.cls_token.grad
     

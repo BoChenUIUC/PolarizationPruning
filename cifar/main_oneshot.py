@@ -804,8 +804,6 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
             print(old_module)
             copy_module_grad(old_module[1],new_module)
-        if args.VLB_conv_type == 2:
-            old_model.cls_token.grad = new_model.cls_token.grad
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):
     num_subnets = len(args.alphas)

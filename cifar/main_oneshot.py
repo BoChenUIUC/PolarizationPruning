@@ -826,10 +826,11 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
             copy_module_grad(bn1,bn2)
     
     with torch.no_grad():
-        old_non_sparse_modules = get_non_sparse_modules(old_model)
+        old_non_sparse_modules = get_non_sparse_modules(old_model,True)
         new_non_sparse_modules = get_non_sparse_modules(new_model)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
-            copy_module_grad(old_module,new_module)
+            print(old_module)
+            copy_module_grad(old_module[1],new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):
     num_subnets = len(args.alphas)
@@ -985,7 +986,7 @@ def get_non_sparse_modules(model,get_name=False):
     non_sparse_modules = []
     for module_name, module in model.named_modules():
         if module not in sparse_modules_set:
-            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear):
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear) or isinstance(module, nn.LayerNorm):
                 if not get_name:
                     non_sparse_modules.append(module)
                 else:

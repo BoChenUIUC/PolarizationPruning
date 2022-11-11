@@ -527,7 +527,7 @@ if args.VLB_conv:
                 out = input.view(batch_size,-1)
                 return out # (batch_size, *size)
         # linear
-        model.aggr = nn.Linear(1024, model.in_planes).cuda()
+        model.aggr = nn.Linear(64, model.in_planes).cuda()
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])

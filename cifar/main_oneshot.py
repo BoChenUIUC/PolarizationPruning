@@ -463,17 +463,14 @@ if args.VLB_conv:
             # reduce dim
             out = out.permute(0,2,3,1).view(B,-1,C).contiguous() # B:64,HW:64,C:64 
             out = self.aggr(out)
-            # add cls token
-            cls_token = repeat(self.cls_token, 'n d -> b n d', b = out.size(0))
-            out = torch.cat((cls_token, out), dim = 1)
             # attention
             image_pos_emb = self.image_rot_emb(H,W,device=out.device)
             for (s_attn, ff) in self.layers:
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
-            cls_token = out[:, 0]
             # linear
-            out = self.linear(cls_token)
+            out = out.view(out.size(0), -1)
+            out = self.linear(out)
         else:
             # aggregate layer
             out = self.aggr(out)
@@ -508,8 +505,6 @@ if args.VLB_conv:
     elif args.VLB_conv_type == 2:
         # linear
         model.aggr = nn.Linear(1024, model.in_planes).cuda()
-        # param??
-        model.register_parameter('cls_token',nn.Parameter(torch.randn(1, model.in_planes).cuda()))
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
@@ -523,8 +518,8 @@ if args.VLB_conv:
         model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
         # linear
         model.linear = nn.Sequential(
-                        nn.LayerNorm(model.in_planes),
-                        nn.Linear(model.in_planes, 10)
+                        nn.LayerNorm(model.in_planes*64),
+                        nn.Linear(model.in_planes*64, 10)
                     ).cuda()
     else:
         exit(0)

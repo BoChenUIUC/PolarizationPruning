@@ -472,11 +472,11 @@ if args.VLB_conv:
         out = torch.cat(out_list,1)
         # attention
         if args.VLB_conv_type == 2:
-            B,C,H,W = out.size()
             # reduce dim
             out = self.aggr(out)
-            out = out.view(B,C,-1)
             # attention
+            B,C,H,W = out.size()
+            out = out.view(B,C,-1)
             frame_pos_emb = self.frame_rot_emb(C,device=out.device)
             for (s_attn, ff) in self.layers:
                 out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out

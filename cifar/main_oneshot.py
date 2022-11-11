@@ -811,6 +811,7 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
         old_non_sparse_modules = get_non_sparse_modules(old_model)
         new_non_sparse_modules = get_non_sparse_modules(new_model)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
+            print(old_module)
             copy_module_grad(old_module,new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):

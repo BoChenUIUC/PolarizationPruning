@@ -459,14 +459,14 @@ if args.VLB_conv:
         out = torch.cat(out_list,1)
         # attention
         if args.VLB_conv_type == 2:
+            B,C,H,W = out.size()
             # reduce dim
-            out = out.permute(0,2,3,1).contiguous() # B:64,HW:64,C:64 
+            out = out.permute(0,2,3,1).view(B,-1,C).contiguous() # B:64,HW:64,C:64 
             out = self.aggr(out)
             # add cls token
             cls_token = repeat(self.cls_token, 'n d -> b n d', b = out.size(0))
             out = torch.cat((cls_token, out), dim = 1)
             # attention
-            B,C,H,W = out.size()
             image_pos_emb = self.image_rot_emb(H,W,device=out.device)
             for (s_attn, ff) in self.layers:
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = B, rot_emb = image_pos_emb) + out

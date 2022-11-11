@@ -535,7 +535,7 @@ if args.VLB_conv:
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
-        if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
+        if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d) and not isinstance(bn_module, nn.LayerNorm): continue
         for nid in range(len(args.alphas)):
             bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
             bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
@@ -572,7 +572,7 @@ if args.bn_wd:
     no_wd_type = [models.common.SparseGate]
 else:
     # do not apply weight decay on bn layers
-    no_wd_type = [models.common.SparseGate, nn.BatchNorm2d, nn.BatchNorm1d]
+    no_wd_type = [models.common.SparseGate, nn.BatchNorm2d, nn.BatchNorm1d, nn.LayerNorm]
 
 no_wd_params = []  # do not apply weight decay on these parameters
 for module_name, sub_module in model.named_modules():
@@ -745,7 +745,7 @@ def sample_partition_network(old_model,net_id=None,eval=False):
     else:
         dynamic_model = old_model
     for module_name,bn_module in dynamic_model.named_modules():
-        if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
+        if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d) and not isinstance(bn_module, nn.LayerNorm) : continue
         if args.split_running_stat:
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
@@ -762,7 +762,7 @@ def sample_partition_network(old_model,net_id=None,eval=False):
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):
     def copy_module_grad(old_module,new_module,subnet_mask=None):
         # copy running mean/var
-        if isinstance(new_module,nn.BatchNorm2d) or isinstance(new_module,nn.BatchNorm1d):
+        if isinstance(new_module,nn.BatchNorm2d) or isinstance(new_module,nn.BatchNorm1d) or isinstance(new_module,nn.LayerNorm):
             if args.split_running_stat:
                 old_module._buffers[f"mean{net_id}"] = new_module.running_mean.data.clone().detach()
                 old_module._buffers[f"var{net_id}"] = new_module.running_var.data.clone().detach()
@@ -811,6 +811,7 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
         old_non_sparse_modules = get_non_sparse_modules(old_model)
         new_non_sparse_modules = get_non_sparse_modules(new_model)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
+            print(new_module,new_module.weight.requires_grad)
             copy_module_grad(old_module,new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):
@@ -967,7 +968,7 @@ def get_non_sparse_modules(model,get_name=False):
     non_sparse_modules = []
     for module_name, module in model.named_modules():
         if module not in sparse_modules_set:
-            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear):
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear) or isinstance(module, nn.LayerNorm):
                 if not get_name:
                     non_sparse_modules.append(module)
                 else:

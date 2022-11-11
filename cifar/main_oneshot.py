@@ -513,7 +513,7 @@ if args.VLB_conv:
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
-        depth = 12
+        depth = 1
         for _ in range(depth):
             ff = FeedForward(out_channels)
             s_attn = Attention(out_channels, dim_head = 64, heads = 8)
@@ -967,7 +967,7 @@ def get_non_sparse_modules(model,get_name=False):
     non_sparse_modules = []
     for module_name, module in model.named_modules():
         if module not in sparse_modules_set:
-            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear):
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear) or isinstance(module, nn.LayerNorm):
                 if not get_name:
                     non_sparse_modules.append(module)
                 else:

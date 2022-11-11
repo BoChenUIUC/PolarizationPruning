@@ -478,7 +478,7 @@ if args.VLB_conv:
             B,C,H,W = out.size()
             out = out.view(B,C,-1)
             frame_pos_emb = self.frame_rot_emb(C,device=out.device)
-            for (s_attn, ff) in self.layers:
+            for (t_attn, ff) in self.layers:
                 out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
                 out = ff(out) + out
             # linear
@@ -826,11 +826,10 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
             copy_module_grad(bn1,bn2)
     
     with torch.no_grad():
-        old_non_sparse_modules = get_non_sparse_modules(old_model,True)
+        old_non_sparse_modules = get_non_sparse_modules(old_model)
         new_non_sparse_modules = get_non_sparse_modules(new_model)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
-            print(old_module)
-            copy_module_grad(old_module[1],new_module)
+            copy_module_grad(old_module,new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):
     num_subnets = len(args.alphas)

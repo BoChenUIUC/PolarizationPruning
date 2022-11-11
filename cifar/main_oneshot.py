@@ -510,7 +510,7 @@ if args.VLB_conv:
         # linear
         model.aggr = nn.Linear(1024, model.in_planes).cuda()
         # param
-        model.register_parameter('cls_token',nn.Parameter(torch.randn(1, model.in_planes)).cuda())
+        model.register_parameter('cls_token',nn.Parameter(torch.randn(1, model.in_planes).cuda()))
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])

@@ -448,6 +448,8 @@ if args.VLB_conv:
             B,C,H,W = out.size()
             frame_pos_emb = self.frame_rot_emb(C,device=x.device)
             out = out.reshape(B,C,-1).contiguous()
+            print(out.size())
+            exit(0)
             for (t_attn, ff) in self.layers:
                 out = t_attn(x, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
                 out = ff(out) + out

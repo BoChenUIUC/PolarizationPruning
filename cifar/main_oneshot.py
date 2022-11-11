@@ -808,10 +808,11 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
             copy_module_grad(bn1,bn2)
     
     with torch.no_grad():
-        old_non_sparse_modules = get_non_sparse_modules(old_model)
+        old_non_sparse_modules,names = get_non_sparse_modules(old_model,True)
         new_non_sparse_modules = get_non_sparse_modules(new_model)
+        print(names)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
-            print(new_module,new_module.weight.requires_grad,new_module.weight.grad)
+            print(old_module)
             copy_module_grad(old_module,new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):

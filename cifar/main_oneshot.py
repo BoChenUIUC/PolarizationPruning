@@ -471,7 +471,7 @@ if args.VLB_conv:
             # attention
             image_pos_emb = self.image_rot_emb(H,W,device=out.device)
             for (s_attn, ff) in self.layers:
-                out = s_attn(out, 'b (f n) d', '(b f) n d', f = B, rot_emb = image_pos_emb) + out
+                out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
             cls_token = out[:, 0]
             # linear

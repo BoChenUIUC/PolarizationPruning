@@ -677,13 +677,11 @@ def gen_partition_mask(net_id,mask_size):
     r = args.partition_ratio
     # 1st accurate
     if net_id == 0:
-        if c1 == c2:
-            mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
-            mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
+        mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+        mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
     elif net_id == 1:
-        if c1 == c2:
-            mask[:int(c1*r),:int(c2*r)] = 1
-            mask[int(c1*r):,int(c2*r):] = 1
+        mask[:int(c1*r),:int(c2*r)] = 1
+        mask[int(c1*r):,int(c2*r):] = 1
     # 2nd accurate
     elif net_id == 2:
         # upper part
@@ -717,6 +715,8 @@ def sample_partition_network(old_model,net_id=None,eval=False):
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
                 mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
+                if mask_size[0]<=3 or mask_size[1]<=3:
+                    print(mask_size)
                 mask = gen_partition_mask(net_id,mask_size)
                 sub_module.weight.data *= mask
     return dynamic_model

@@ -510,7 +510,7 @@ class ResNetExpand(nn.Module):
     def get_non_partitionable_modules(self):
         par_modules = []
         bn_modules,conv_modules = self.get_partitionable_bns_n_convs()
-        for bn in n_modules: par_modules.append(bn)
+        for bn in bn_modules: par_modules.append(bn)
         for conv in conv_modules: par_modules.append(conv)
         par_modules_set = set(par_modules)
         non_par_modules = []

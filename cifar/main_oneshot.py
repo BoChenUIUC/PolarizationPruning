@@ -471,7 +471,7 @@ if args.VLB_conv:
             out_list.append(out)
         out = torch.cat(out_list,1)
         # attention
-        if args.VLB_conv_type == 2:
+        if args.VLB_conv_type >= 2:
             # reduce dim
             out = self.aggr(out)
             # attention
@@ -545,6 +545,50 @@ if args.VLB_conv:
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
         depth = 4
+        for _ in range(depth):
+            ff = FeedForward(out_channels)
+            # s_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            t_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            t_attn, ff = map(lambda t: PreNorm(out_channels, t), (t_attn, ff))
+            model.layers.append(nn.ModuleList([t_attn, ff]))
+        model.layers.cuda()
+        model.frame_rot_emb = RotaryEmbedding(64).cuda()
+        # model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
+        # linear
+        model.linear = nn.Sequential(
+                        nn.LayerNorm((64)),
+                        nn.AvgPool1d(64),
+                        Flatten(),
+                        nn.Linear(model.in_planes, 10)
+                    ).cuda()
+    elif args.VLB_conv_type == 3:
+        class Flatten(nn.Module):
+            def forward(self, input):
+                '''
+                Note that input.size(0) is usually the batch size.
+                So what it does is that given any input with input.size(0) # of batches,
+                will flatten to be 1 * nb_elements.
+                '''
+                batch_size = input.size(0)
+                out = input.view(batch_size,-1)
+                return out # (batch_size, *size)
+        # conv
+        model.aggr = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(512),
+                                    nn.ReLU(),
+                                    nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(128),
+                                    nn.ReLU(),
+                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
+        # attention
+        out_channels = model.in_planes
+        model.layers = nn.ModuleList([])
+        depth = 1
         for _ in range(depth):
             ff = FeedForward(out_channels)
             # s_attn = Attention(out_channels, dim_head = 64, heads = 8)

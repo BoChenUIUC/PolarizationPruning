@@ -496,15 +496,17 @@ class ResNetExpand(nn.Module):
     def get_partitionable_bns_n_convs(self) -> List[nn.Module]:
         par_bns = []
         par_convs = []
-        for m in self.modules():
+        for n,m in self.named_modules():
             if isinstance(m, BasicBlock):
                 m: BasicBlock
                 par_convs.append(m.conv1)
                 par_convs.append(m.conv2)
                 par_bns.append(m.bn1)
                 par_bns.append(m.bn2)
+                print(n)
         par_bns += [self.bn1]
         par_convs += [self.conv1]
+        exit(0)
         # par_convs += [self.linear]
         return par_bns,par_convs
 

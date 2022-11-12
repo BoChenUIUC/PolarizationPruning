@@ -546,7 +546,7 @@ if args.VLB_conv:
             model.layers.append(nn.ModuleList([s_attn, ff]))
         model.layers.cuda()
         # model.frame_rot_emb = RotaryEmbedding(64).cuda()
-        self.image_rot_emb = AxialRotaryEmbedding(64).cuda()
+        model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
     else:
         exit(0)
 

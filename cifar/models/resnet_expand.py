@@ -514,7 +514,7 @@ class ResNetExpand(nn.Module):
         for conv in conv_modules: par_modules.append(conv)
         par_modules_set = set(par_modules)
         non_par_modules = []
-        for module_name, module in model.named_modules():
+        for module_name, module in self.named_modules():
             if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear):
                 if module not in par_modules_set:
                     print('NON:' ,module_name)

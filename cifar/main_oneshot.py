@@ -710,7 +710,7 @@ def gen_partition_mask(net_id,weight_size):
             mask[int(c1*r):,int(c2*r):] = 1
         else:
             mask[int(c1*r):] = 1
-    return mask.view(*mask_size,1,1)
+    return mask.view(c1,c2,1,1)
 
 def sample_partition_network(old_model,net_id=None,eval=False):
     if eval:

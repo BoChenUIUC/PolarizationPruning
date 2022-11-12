@@ -588,7 +588,7 @@ def gen_partition_mask(net_id,mask_size,is_conv=True):
             mask[int(c1*r):,int(c2*r):] = 1
         else:
             mask[int(c1*r):] = 1
-    mask = mask_size.view(*mask_size,1,1)
+    mask = mask.view(*mask_size,1,1)
     return mask
 
 def sample_partition_network(old_model,net_id=None,eval=False):

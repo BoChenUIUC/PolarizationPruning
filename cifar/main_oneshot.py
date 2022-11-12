@@ -603,6 +603,7 @@ def sample_partition_network(old_model,net_id=None,eval=False):
     cnt=0
     for module_name,module in dynamic_model.named_modules():
         if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
+            print(module_name,module.weight.size())
             cnt += 1
     print(len(convs),cnt)
     exit(0)

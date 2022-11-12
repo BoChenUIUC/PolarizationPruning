@@ -669,21 +669,12 @@ def bn_sparsity(model, loss_type, sparsity, t, alpha,
 #         for old_module,new_module in zip(old_non_par_modules,new_non_par_modules):
 #             copy_module_grad(old_module,new_module)
 
-def gen_partition_mask(net_id,mask_size,is_conv=True):
+def gen_partition_mask(net_id,mask_size):
     # different net_id map to different nets
     # different layer map to differnet subnets
     mask = torch.zeros(mask_size).long().cuda()
     c1,c2 = mask_size
     r = args.partition_ratio
-    # last linear layer
-    if not is_conv:
-        if net_id < 2:
-            mask[:] = 1
-        elif net_id == 2:
-            mask[:,:int(c2*(1-r))] = 1
-        elif net_id == 3:
-            mask[:,int(c2*r):] = 1
-        return mask
     # 1st accurate
     if net_id == 0:
         if 3 != c2:
@@ -724,15 +715,11 @@ def sample_partition_network(old_model,net_id=None,eval=False):
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
-    for sub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
+    for module_name,sub_module in dynamic_model.named_modules():
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
                 mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
                 mask = gen_partition_mask(net_id,mask_size)
-                sub_module.weight.data *= mask
-            elif isinstance(sub_module, nn.Linear):
-                mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
-                mask = gen_partition_mask(net_id,mask_size,is_conv=False)
                 sub_module.weight.data *= mask
     return dynamic_model
 
@@ -773,21 +760,19 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
         else:
             old_param.grad_tmp += new_grad
 
-    bns1,convs1 = old_model.get_partitionable_bns_n_convs()
-    bns2,convs2 = new_model.get_partitionable_bns_n_convs()
+    bns1,convs1 = old_model.get_sparse_layers_and_convs()
+    bns2,convs2 = new_model.get_sparse_layers_and_convs()
     ch_start = 0
-    for conv1,conv2 in zip(convs1,convs2):
+    for conv1,bn1,conv2,bn2 in zip(convs1,bns1,convs2,bns2):
         with torch.no_grad():
             mask_size = (conv1.weight.size(0),conv1.weight.size(1))
-            subnet_mask = gen_partition_mask(net_id,mask_size,is_conv=len(conv1.weight.data.size())>2)
+            subnet_mask = gen_partition_mask(net_id,mask_size)
             copy_module_grad(conv1,conv2,subnet_mask)
-    for bn1,bn2 in zip(bns1,bns2):
-        with torch.no_grad():
             copy_module_grad(bn1,bn2)
     
     with torch.no_grad():
-        old_non_sparse_modules = old_model.get_non_partitionable_modules()
-        new_non_sparse_modules = new_model.get_non_partitionable_modules()
+        old_non_sparse_modules = get_non_sparse_modules(old_model)
+        new_non_sparse_modules = get_non_sparse_modules(new_model)
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
             copy_module_grad(old_module,new_module)
     

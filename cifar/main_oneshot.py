@@ -715,7 +715,7 @@ def sample_partition_network(old_model,net_id=None,eval=False):
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
-    for ub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
+    for sub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
                 mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))

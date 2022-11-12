@@ -720,8 +720,10 @@ def sample_partition_network(old_model,net_id=None,eval=False):
             if isinstance(sub_module, nn.Conv2d): 
                 mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
                 if mask_size[0]>64 or mask_size[1]>64:continue
+                print(module_name,sub_module.weight.data.size())
                 mask = gen_partition_mask(net_id,mask_size)
                 sub_module.weight.data *= mask
+    exit(0)
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):

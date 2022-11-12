@@ -493,6 +493,19 @@ class ResNetExpand(nn.Module):
                 
         return sparse_layers,sparse_convs
 
+    def get_partitionable_bns_n_convs(self) -> List[nn.Module]:
+        par_bns = []
+        par_convs = []
+        for m in self.modules():
+            if isinstance(m, BasicBlock):
+                m: BasicBlock
+                par_convs.append(m.conv1)
+                par_convs.append(m.conv2)
+                par_bns.append(m.bn1)
+                par_bns.append(m.bn2)
+        par_convs += [self.linear]
+        return par_bns,par_convs
+
     def config(self) -> List[int]:
         # a flatten config list
         config: List[int] = []

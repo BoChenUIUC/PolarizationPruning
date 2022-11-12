@@ -318,142 +318,6 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
 # print(feature_len)
 # test
 
-
-from einops import rearrange, repeat
-from torch import einsum
-from math import log, pi
-# classes
-
-class PreNorm(nn.Module):
-    def __init__(self, dim, fn):
-        super().__init__()
-        self.fn = fn
-        self.norm = nn.LayerNorm(dim)
-
-    def forward(self, x, *args, **kwargs):
-        x = self.norm(x)
-        return self.fn(x, *args, **kwargs)
-        
-# feedforward
-
-class GEGLU(nn.Module):
-    def forward(self, x):
-        x, gates = x.chunk(2, dim = -1)
-        return x * F.gelu(gates)
-
-class FeedForward(nn.Module):
-    def __init__(self, dim, mult = 4, dropout = 0.):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim, dim * mult * 2),
-            GEGLU(),
-            nn.Dropout(dropout),
-            nn.Linear(dim * mult, dim)
-        )
-
-    def forward(self, x):
-        return self.net(x)
-        
-# attention
-def exists(val):
-    return val is not None
-
-def attn(q, k, v, mask = None):
-    sim = einsum('b i d, b j d -> b i j', q, k)
-
-    if exists(mask):
-        max_neg_value = -torch.finfo(sim.dtype).max
-        sim.masked_fill_(~mask, max_neg_value)
-
-    attn = sim.softmax(dim = -1)
-    out = einsum('b i j, b j d -> b i d', attn, v)
-    return out
-
-class Attention(nn.Module):
-    def __init__(
-        self,
-        dim,
-        dim_head = 64,
-        heads = 8,
-        dropout = 0.
-    ):
-        super().__init__()
-        self.heads = heads
-        self.scale = dim_head ** -0.5
-        inner_dim = dim_head * heads
-
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
-        self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
-            nn.Dropout(dropout)
-        )
-
-    def forward(self, x, einops_from, einops_to, mask = None, cls_mask = None, rot_emb = None, **einops_dims):
-        h = self.heads
-        q, k, v = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h = h), (q, k, v))
-
-        q = q * self.scale
-
-        # rearrange across time or space
-        (q_, k_, v_) = q, k, v
-        q_, k_, v_ = map(lambda t: rearrange(t, f'{einops_from} -> {einops_to}', **einops_dims), (q_, k_, v_))
-
-        # attention
-        out = attn(q_, k_, v_, mask = mask)
-
-        # merge back time or space
-        out = rearrange(out, f'{einops_to} -> {einops_from}', **einops_dims)
-
-        # merge back the heads
-        out = rearrange(out, '(b h) n d -> b n (h d)', h = h)
-
-        # combine heads out
-        return self.to_out(out)
-
-class AxialRotaryEmbedding(nn.Module):
-    def __init__(self, dim, max_freq = 10):
-        super().__init__()
-        self.dim = dim
-        scales = torch.logspace(0., log(max_freq / 2) / log(2), self.dim // 4, base = 2)
-        self.register_buffer('scales', scales)
-
-    def forward(self, h, w, device):
-        scales = rearrange(self.scales, '... -> () ...')
-        scales = scales.to(device)
-
-        h_seq = torch.linspace(-1., 1., steps = h, device = device)
-        h_seq = h_seq.unsqueeze(-1)
-
-        w_seq = torch.linspace(-1., 1., steps = w, device = device)
-        w_seq = w_seq.unsqueeze(-1)
-
-        h_seq = h_seq * scales * pi
-        w_seq = w_seq * scales * pi
-
-        x_sinu = repeat(h_seq, 'i d -> i j d', j = w)
-        y_sinu = repeat(w_seq, 'j d -> i j d', i = h)
-
-        sin = torch.cat((x_sinu.sin(), y_sinu.sin()), dim = -1)
-        cos = torch.cat((x_sinu.cos(), y_sinu.cos()), dim = -1)
-
-        sin, cos = map(lambda t: rearrange(t, 'i j d -> (i j) d'), (sin, cos))
-        sin, cos = map(lambda t: repeat(t, 'n d -> () n (d j)', j = 2), (sin, cos))
-        return sin, cos
-
-class RotaryEmbedding(nn.Module):
-    def __init__(self, dim):
-        super().__init__()
-        inv_freqs = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
-        self.register_buffer('inv_freqs', inv_freqs)
-
-    def forward(self, n, device):
-        seq = torch.arange(n, device = device)
-        freqs = einsum('i, j -> i j', seq, self.inv_freqs)
-        freqs = torch.cat((freqs, freqs), dim = -1)
-        freqs = rearrange(freqs, 'n d -> () n d')
-        return freqs.sin(), freqs.cos()
-
 if args.VLB_conv:
     from types import MethodType
     def modified_forward(self,x):
@@ -470,28 +334,11 @@ if args.VLB_conv:
             out = l(out)
             out_list.append(out)
         out = torch.cat(out_list,1)
-        # attention
-        if args.VLB_conv_type >= 2:
-            # reduce dim
-            out = self.aggr(out)
-            # attention
-            B,C,H,W = out.size()
-            out = out.view(B,C,-1)
-            # out = out.permute(0,2,3,1).reshape(B,-1,C).contiguous() 
-            frame_pos_emb = self.frame_rot_emb(C,device=out.device)
-            # image_pos_emb = self.image_rot_emb(H,W,device=out.device)
-            for (t_attn, ff) in self.layers:
-                out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
-                # out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
-                out = ff(out) + out
-            # linear
-            out = self.linear(out)
-        else:
-            # aggregate layer
-            out = self.aggr(out)
-            out = F.avg_pool2d(out, out.size()[3])
-            out = out.view(out.size(0), -1)
-            out = self.linear(out)
+        # aggregate layer
+        out = self.aggr(out)
+        out = F.avg_pool2d(out, out.size()[3])
+        out = out.view(out.size(0), -1)
+        out = self.linear(out)
         return out, None
     model.forward = MethodType(modified_forward, model)
     if args.VLB_conv_type == 0:
@@ -517,94 +364,6 @@ if args.VLB_conv:
                                     nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
-    elif args.VLB_conv_type == 2:
-        class Flatten(nn.Module):
-            def forward(self, input):
-                '''
-                Note that input.size(0) is usually the batch size.
-                So what it does is that given any input with input.size(0) # of batches,
-                will flatten to be 1 * nb_elements.
-                '''
-                batch_size = input.size(0)
-                out = input.view(batch_size,-1)
-                return out # (batch_size, *size)
-        # conv
-        model.aggr = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(512),
-                                    nn.ReLU(),
-                                    nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(256),
-                                    nn.ReLU(),
-                                    nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
-        # attention
-        out_channels = model.in_planes
-        model.layers = nn.ModuleList([])
-        depth = 4
-        for _ in range(depth):
-            ff = FeedForward(out_channels)
-            # s_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            t_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            t_attn, ff = map(lambda t: PreNorm(out_channels, t), (t_attn, ff))
-            model.layers.append(nn.ModuleList([t_attn, ff]))
-        model.layers.cuda()
-        model.frame_rot_emb = RotaryEmbedding(64).cuda()
-        # model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
-        # linear
-        model.linear = nn.Sequential(
-                        nn.LayerNorm((64)),
-                        nn.AvgPool1d(64),
-                        Flatten(),
-                        nn.Linear(model.in_planes, 10)
-                    ).cuda()
-    elif args.VLB_conv_type == 3:
-        class Flatten(nn.Module):
-            def forward(self, input):
-                '''
-                Note that input.size(0) is usually the batch size.
-                So what it does is that given any input with input.size(0) # of batches,
-                will flatten to be 1 * nb_elements.
-                '''
-                batch_size = input.size(0)
-                out = input.view(batch_size,-1)
-                return out # (batch_size, *size)
-        # conv
-        model.aggr = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(512),
-                                    nn.ReLU(),
-                                    nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(256),
-                                    nn.ReLU(),
-                                    nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
-        # attention
-        out_channels = model.in_planes
-        model.layers = nn.ModuleList([])
-        depth = 1
-        for _ in range(depth):
-            ff = FeedForward(out_channels)
-            # s_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            t_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            t_attn, ff = map(lambda t: PreNorm(out_channels, t), (t_attn, ff))
-            model.layers.append(nn.ModuleList([t_attn, ff]))
-        model.layers.cuda()
-        model.frame_rot_emb = RotaryEmbedding(64).cuda()
-        # model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
-        # linear
-        model.linear = nn.Sequential(
-                        nn.LayerNorm((64)),
-                        nn.AvgPool1d(64),
-                        Flatten(),
-                        nn.Linear(model.in_planes, 10)
-                    ).cuda()
     else:
         exit(0)
 
@@ -792,12 +551,19 @@ def bn_sparsity(model, loss_type, sparsity, t, alpha,
     else:
         raise ValueError()
 
-def gen_partition_mask(net_id,mask_size):
+def gen_partition_mask(net_id,mask_size,is_conv=True):
     # different net_id map to different nets
     # different layer map to differnet subnets
     mask = torch.zeros(mask_size).long().cuda()
     c1,c2 = mask_size
     r = args.partition_ratio
+    # last linear layer
+    if not is_conv:
+        if net_id == 2:
+            mask[:,:int(c2*(1-r))] = 1
+        elif net_id == 3:
+            mask[:,int(c2*r):] = 1
+        return mask
     # 1st accurate
     if net_id == 0:
         mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
@@ -808,29 +574,47 @@ def gen_partition_mask(net_id,mask_size):
     # 2nd accurate
     elif net_id == 2:
         # upper part
-        mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+        if c1 == c2:
+            mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+        else:
+            # first conv
+            mask[:int(c1*(1-r))] = 1
     elif net_id == 3:
         # lower part
-        mask[int(c1*r):,int(c2*r):] = 1
-    return mask.view(*mask_size,1,1)
+        if c1 == c2:
+            mask[int(c1*r):,int(c2*r):] = 1
+        else:
+            mask[int(c1*r):] = 1
+    return mask
 
 def sample_partition_network(old_model,net_id=None,eval=False):
     if eval:
         dynamic_model = copy.deepcopy(old_model)
     else:
         dynamic_model = old_model
+
     for module_name,bn_module in dynamic_model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
-    for module_name,sub_module in dynamic_model.named_modules():
+    _,convs = dynamic_model.get_partitionable_bns_n_convs()
+    cnt=0
+    for module_name,module in dynamic_model.named_modules():
+        if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, nn.Linear):
+            cnt += 1
+    print(len(convs),cnt)
+    exit(0)
+    for sub_module in convs:
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
                 mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
-                if mask_size[0]<=3 or mask_size[1]<=3:continue
-                mask = gen_partition_mask(net_id,mask_size)
+                mask = gen_partition_mask(net_id,mask_size,is_conv=True)
+                sub_module.weight.data *= mask
+            elif isinstance(sub_module, nn.Linear):
+                mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
+                mask = gen_partition_mask(net_id,mask_size,is_conv=False)
                 sub_module.weight.data *= mask
     return dynamic_model
 
@@ -871,22 +655,15 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
         else:
             old_param.grad_tmp += new_grad
 
-    bns1,convs1 = old_model.get_sparse_layers_and_convs()
-    bns2,convs2 = new_model.get_sparse_layers_and_convs()
-    ch_start = 0
-    for conv1,bn1,conv2,bn2 in zip(convs1,bns1,convs2,bns2):
-        with torch.no_grad():
+    bns1,convs1 = old_model.get_partitionable_bns_n_convs()
+    bns2,convs2 = new_model.get_partitionable_bns_n_convs()
+    with torch.no_grad():
+        for conv1,bn1,conv2,bn2 in zip(convs1,bns1,convs2,bns2):
             mask_size = (conv1.weight.size(0),conv1.weight.size(1))
-            if mask_size[0]<=3 or mask_size[1]<=3:continue
             subnet_mask = gen_partition_mask(net_id,mask_size)
             copy_module_grad(conv1,conv2,subnet_mask)
+        for bn1,bn2 in zip(bns1,bns2):
             copy_module_grad(bn1,bn2)
-    
-    with torch.no_grad():
-        old_non_sparse_modules = get_non_sparse_modules(old_model)
-        new_non_sparse_modules = get_non_sparse_modules(new_model)
-        for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
-            copy_module_grad(old_module,new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):
     num_subnets = len(args.alphas)

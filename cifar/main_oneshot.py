@@ -348,6 +348,9 @@ if args.VLB_conv:
                                     nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(256),
                                     nn.ReLU(),
+                                    nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
                                     nn.Conv2d(256, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
@@ -600,14 +603,6 @@ def sample_partition_network(old_model,net_id=None,eval=False):
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
     bns,convs = dynamic_model.get_partitionable_bns_n_convs()
-    cnt=0
-    for module_name,module in dynamic_model.named_modules():
-        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear) or isinstance(module, nn.BatchNorm2d):
-            print(module_name,module.weight.size())
-            cnt += 1
-    non_modules = dynamic_model.get_non_partitionable_modules()
-    print(len(convs),len(bns),cnt,len(non_modules))
-    exit(0)
     for sub_module in convs:
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
@@ -666,6 +661,12 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
             copy_module_grad(conv1,conv2,subnet_mask)
         for bn1,bn2 in zip(bns1,bns2):
             copy_module_grad(bn1,bn2)
+
+    with torch.no_grad():
+        old_non_par_modules = old_model.get_non_partitionable_modules()
+        new_non_par_modules = new_model.get_non_partitionable_modules()
+        for old_module,new_module in zip(old_non_par_modules,new_non_par_modules):
+            copy_module_grad(old_module,new_module)
     
 def sample_network(old_model,net_id=None,eval=False,check_size=False):
     num_subnets = len(args.alphas)

@@ -455,7 +455,7 @@ if args.VLB_conv:
             out = l(out)
             out_list.append(out)
         out = torch.cat(out_list,1)
-        if args.VLB_conv_type >= 2:
+        if args.VLB_conv_type == 2:
             # reduce dim
             out = self.aggr(out)
             # attention
@@ -521,6 +521,19 @@ if args.VLB_conv:
                         Flatten(),
                         nn.Linear(model.in_planes, 10)
                     ).cuda()
+    elif args.VLB_conv_type == 3:
+        model.aggr = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
     else:
         exit(0)
 

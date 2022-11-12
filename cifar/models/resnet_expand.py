@@ -505,7 +505,7 @@ class ResNetExpand(nn.Module):
                 par_bns.append(m.bn2)
         par_bns += [self.bn1]
         par_convs += [self.conv1]
-        par_convs += [self.linear]
+        # par_convs += [self.linear]
         return par_bns,par_convs
 
     def get_non_partitionable_modules(self):

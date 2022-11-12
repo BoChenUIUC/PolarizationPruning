@@ -602,7 +602,7 @@ def sample_partition_network(old_model,net_id=None,eval=False):
     _,convs = dynamic_model.get_partitionable_bns_n_convs()
     cnt=0
     for module_name,module in dynamic_model.named_modules():
-        if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, nn.Linear):
+        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
             cnt += 1
     print(len(convs),cnt)
     exit(0)

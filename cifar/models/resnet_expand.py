@@ -505,7 +505,7 @@ class ResNetExpand(nn.Module):
                 par_bns.append(m.bn2)
         par_bns += [self.bn1]
         par_convs += [self.conv1]
-        par_convs += [self.linear]
+        # par_convs += [self.linear]
         return par_bns,par_convs
 
     def get_non_partitionable_modules(self):
@@ -516,7 +516,7 @@ class ResNetExpand(nn.Module):
         par_modules_set = set(par_modules)
         non_par_modules = []
         for module_name, module in self.named_modules():
-            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear):
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear) or isinstance(module, nn.LayerNorm):
                 if module not in par_modules_set:
                     non_par_modules.append(module)
         return non_par_modules

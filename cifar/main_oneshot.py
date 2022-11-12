@@ -476,20 +476,24 @@ if args.VLB_conv:
             out = self.aggr(out)
             # attention
             B,C,H,W = out.size()
-            out = out.view(B,C,-1)
-            frame_pos_emb = self.frame_rot_emb(C,device=out.device)
-            for (t_attn, ff) in self.layers:
-                out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
+            # out = out.view(B,C,-1)
+            out = out.permute(0,2,3,1).reshape(B,-1,C).contiguous() 
+            # frame_pos_emb = self.frame_rot_emb(C,device=out.device)
+            image_pos_emb = self.image_rot_emb(H,W,device=out.device)
+            for (s_attn, ff) in self.layers:
+                # out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
+                out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
             # linear
+            out = F.layer_norm(out,64)
             out = out.view(B,C,H,W)
-            out = self.linear(out)
         else:
             # aggregate layer
             out = self.aggr(out)
-            out = F.avg_pool2d(out, out.size()[3])
-            out = out.view(out.size(0), -1)
-            out = self.linear(out)
+
+        out = F.avg_pool2d(out, out.size()[3])
+        out = out.view(out.size(0), -1)
+        out = self.linear(out)
         return out, None
     model.forward = MethodType(modified_forward, model)
     if args.VLB_conv_type == 0:
@@ -536,18 +540,13 @@ if args.VLB_conv:
         depth = 12
         for _ in range(depth):
             ff = FeedForward(out_channels)
-            t_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            t_attn, ff = map(lambda t: PreNorm(out_channels, t), (t_attn, ff))
+            s_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            # t_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
             model.layers.append(nn.ModuleList([t_attn, ff]))
         model.layers.cuda()
-        model.frame_rot_emb = RotaryEmbedding(64).cuda()
-        # linear
-        model.linear = nn.Sequential(
-                        nn.LayerNorm((8,8)),
-                        nn.AvgPool2d(8),
-                        Flatten(),
-                        nn.Linear(model.in_planes, 10)
-                    ).cuda()
+        # model.frame_rot_emb = RotaryEmbedding(64).cuda()
+        self.image_rot_emb = AxialRotaryEmbedding(64).cuda()
     else:
         exit(0)
 

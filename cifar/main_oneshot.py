@@ -485,7 +485,7 @@ if args.VLB_conv:
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
             # linear
-            out = F.layer_norm(out,64)
+            out = F.layer_norm(out,(64,))
             out = out.view(B,C,H,W)
         else:
             # aggregate layer

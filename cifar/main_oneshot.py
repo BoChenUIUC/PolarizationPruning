@@ -715,7 +715,6 @@ def sample_partition_network(old_model,net_id=None,eval=False):
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
                 mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
-                if mask_size[0]<=3 or mask_size[1]<=3:continue
                 mask = gen_partition_mask(net_id,mask_size)
                 sub_module.weight.data *= mask
     return dynamic_model

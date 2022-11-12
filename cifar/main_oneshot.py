@@ -673,7 +673,7 @@ def gen_partition_mask(net_id,weight_size):
     # different net_id map to different nets
     # different layer map to differnet subnets
     mask = torch.zeros(weight_size[:2]).long().cuda()
-    c1,c2 = mask_size
+    c1,c2 = weight_size[:2]
     r = args.partition_ratio
     if len(weight_size)==2:
         if net_id < 2:

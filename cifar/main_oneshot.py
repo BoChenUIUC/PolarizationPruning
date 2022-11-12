@@ -476,13 +476,13 @@ if args.VLB_conv:
             out = self.aggr(out)
             # attention
             B,C,H,W = out.size()
-            # out = out.view(B,C,-1)
-            out = out.permute(0,2,3,1).reshape(B,-1,C).contiguous() 
-            # frame_pos_emb = self.frame_rot_emb(C,device=out.device)
-            image_pos_emb = self.image_rot_emb(H,W,device=out.device)
-            for (s_attn, ff) in self.layers:
-                # out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
-                out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
+            out = out.view(B,C,-1)
+            # out = out.permute(0,2,3,1).reshape(B,-1,C).contiguous() 
+            frame_pos_emb = self.frame_rot_emb(C,device=out.device)
+            # image_pos_emb = self.image_rot_emb(H,W,device=out.device)
+            for (t_attn, ff) in self.layers:
+                out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
+                # out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
             # linear
             out = F.layer_norm(out,(64,))
@@ -537,16 +537,16 @@ if args.VLB_conv:
         # attention
         out_channels = model.in_planes
         model.layers = nn.ModuleList([])
-        depth = 12
+        depth = 4
         for _ in range(depth):
             ff = FeedForward(out_channels)
-            s_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            # t_attn = Attention(out_channels, dim_head = 64, heads = 8)
-            s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
-            model.layers.append(nn.ModuleList([s_attn, ff]))
+            # s_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            t_attn = Attention(out_channels, dim_head = 64, heads = 8)
+            t_attn, ff = map(lambda t: PreNorm(out_channels, t), (t_attn, ff))
+            model.layers.append(nn.ModuleList([t_attn, ff]))
         model.layers.cuda()
-        # model.frame_rot_emb = RotaryEmbedding(64).cuda()
-        model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
+        model.frame_rot_emb = RotaryEmbedding(64).cuda()
+        # model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
     else:
         exit(0)
 

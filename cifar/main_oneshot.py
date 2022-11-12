@@ -543,7 +543,7 @@ if args.VLB_conv:
             s_attn = Attention(out_channels, dim_head = 64, heads = 8)
             # t_attn = Attention(out_channels, dim_head = 64, heads = 8)
             s_attn, ff = map(lambda t: PreNorm(out_channels, t), (s_attn, ff))
-            model.layers.append(nn.ModuleList([t_attn, ff]))
+            model.layers.append(nn.ModuleList([s_attn, ff]))
         model.layers.cuda()
         # model.frame_rot_emb = RotaryEmbedding(64).cuda()
         self.image_rot_emb = AxialRotaryEmbedding(64).cuda()

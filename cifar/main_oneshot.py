@@ -388,7 +388,8 @@ class Attention(nn.Module):
         # attention
         out = attn(q_, k_, v_, mask = mask)
         # merge back time or space
-        out = rearrange(out, f'{einops_to} -> {einops_from}', **einops_dims)
+        if einops_from is not None:
+            out = rearrange(out, f'{einops_to} -> {einops_from}', **einops_dims)
         # merge back the heads
         out = rearrange(out, '(b h) n d -> b n (h d)', h = h)
         # combine heads out

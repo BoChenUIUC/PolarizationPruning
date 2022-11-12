@@ -480,7 +480,7 @@ if args.VLB_conv:
             out = out.permute(0,2,3,1).reshape(B,-1,C).contiguous() 
             # frame_pos_emb = self.frame_rot_emb(C,device=out.device)
             image_pos_emb = self.image_rot_emb(H,W,device=out.device)
-            for (t_attn, ff) in self.layers:
+            for (s_attn, ff) in self.layers:
                 # out = t_attn(out, 'b (f n) d', '(b n) f d', n = 1, rot_emb = frame_pos_emb) + out
                 out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out

@@ -378,7 +378,6 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
 
 flops = compute_conv_flops_par(model, cuda=True)
 print(flops)
-exit(0)
 
 if args.VLB_conv:
     from types import MethodType
@@ -437,6 +436,10 @@ if args.VLB_conv:
                                     nn.ReLU()).cuda()
     else:
         exit(0)
+
+flops = compute_conv_flops_par(model, cuda=True)
+print(flops)
+exit(0)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

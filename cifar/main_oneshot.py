@@ -383,7 +383,7 @@ class Attention(nn.Module):
         q = q * self.scale
         # rearrange across time or space
         (q_, k_, v_) = q, k, v
-        if einops is not None
+        if einops is not None:
             q_, k_, v_ = map(lambda t: rearrange(t, f'{einops_from} -> {einops_to}', **einops_dims), (q_, k_, v_))
         # attention
         out = attn(q_, k_, v_, mask = mask)

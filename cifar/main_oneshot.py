@@ -682,12 +682,14 @@ def gen_partition_mask(net_id,mask_size):
             mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
         else:
             mask[:] = 1
+            exit(0)
     elif net_id == 1:
         if c1 == c2:
             mask[:int(c1*r),:int(c2*r)] = 1
             mask[int(c1*r):,int(c2*r):] = 1
         else:
             mask[:] = 1
+            exit(0)
     # 2nd accurate
     elif net_id == 2:
         # upper part

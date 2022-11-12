@@ -774,6 +774,7 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
     for conv1,bn1,conv2,bn2 in zip(convs1,bns1,convs2,bns2):
         with torch.no_grad():
             mask_size = (conv1.weight.size(0),conv1.weight.size(1))
+            print(mask_size)
             subnet_mask = gen_partition_mask(net_id,mask_size)
             copy_module_grad(conv1,conv2,subnet_mask)
             copy_module_grad(bn1,bn2)

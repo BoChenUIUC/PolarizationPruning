@@ -485,15 +485,13 @@ if args.VLB_conv:
                 # out = s_attn(out, 'b (f n) d', '(b f) n d', f = 1, rot_emb = image_pos_emb) + out
                 out = ff(out) + out
             # linear
-            out = F.layer_norm(out,(64,))
-            out = out.view(B,C,H,W)
+            out = self.linear(out)
         else:
             # aggregate layer
             out = self.aggr(out)
-
-        out = F.avg_pool2d(out, out.size()[3])
-        out = out.view(out.size(0), -1)
-        out = self.linear(out)
+            out = F.avg_pool2d(out, out.size()[3])
+            out = out.view(out.size(0), -1)
+            out = self.linear(out)
         return out, None
     model.forward = MethodType(modified_forward, model)
     if args.VLB_conv_type == 0:
@@ -547,6 +545,13 @@ if args.VLB_conv:
         model.layers.cuda()
         model.frame_rot_emb = RotaryEmbedding(64).cuda()
         # model.image_rot_emb = AxialRotaryEmbedding(64).cuda()
+        # linear
+        model.linear = nn.Sequential(
+                        nn.LayerNorm((64)),
+                        nn.AvgPool1d(64),
+                        Flatten(),
+                        nn.Linear(model.in_planes, 10)
+                    ).cuda()
     else:
         exit(0)
 

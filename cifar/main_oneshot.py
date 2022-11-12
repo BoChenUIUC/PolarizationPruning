@@ -677,11 +677,17 @@ def gen_partition_mask(net_id,mask_size):
     r = args.partition_ratio
     # 1st accurate
     if net_id == 0:
-        mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
-        mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
+        if c1 == c2:
+            mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+            mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
+        else:
+            mask[:] = 1
     elif net_id == 1:
-        mask[:int(c1*r),:int(c2*r)] = 1
-        mask[int(c1*r):,int(c2*r):] = 1
+        if c1 == c2:
+            mask[:int(c1*r),:int(c2*r)] = 1
+            mask[int(c1*r):,int(c2*r):] = 1
+        else:
+            mask[:] = 1
     # 2nd accurate
     elif net_id == 2:
         # upper part

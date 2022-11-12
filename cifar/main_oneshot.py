@@ -669,12 +669,21 @@ def bn_sparsity(model, loss_type, sparsity, t, alpha,
 #         for old_module,new_module in zip(old_non_par_modules,new_non_par_modules):
 #             copy_module_grad(old_module,new_module)
 
-def gen_partition_mask(net_id,mask_size):
+def gen_partition_mask(net_id,mask_size,is_conv=True):
     # different net_id map to different nets
     # different layer map to differnet subnets
     mask = torch.zeros(mask_size).long().cuda()
     c1,c2 = mask_size
     r = args.partition_ratio
+    # last linear layer
+    if not is_conv:
+        if net_id < 2:
+            mask[:] = 1
+        elif net_id == 2:
+            mask[:,:int(c2*(1-r))] = 1
+        elif net_id == 3:
+            mask[:,int(c2*r):] = 1
+        return mask
     # 1st accurate
     if net_id == 0:
         if 3 != c2:
@@ -720,6 +729,10 @@ def sample_partition_network(old_model,net_id=None,eval=False):
             if isinstance(sub_module, nn.Conv2d): 
                 mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
                 mask = gen_partition_mask(net_id,mask_size)
+                sub_module.weight.data *= mask
+            elif isinstance(sub_module, nn.Linear):
+                mask_size = (sub_module.weight.size(0),sub_module.weight.size(1))
+                mask = gen_partition_mask(net_id,mask_size,is_conv=False)
                 sub_module.weight.data *= mask
     return dynamic_model
 

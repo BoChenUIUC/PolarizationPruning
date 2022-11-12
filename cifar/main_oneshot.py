@@ -786,8 +786,8 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
             copy_module_grad(bn1,bn2)
     
     with torch.no_grad():
-        old_non_sparse_modules = get_non_partitionable_modules(old_model)
-        new_non_sparse_modules = get_non_partitionable_modules(new_model)
+        old_non_sparse_modules = old_model.get_non_partitionable_modules()
+        new_non_sparse_modules = new_model.get_non_partitionable_modules()
         for old_module,new_module in zip(old_non_sparse_modules,new_non_sparse_modules):
             copy_module_grad(old_module,new_module)
     

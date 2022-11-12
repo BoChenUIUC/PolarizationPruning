@@ -599,13 +599,14 @@ def sample_partition_network(old_model,net_id=None,eval=False):
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
-    _,convs = dynamic_model.get_partitionable_bns_n_convs()
+    bns,convs = dynamic_model.get_partitionable_bns_n_convs()
     cnt=0
     for module_name,module in dynamic_model.named_modules():
-        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
+        if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear) or isinstance(module, nn.BatchNorm2d):
             print(module_name,module.weight.size())
             cnt += 1
-    print(len(convs),cnt)
+    non_modules = dynamic_model.get_non_partitionable_modules()
+    print(len(convs),len(bns),cnt,len(non_modules))
     exit(0)
     for sub_module in convs:
         with torch.no_grad():

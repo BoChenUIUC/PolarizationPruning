@@ -507,6 +507,20 @@ class ResNetExpand(nn.Module):
         par_convs += [self.linear]
         return par_bns,par_convs
 
+    def get_non_partitionable_modules(self):
+        par_modules = []
+        bn_modules,conv_modules = self.get_partitionable_bns_n_convs()
+        for bn in n_modules: par_modules.append(bn)
+        for conv in conv_modules: par_modules.append(conv)
+        par_modules_set = set(par_modules)
+        non_par_modules = []
+        for module_name, module in model.named_modules():
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear):
+                if module not in par_modules_set:
+                    print('NON:' module_name)
+                    non_par_modules.append(module)
+        return non_par_modules
+
     def config(self) -> List[int]:
         # a flatten config list
         config: List[int] = []

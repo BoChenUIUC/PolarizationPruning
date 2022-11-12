@@ -503,10 +503,8 @@ class ResNetExpand(nn.Module):
                 par_convs.append(m.conv2)
                 par_bns.append(m.bn1)
                 par_bns.append(m.bn2)
-                print(n)
         par_bns += [self.bn1]
         par_convs += [self.conv1]
-        exit(0)
         # par_convs += [self.linear]
         return par_bns,par_convs
 

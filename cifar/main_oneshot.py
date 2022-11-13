@@ -393,16 +393,16 @@ if args.VLB_conv:
     elif args.VLB_conv_type == 3:
         sampling_interval = 3
         # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 64, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(64),
+        model.aggr = nn.Sequential(nn.Conv2d(352, 96, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(96),
                                     nn.ReLU(),
-                                    nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(64),
+                                    nn.Conv2d(96, 96, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(96),
                                     nn.ReLU(),
-                                    nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(64),
+                                    nn.Conv2d(96, 96, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(96),
                                     nn.ReLU(),
-                                    nn.Conv2d(64, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.Conv2d(96, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     else:

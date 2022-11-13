@@ -1008,7 +1008,7 @@ def train(epoch):
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(model)
         elif args.loss in {LossType.PARTITION}:
             nonzero = torch.nonzero(torch.tensor(args.alphas))
-            net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            net_id = len(nonzero) - int(nonzero[batch_idx%len(nonzero)][0])
             dynamic_model = sample_partition_network(model,net_id)
 
         if args.cuda:

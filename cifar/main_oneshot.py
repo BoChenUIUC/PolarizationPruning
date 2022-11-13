@@ -360,8 +360,8 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
 
 if args.VLB_conv:
     from types import MethodType
-    sampling_interval = 2
-    # 6->128
+    sampling_interval = 6
+    # 6->128, 2->464
     def modified_forward(self,x):
         out_list = []
         out = F.relu(self.bn1(self.conv1(x)))
@@ -379,8 +379,6 @@ if args.VLB_conv:
             if idx%sampling_interval == sampling_interval-1:
                 out_list.append(out)
         out = torch.cat(out_list,1)
-        print(out.size())
-        exit(0)
         # aggregate layer
         out = self.aggr(out)
         out = F.avg_pool2d(out, out.size()[3])
@@ -406,7 +404,7 @@ if args.VLB_conv:
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     elif args.VLB_conv_type == 2:
-        model.aggr = nn.Sequential(nn.Conv2d(1024, 64, kernel_size=3, stride=1, padding=1, bias=False),
+        model.aggr = nn.Sequential(nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(64),
                                     nn.ReLU(),
                                     nn.Conv2d(64, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),

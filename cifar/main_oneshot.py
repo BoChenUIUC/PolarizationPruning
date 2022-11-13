@@ -399,10 +399,10 @@ if args.VLB_conv:
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     elif args.VLB_conv_type == 2:
-        model.aggr = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(256),
+        model.aggr = nn.Sequential(nn.Conv2d(1024, 64, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(64),
                                     nn.ReLU(),
-                                    nn.Conv2d(256, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.Conv2d(64, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     else:

@@ -435,6 +435,21 @@ if args.VLB_conv:
                                     nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
+    elif args.VLB_conv_type == 6:
+        sampling_interval = 3
+        # better with at least 3 layers
+        model.aggr = nn.Sequential(nn.Conv2d(352, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(256),
+                                    nn.ReLU(),
+                                    nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(128),
+                                    nn.ReLU(),
+                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(model.in_planes),
+                                    nn.ReLU()).cuda()
     else:
         exit(0)
     from types import MethodType
@@ -1071,7 +1086,7 @@ def train(epoch):
             update_shared_model(model,dynamic_model,freeze_mask,batch_idx,ch_indices,net_id)
         if args.loss in {LossType.PARTITION} and deepcopy:
             update_partitioned_model(model,dynamic_model,net_id,batch_idx)
-        if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1) or (args.loss in {LossType.PARTITION} and not deepcopy):
+        if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1):
             optimizer.step()
         if args.loss in {LossType.POLARIZATION,
                          LossType.L2_POLARIZATION}:

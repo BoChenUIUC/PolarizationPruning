@@ -283,18 +283,7 @@ if args.flops_weighted:
 if args.cuda:
     model.cuda()
 
-if args.debug:
-    # fake polarization to test pruning
-    for name, module in model.named_modules():
-        if isinstance(module, nn.BatchNorm1d) or \
-                isinstance(module, nn.BatchNorm2d) or \
-                isinstance(module, models.common.SparseGate):
-            module.weight.data.zero_()
-            total_weight_count = len(module.weight)
-            one_num = random.randint(3, total_weight_count - 2)
-            module.weight.data[:one_num] = 1.
-
-            print(f"{name} remains {one_num}")
+BASEFLOPS = compute_conv_flops(model, cuda=True)
 
 if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     teacher_model = copy.deepcopy(model)
@@ -952,11 +941,9 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
 
-    baseline_flops = compute_conv_flops(model, cuda=True)
-
     prune_str = ''
     for flop,prec1 in zip(saved_flops,saved_prec1s):
-        prune_str += f"{prec1:.4f}({(flop / baseline_flops)*100:.2f}%),"
+        prune_str += f"{prec1:.4f}({(flop / BASEFLOPS)*100:.2f}%),"
     log_str = f'{epoch} '
     if avg_loss is not None:
         log_str += f"{avg_loss:.3f} "

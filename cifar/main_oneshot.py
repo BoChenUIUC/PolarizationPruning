@@ -304,20 +304,6 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
         teacher_path = './original/vgg/model_best.pth.tar'
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
-# test
-# input_list = []
-# def bn_hook(self, input, output):
-#     input_list.append(input)
-#     print(input[0].size())
-# feature_len = 0
-# for module_name,module in model.named_modules():
-#     if not isinstance(module, nn.BatchNorm2d) and not isinstance(module, nn.BatchNorm1d): continue
-#     print(module_name,module.weight.size(0))
-#     feature_len += module.weight.size(0)
-#     module.register_forward_hook(bn_hook)
-# print(feature_len)
-# test
-
 def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     """
     compute the FLOPs for CIFAR models
@@ -446,10 +432,6 @@ if args.VLB_conv:
 
 flops = compute_conv_flops_par(model, cuda=True)
 print(flops)
-
-flops = compute_conv_flops_par(sample_partition_network(model,net_id=0,eval=True), cuda=True)
-print(flops)
-exit(0)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
@@ -707,6 +689,10 @@ def sample_partition_network(old_model,net_id=None,eval=False):
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
     return dynamic_model
+
+flops = compute_conv_flops_par(sample_partition_network(model,net_id=0,eval=True), cuda=True)
+print(flops)
+exit(0)
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):
     def copy_module_grad(old_module,new_module,subnet_mask=None):

@@ -700,11 +700,13 @@ def gen_partition_mask(net_id,weight_size):
         else:
             mask[int(c1*r):] = 1
             flops_multiplier = 1-r
-    print(mask.sum()/mask.numel())
     return mask.view(c1,c2,1,1),flops_multiplier
 
-def sample_partition_network(old_model,net_id=None):
-    dynamic_model = copy.deepcopy(old_model)
+def sample_partition_network(old_model,net_id=None,deepcopy=True):
+    if deepcopy:
+        dynamic_model = copy.deepcopy(old_model)
+    else:
+        dynamic_model = old_model
     for module_name,bn_module in dynamic_model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:
@@ -1025,14 +1027,15 @@ def train(epoch):
             else:
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(model)
         elif args.loss in {LossType.PARTITION}:
+            deepcopy = len(args.alphas)>1
             nonzero = torch.nonzero(torch.tensor(args.alphas))
             # net_id = int(nonzero[batch_idx%len(nonzero)][0])
             net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
-            dynamic_model = sample_partition_network(model,net_id)
+            dynamic_model = sample_partition_network(model,net_id,deepcopy=deepcopy)
 
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING} or (args.loss in {LossType.PARTITION} and deepcopy):
             output = dynamic_model(data)
         else:
             output = model(data)
@@ -1066,9 +1069,9 @@ def train(epoch):
             updateBN()
         if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
             update_shared_model(model,dynamic_model,freeze_mask,batch_idx,ch_indices,net_id)
-        if args.loss in {LossType.PARTITION}:
+        if args.loss in {LossType.PARTITION} and deepcopy:
             update_partitioned_model(model,dynamic_model,net_id,batch_idx)
-        if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1):
+        if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1) or (args.loss in {LossType.PARTITION} and not deepcopy):
             optimizer.step()
         if args.loss in {LossType.POLARIZATION,
                          LossType.L2_POLARIZATION}:

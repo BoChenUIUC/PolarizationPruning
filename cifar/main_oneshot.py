@@ -365,11 +365,15 @@ else:
 
 if args.VLB_conv:
     if args.VLB_conv_type == 0:
+        print('Deprecated. Not quite effective.')
+        exit(0)
         sampling_interval = 1
         model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     elif args.VLB_conv_type == 1:
+        print('Deprecated. Too computation heavy.')
+        exit(0)
         sampling_interval = 1
         model.aggr = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(512),
@@ -1021,7 +1025,8 @@ def train(epoch):
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(model)
         elif args.loss in {LossType.PARTITION}:
             nonzero = torch.nonzero(torch.tensor(args.alphas))
-            net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            # net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
             dynamic_model = sample_partition_network(model,net_id)
 
         if args.cuda:

@@ -438,10 +438,10 @@ if args.VLB_conv:
     elif args.VLB_conv_type == 6:
         sampling_interval = 3
         # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(256),
+        model.aggr = nn.Sequential(nn.Conv2d(352, 128, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.BatchNorm2d(128),
                                     nn.ReLU(),
-                                    nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
+                                    nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False),
                                     nn.BatchNorm2d(128),
                                     nn.ReLU(),
                                     nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False),

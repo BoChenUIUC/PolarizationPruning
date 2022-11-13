@@ -360,7 +360,8 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
 
 if args.VLB_conv:
     from types import MethodType
-    sampling_interval = 6
+    sampling_interval = 2
+    # 6->128
     def modified_forward(self,x):
         out_list = []
         out = F.relu(self.bn1(self.conv1(x)))

@@ -337,6 +337,9 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
 
         flops = kernel_ops * output_channels * output_height * output_width
 
+        if hasattr(self, 'flops_multiplier'):
+            flops *= self.flops_multiplier
+
         list_conv.append(flops)
 
     list_linear = []
@@ -345,6 +348,10 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
         weight_ops = self.weight.nelement()
 
         flops = weight_ops
+
+        if hasattr(self, 'flops_multiplier'):
+            flops *= self.flops_multiplier
+
         list_linear.append(flops)
 
     def add_hooks(net, hook_handles: list):
@@ -438,6 +445,9 @@ if args.VLB_conv:
         exit(0)
 
 flops = compute_conv_flops_par(model, cuda=True)
+print(flops)
+
+flops = compute_conv_flops_par(sample_partition_network(model,net_id=0,eval=True), cuda=True)
 print(flops)
 exit(0)
 
@@ -634,39 +644,50 @@ def gen_partition_mask(net_id,weight_size):
     if len(weight_size)==2:
         if net_id < 2:
             mask[:] = 1
+            flops_multiplier = 1
         elif net_id == 2:
             mask[:,:int(c2*(1-r))] = 1
+            flops_multiplier = 1-r
         elif net_id == 3:
             mask[:,int(c2*r):] = 1
-        return mask
+            flops_multiplier = 1-r
+        return mask,flops_multiplier
     # 1st accurate
     if net_id == 0:
         if 3 != c2:
             mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
             mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
+            flops_multiplier = (1-r)**2 + r**2
         else:
             mask[:] = 1
+            flops_multiplier = 1
     elif net_id == 1:
         if 3 != c2:
             mask[:int(c1*r),:int(c2*r)] = 1
             mask[int(c1*r):,int(c2*r):] = 1
+            flops_multiplier = (1-r)**2 + r**2
         else:
             mask[:] = 1
+            flops_multiplier = 1
     # 2nd accurate
     elif net_id == 2:
         # upper part
         if c3 != c2:
             mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+            flops_multiplier = (1-r)**2
         else:
             # first conv
             mask[:int(c1*(1-r))] = 1
+            flops_multiplier = 1-r
     elif net_id == 3:
         # lower part
         if 3 != c2:
             mask[int(c1*r):,int(c2*r):] = 1
+            flops_multiplier = (1-r)**2
         else:
             mask[int(c1*r):] = 1
-    return mask.view(c1,c2,1,1)
+            flops_multiplier = 1-r
+    return mask.view(c1,c2,1,1),flops_multiplier
 
 def sample_partition_network(old_model,net_id=None,eval=False):
     if eval:
@@ -682,8 +703,9 @@ def sample_partition_network(old_model,net_id=None,eval=False):
     for sub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, nn.Linear): 
-                mask = gen_partition_mask(net_id,sub_module.weight.size())
+                mask,flops_multiplier = gen_partition_mask(net_id,sub_module.weight.size())
                 sub_module.weight.data *= mask
+                sub_module.flops_multiplier = flops_multiplier
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):

@@ -369,9 +369,6 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
         h.remove()
     return total_flops
 
-flops = compute_conv_flops_par(model, cuda=True)
-print(flops)
-
 if args.VLB_conv:
     from types import MethodType
     def modified_forward(self,x):
@@ -429,9 +426,6 @@ if args.VLB_conv:
                                     nn.ReLU()).cuda()
     else:
         exit(0)
-
-flops = compute_conv_flops_par(model, cuda=True)
-print(flops)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
@@ -671,11 +665,8 @@ def gen_partition_mask(net_id,weight_size):
             flops_multiplier = 1-r
     return mask.view(c1,c2,1,1),flops_multiplier
 
-def sample_partition_network(old_model,net_id=None,eval=False):
-    if eval:
-        dynamic_model = copy.deepcopy(old_model)
-    else:
-        dynamic_model = old_model
+def sample_partition_network(old_model,net_id=None):
+    dynamic_model = copy.deepcopy(old_model)
     for module_name,bn_module in dynamic_model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:
@@ -689,10 +680,6 @@ def sample_partition_network(old_model,net_id=None,eval=False):
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
     return dynamic_model
-
-flops = compute_conv_flops_par(sample_partition_network(model,net_id=0,eval=True), cuda=True)
-print(flops)
-exit(0)
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):
     def copy_module_grad(old_module,new_module,subnet_mask=None):
@@ -955,18 +942,23 @@ def prune_while_training(model, arch, prune_mode, num_classes, avg_loss=None, in
 def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0):
     model.eval()
     saved_prec1s = []
+    saved_flops = []
     if arch == "resnet56":
         for i in range(len(args.alphas)):
-            masked_model = sample_partition_network(model,net_id=i,eval=True)
+            masked_model = sample_partition_network(model,net_id=i)
             prec1 = test(masked_model)
+            flop = compute_conv_flops_par(masked_model, cuda=True)
             saved_prec1s += [prec1]
+            saved_flops += [flop]
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
 
+    baseline_flops = compute_conv_flops(model, cuda=True)
+
     prune_str = ''
-    for prec1 in saved_prec1s:
-        prune_str += f"{prec1:.4f},"
+    for flop,prec1 in zip(saved_flops,saved_prec1s):
+        prune_str += f"{prec1:.4f}({(1-flop / baseline_flops)*100:.2f}%),"
     log_str = f'{epoch} '
     if avg_loss is not None:
         log_str += f"{avg_loss:.3f} "
@@ -1000,7 +992,7 @@ def train(epoch):
         elif args.loss in {LossType.PARTITION}:
             nonzero = torch.nonzero(torch.tensor(args.alphas))
             net_id = int(nonzero[batch_idx%len(nonzero)][0])
-            dynamic_model = sample_partition_network(model,net_id,eval=True)
+            dynamic_model = sample_partition_network(model,net_id)
 
         if args.cuda:
             data, target = data.cuda(), target.cuda()

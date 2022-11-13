@@ -358,6 +358,11 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
         h.remove()
     return total_flops
 
+if len(args.alphas)>1:
+    args.ps_batch = len(args.alphas)*4
+else:
+    args.ps_batch = 1
+
 if args.VLB_conv:
     if args.VLB_conv_type == 0:
         sampling_interval = 1
@@ -833,8 +838,6 @@ def sample_network(old_model,net_id=None,eval=False,check_size=False):
         return freeze_mask,net_id,dynamic_model,ch_indices
     else:
         return dynamic_model
-
-args.ps_batch = len(args.alphas)*4
     
 def update_shared_model(old_model,new_model,mask,batch_idx,ch_indices,net_id):
     def copy_module_grad(old_module,new_module,subnet_mask=None,enhance_mask=None):
@@ -973,6 +976,7 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
     saved_flops = []
     if arch == "resnet56":
         for i in range(len(args.alphas)):
+            if args.alphas[i]==0:continue
             masked_model = sample_partition_network(model,net_id=i)
             prec1 = test(masked_model)
             flop = compute_conv_flops_par(masked_model, cuda=True)

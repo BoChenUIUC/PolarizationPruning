@@ -967,7 +967,7 @@ def prune_while_training(model, arch, prune_mode, num_classes, avg_loss=None, in
         f.write(log_str+'\n')
     return prec1,prune_str,saved_prec1s
 
-def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0):
+def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
     model.eval()
     saved_prec1s = []
     saved_flops = []
@@ -984,12 +984,12 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
 
     prune_str = ''
     for flop,prec1 in zip(saved_flops,saved_prec1s):
-        prune_str += f"{prec1:.4f}({(flop / BASEFLOPS)*100:.2f}%),"
+        prune_str += f"{prec1:.4f}({(flop / BASEFLOPS):.4f}),"
     log_str = f'{epoch} '
     if avg_loss is not None:
-        log_str += f"{avg_loss:.3f} "
-    for prec1 in saved_prec1s:
-        log_str += f"{prec1:.4f} "
+        log_str += f"{avg_loss:.3f},{lr:.4f},"
+    for flop,prec1 in zip(saved_flops,saved_prec1s):
+        log_str += f"{prec1:.4f}({(flop / BASEFLOPS):.4f}),"
     with open(os.path.join(args.save,'train.log'),'a+') as f:
         f.write(log_str+'\n')
     return prec1,prune_str,saved_prec1s
@@ -1139,7 +1139,7 @@ for epoch in range(args.start_epoch, args.epochs):
     avg_loss = train(epoch) # train with regularization
 
     if args.loss in {LossType.PARTITION}:
-        prec1,prune_str,saved_prec1s = partition_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss,epoch=epoch)
+        prec1,prune_str,saved_prec1s = partition_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss,epoch=epoch,lr=args.current_lr)
     else:
         prec1,prune_str,saved_prec1s = prune_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes,avg_loss=avg_loss)
     print(f"Epoch {epoch}/{args.epochs} learning rate {args.current_lr:.4f}",args.arch,args.save,prune_str,args.alphas)

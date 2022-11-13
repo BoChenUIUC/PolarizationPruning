@@ -648,7 +648,7 @@ def gen_partition_mask(net_id,weight_size):
     # 2nd accurate
     elif net_id == 2:
         # upper part
-        if c3 != c2:
+        if 3 != c2:
             mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
             flops_multiplier = (1-r)**2
         else:
@@ -958,7 +958,7 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
 
     prune_str = ''
     for flop,prec1 in zip(saved_flops,saved_prec1s):
-        prune_str += f"{prec1:.4f}({(1-flop / baseline_flops)*100:.2f}%),"
+        prune_str += f"{prec1:.4f}({(flop / baseline_flops)*100:.2f}%),"
     log_str = f'{epoch} '
     if avg_loss is not None:
         log_str += f"{avg_loss:.3f} "

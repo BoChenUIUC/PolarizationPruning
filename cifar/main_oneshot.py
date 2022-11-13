@@ -700,6 +700,7 @@ def gen_partition_mask(net_id,weight_size):
         else:
             mask[int(c1*r):] = 1
             flops_multiplier = 1-r
+    print(mask.sum()/mask.numel())
     return mask.view(c1,c2,1,1),flops_multiplier
 
 def sample_partition_network(old_model,net_id=None):

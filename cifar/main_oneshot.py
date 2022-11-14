@@ -452,6 +452,7 @@ if args.VLB_conv:
                                     nn.BatchNorm2d(model.in_planes),
                                     nn.ReLU()).cuda()
     elif args.VLB_conv_type == 7:
+        # to try
         sampling_interval = 3
         # better with at least 3 layers
         model.aggr = nn.Sequential(nn.Conv2d(352, 96, kernel_size=3, stride=1, padding=1, bias=False),

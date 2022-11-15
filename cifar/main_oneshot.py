@@ -717,7 +717,6 @@ def gen_partition_mask_three_split(net_id,weight_size):
             mask[int(c1*10/16):] = 1
             mask[:int(c1*(10/16-r))] = 1
             flops_multiplier = 1-r
-    print(net_id,mask.sum()/mask.numel(),flops_multiplier)
     return mask.view(c1,c2,1,1),flops_multiplier
 
 def gen_partition_mask_two_split(net_id,weight_size):

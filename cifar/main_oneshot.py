@@ -117,6 +117,8 @@ parser.add_argument('--VLB_conv', action='store_true',
                     help='enable VLB')
 parser.add_argument('--VLB_conv_type', default=0, type=int,
                     help="Type of vlb conv")
+parser.add_argument('--split_num', default=2, type=int,
+                    help="Number of splits on the ring")
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -403,6 +405,7 @@ if args.VLB_conv:
         sampling_interval = 3
         cfg = [352,model.in_planes]
     elif args.VLB_conv_type == 10:
+        # best as good as 2
         sampling_interval = 3
         cfg = [352,144,model.in_planes]
     else:
@@ -626,6 +629,96 @@ def bn_sparsity(model, loss_type, sparsity, t, alpha,
         raise ValueError()
 
 def gen_partition_mask(net_id,weight_size):
+    if args.split_num == 2:
+        return gen_partition_mask_two_split(net_id,weight_size)
+    elif args.split_num == 3:
+        return gen_partition_mask_three_split(net_id,weight_size)
+    else:
+        exit(0)
+
+def gen_partition_mask_three_split(net_id,weight_size):
+    mask = torch.zeros(weight_size[:2]).long().cuda()
+    c1,c2 = weight_size[:2]
+    r = args.partition_ratio
+    # linear layer
+    if len(weight_size)==2:
+        if net_id < 3:
+            mask[:] = 1
+            flops_multiplier = 1
+        elif net_id == 3:
+            mask[:,:int(c2*(1-r))] = 1
+            flops_multiplier = 1-r
+        elif net_id == 4:
+            mask[:,int(c2*5/16):] = 1
+            mask[:,:int(c2*(5/16-r))] = 1
+            flops_multiplier = 1-r
+        elif net_id == 5:
+            mask[:,int(c2*10/16):] = 1
+            mask[:,:int(c2*(10/16-r))] = 1
+            flops_multiplier = 1-r
+        return mask,flops_multiplier
+    # conv layer
+    if net_id == 0:
+        if 3 != c2:
+            mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+            mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
+            flops_multiplier = (1-r)**2 + r**2
+        else:
+            mask[:] = 1
+            flops_multiplier = 1
+    elif net_id == 1:
+        if 3 != c2:
+            mask[int(c1*5/16):,int(c2*5/16):] = 1
+            mask[:int(c1*(5/16-r)),:int(c2*(5/16-r))] = 1
+            mask[int(c1*5/16):,:int(c2*(5/16-r))] = 1
+            mask[:int(c1*(5/16-r)),int(c2*5/16):] = 1
+            mask[int(c1*(5/16-r)):int(c1*5/16),int(c2*(5/16-r)):int(c2*5/16)] = 1
+            flops_multiplier = (1-r)**2 + r**2
+        else:
+            mask[:] = 1
+            flops_multiplier = 1
+    elif net_id == 2:
+        if 3 != c2:
+            mask[int(c1*10/16):,int(c2*10/16):] = 1
+            mask[:int(c1*(10/16-r)),:int(c2*(10/16-r))] = 1
+            mask[int(c1*10/16):,:int(c2*(10/16-r))] = 1
+            mask[:int(c1*(10/16-r)),int(c2*10/16):] = 1
+            mask[int(c1*(10/16-r)):int(c2*10/16),int(c2*(10/16-r)):int(c2*10/16)] = 1
+            flops_multiplier = (1-r)**2 + r**2
+        else:
+            mask[:] = 1
+            flops_multiplier = 1
+    elif net_id == 3:
+        if 3 != c2:
+            mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+            flops_multiplier = (1-r)**2
+        else:
+            mask[:int(c1*(1-r))] = 1
+            flops_multiplier = 1-r
+    elif net_id == 4:
+        if 3 != c2:
+            mask[int(c1*5/16):,int(c2*5/16):] = 1
+            mask[:int(c1*(5/16-r)),:int(c2*(5/16-r))] = 1
+            mask[int(c1*5/16):,:int(c2*(5/16-r))] = 1
+            mask[:int(c2*(5/16-r)),int(c1*5/16):] = 1
+            flops_multiplier = (1-r)**2
+        else:
+            mask[:int(c1*(1-r))] = 1
+            flops_multiplier = 1-r
+    elif net_id == 5:
+        if 3 != c2:
+            mask[int(c1*10/16):,int(c2*10/16):] = 1
+            mask[:int(c1*(10/16-r)),:int(c2*(10/16-r))] = 1
+            mask[int(c1*10/16):,:int(c2*(10/16-r))] = 1
+            mask[:int(c2*(10/16-r)),int(c1*10/16):] = 1
+            flops_multiplier = (1-r)**2
+        else:
+            mask[:int(c1*(1-r))] = 1
+            flops_multiplier = 1-r
+    print(net_id,mask.sum()/mask.numel(),flops_multiplier)
+    return mask.view(c1,c2,1,1),flops_multiplier
+
+def gen_partition_mask_two_split(net_id,weight_size):
     # different net_id map to different nets
     # different layer map to differnet subnets
     mask = torch.zeros(weight_size[:2]).long().cuda()

@@ -683,7 +683,7 @@ def gen_partition_mask_three_split(net_id,weight_size):
             mask[:int(c1*(10/16-r)),:int(c2*(10/16-r))] = 1
             mask[int(c1*10/16):,:int(c2*(10/16-r))] = 1
             mask[:int(c1*(10/16-r)),int(c2*10/16):] = 1
-            mask[int(c1*(10/16-r)):int(c2*10/16),int(c2*(10/16-r)):int(c2*10/16)] = 1
+            mask[int(c1*(10/16-r)):int(c1*10/16),int(c2*(10/16-r)):int(c2*10/16)] = 1
             flops_multiplier = (1-r)**2 + r**2
         else:
             mask[:] = 1
@@ -700,20 +700,22 @@ def gen_partition_mask_three_split(net_id,weight_size):
             mask[int(c1*5/16):,int(c2*5/16):] = 1
             mask[:int(c1*(5/16-r)),:int(c2*(5/16-r))] = 1
             mask[int(c1*5/16):,:int(c2*(5/16-r))] = 1
-            mask[:int(c2*(5/16-r)),int(c1*5/16):] = 1
+            mask[:int(c1*(5/16-r)),int(c2*5/16):] = 1
             flops_multiplier = (1-r)**2
         else:
-            mask[:int(c1*(1-r))] = 1
+            mask[int(c1*5/16):] = 1
+            mask[:int(c1*(5/16-r))] = 1
             flops_multiplier = 1-r
     elif net_id == 5:
         if 3 != c2:
             mask[int(c1*10/16):,int(c2*10/16):] = 1
             mask[:int(c1*(10/16-r)),:int(c2*(10/16-r))] = 1
             mask[int(c1*10/16):,:int(c2*(10/16-r))] = 1
-            mask[:int(c2*(10/16-r)),int(c1*10/16):] = 1
+            mask[:int(c1*(10/16-r)),int(c2*10/16):] = 1
             flops_multiplier = (1-r)**2
         else:
-            mask[:int(c1*(1-r))] = 1
+            mask[int(c1*10/16):] = 1
+            mask[:int(c1*(10/16-r))] = 1
             flops_multiplier = 1-r
     print(net_id,mask.sum()/mask.numel(),flops_multiplier)
     return mask.view(c1,c2,1,1),flops_multiplier

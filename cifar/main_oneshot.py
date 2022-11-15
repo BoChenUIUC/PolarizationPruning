@@ -368,133 +368,52 @@ if args.VLB_conv:
         print('Deprecated. Not quite effective.')
         exit(0)
         sampling_interval = 1
-        model.aggr = nn.Sequential(nn.Conv2d(1024, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [1024,model.in_planes]
     elif args.VLB_conv_type == 1:
         print('Deprecated. Too computation heavy.')
         exit(0)
         sampling_interval = 1
-        model.aggr = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(512),
-                                    nn.ReLU(),
-                                    nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(256),
-                                    nn.ReLU(),
-                                    nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [1024,512,256,128,model.in_planes]
     elif args.VLB_conv_type == 2:
         # best for 0.25 now
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,128,128,model.in_planes]
     elif args.VLB_conv_type == 3:
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 96, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(96),
-                                    nn.ReLU(),
-                                    nn.Conv2d(96, 96, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(96),
-                                    nn.ReLU(),
-                                    nn.Conv2d(96, 96, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(96),
-                                    nn.ReLU(),
-                                    nn.Conv2d(96, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,96,96,96,model.in_planes]
     elif args.VLB_conv_type == 4:
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 64, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(64),
-                                    nn.ReLU(),
-                                    nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(64),
-                                    nn.ReLU(),
-                                    nn.Conv2d(64, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,64,64,model.in_planes]
     elif args.VLB_conv_type == 5:
         # not as good as 2
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,128,model.in_planes]
     elif args.VLB_conv_type == 6:
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(128),
-                                    nn.ReLU(),
-                                    nn.Conv2d(128, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,128,128,128,model.in_planes]
     elif args.VLB_conv_type == 7:
         # to try
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 96, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(96),
-                                    nn.ReLU(),
-                                    nn.Conv2d(96, 96, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(96),
-                                    nn.ReLU(),
-                                    nn.Conv2d(96, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,96,96,model.in_planes]
     elif args.VLB_conv_type == 8:
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 192, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(192),
-                                    nn.ReLU(),
-                                    nn.Conv2d(192, 192, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(192),
-                                    nn.ReLU(),
-                                    nn.Conv2d(192, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,192,192,model.in_planes]
     elif args.VLB_conv_type == 9:
-        # to try
+        # looks goooood
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,model.in_planes]
     elif args.VLB_conv_type == 10:
         sampling_interval = 3
-        # better with at least 3 layers
-        model.aggr = nn.Sequential(nn.Conv2d(352, 144, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(144),
-                                    nn.ReLU(),
-                                    nn.Conv2d(144, model.in_planes, kernel_size=3, stride=1, padding=1, bias=False),
-                                    nn.BatchNorm2d(model.in_planes),
-                                    nn.ReLU()).cuda()
+        cfg = [352,144,model.in_planes]
     else:
         exit(0)
+    layers = []
+    for i in range(1,len(cfg)):
+        layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))
+        layers.append(nn.BatchNorm2d(cfg[i]))
+        layers.append(nn.ReLU())
+    model.aggr = nn.Sequential(*layers)
+
     from types import MethodType
     # 3->352
     def modified_forward(self,x):
@@ -723,7 +642,6 @@ def gen_partition_mask(net_id,weight_size):
             mask[:,int(c2*r):] = 1
             flops_multiplier = 1-r
         return mask,flops_multiplier
-    # 1st accurate
     if net_id == 0:
         if 3 != c2:
             mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
@@ -740,18 +658,14 @@ def gen_partition_mask(net_id,weight_size):
         else:
             mask[:] = 1
             flops_multiplier = 1
-    # 2nd accurate
     elif net_id == 2:
-        # upper part
         if 3 != c2:
             mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
             flops_multiplier = (1-r)**2
         else:
-            # first conv
             mask[:int(c1*(1-r))] = 1
             flops_multiplier = 1-r
     elif net_id == 3:
-        # lower part
         if 3 != c2:
             mask[int(c1*r):,int(c2*r):] = 1
             flops_multiplier = (1-r)**2
@@ -1061,7 +975,7 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
         log_str += f"{prec1:.4f}({(flop / BASEFLOPS):.4f}),"
     with open(os.path.join(args.save,'train.log'),'a+') as f:
         f.write(log_str+'\n')
-    return prec1,prune_str,saved_prec1s
+    return saved_prec1s[0],prune_str,saved_prec1s
 
 def cross_entropy_loss_with_soft_target(pred, soft_target):
     logsoftmax = nn.LogSoftmax()

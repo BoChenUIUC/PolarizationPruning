@@ -412,7 +412,7 @@ if args.VLB_conv:
         layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))
         layers.append(nn.BatchNorm2d(cfg[i]))
         layers.append(nn.ReLU())
-    model.aggr = nn.Sequential(*layers)
+    model.aggr = nn.Sequential(*layers).cuda()
 
     from types import MethodType
     # 3->352

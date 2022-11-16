@@ -666,7 +666,7 @@ def gen_partition_mask_four_split(net_id,weight_size):
         if 3 != c2:
             flops_multiplier = (1-r)**2
         else:
-            mask[int(c1*start/4):int(c1*(start/4)+1-r)] = 1
+            mask[int(c1*start/4):int(c1*(start/4+1-r))] = 1
             mask[:int(c1*(start/4-r))] = 1
             flops_multiplier = 1-r
     if 3 != c2:

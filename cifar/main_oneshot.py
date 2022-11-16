@@ -670,10 +670,11 @@ def gen_partition_mask_four_split(net_id,weight_size):
             mask[:int(c1*(start/4-r))] = 1
             flops_multiplier = 1-r
     if 3 != c2:
-        mask[int(c1*start/4):int(c1*(start/4)+1-r),int(c2*start/4):int(c2*(start/4)+1-r)] = 1
-        mask[:int(c1*(start/4-r)),:int(c2*(start/4-r))] = 1
-        mask[int(c1*start/4):int(c1*(start/4)+1-r),:int(c2*(start/4-r))] = 1
-        mask[:int(c1*(start/4-r)),int(c2*start/4):int(c2*((start)/4)+1-r)] = 1
+        left0,right0,right1 = start/4,(start/4)+1-r,start/4-r
+        mask[int(c1*left0):int(c1*right0),int(c2*left0):int(c2*right0)] = 1
+        mask[:int(c1*right1),:int(c2*right1)] = 1
+        mask[int(c1*left0):int(c1*right0),:int(c2*right1)] = 1
+        mask[:int(c1*right1),int(c2*left0):int(c2*right0)] = 1
     print(net_id,mask.sum()/mask.numel(),flops_multiplier)
     return mask.view(c1,c2,1,1),flops_multiplier
 

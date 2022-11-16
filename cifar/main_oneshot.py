@@ -677,6 +677,7 @@ def gen_partition_mask_four_split(net_id,weight_size):
         mask[int(c1*left0):int(c1*right0),:int(c2*right1)] = 1
         mask[:int(c1*right1),int(c2*left0):int(c2*right0)] = 1
     print(net_id,mask.sum()/mask.numel(),flops_multiplier)
+    print(mask)
     return mask.view(c1,c2,1,1),flops_multiplier
 
 def gen_partition_mask_three_split(net_id,weight_size):

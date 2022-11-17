@@ -604,7 +604,7 @@ def main_worker(gpu, ngpus_per_node, args):
         # 3->352
         def modified_forward(self,x):
             out_list = []
-            
+
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)
@@ -804,7 +804,7 @@ def main_worker(gpu, ngpus_per_node, args):
         if epoch >= 0:
             if args.loss in {LossType.PARTITION}:
                 prec1,prune_str,saved_prec1s = partition_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, \
-                                            criterion, epoch, args, avg_loss=avg_loss, epoch=epoch,lr=optimizer.param_groups[0]['lr'])
+                                            criterion, epoch, args, avg_loss=avg_loss, lr=optimizer.param_groups[0]['lr'])
             else:
                 prec1,prune_str,saved_prec1s = prune_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, criterion, epoch, args, avg_loss=avg_loss)
             print(f"Epoch {epoch}/{args.epochs}",args.arch,args.save,prune_str,args.alphas)
@@ -1643,7 +1643,7 @@ def prune_while_training(model, arch, prune_mode, width_multiplier, val_loader, 
         f.write(log_str+'\n')
     return prec1,prune_str,saved_prec1s
 
-def partition_while_training(model, arch, prune_mode, width_multiplier, val_loader, criterion, epoch, args, avg_loss=None, fake_prune=True, check_size=False, epoch=0,lr=0):
+def partition_while_training(model, arch, prune_mode, width_multiplier, val_loader, criterion, epoch, args, avg_loss=None, fake_prune=True, check_size=False,lr=0):
     model.eval()
     saved_prec1s = []
     saved_flops = []

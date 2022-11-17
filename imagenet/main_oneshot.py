@@ -492,6 +492,19 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
 
+    if not args.distributed:
+        # DataParallel
+        model.cuda()
+        if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
+            # see discussion
+            # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
+            model.features = torch.nn.DataParallel(model.features)
+        else:
+            model = torch.nn.DataParallel(model).cuda()
+    else:
+        # DistributedDataParallel
+        model.cuda()
+        model = torch.nn.parallel.DistributedDataParallel(model)
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
 
@@ -502,8 +515,6 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
         args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
-        args.teacher_model.cuda()
-        args.teacher_model = torch.nn.parallel.DistributedDataParallel(args.teacher_model)
 
     args.BASEFLOPS = compute_conv_flops(model, cuda=True)
 
@@ -621,21 +632,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
             return x, x_aux
 
-        # model.forward = MethodType(modified_forward, model)
-
-    if not args.distributed:
-        # DataParallel
-        model.cuda()
-        if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
-            # see discussion
-            # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
-            model.features = torch.nn.DataParallel(model.features)
-        else:
-            model = torch.nn.DataParallel(model).cuda()
-    else:
-        # DistributedDataParallel
-        model.cuda()
-        model = torch.nn.parallel.DistributedDataParallel(model)
+        model.forward = MethodType(modified_forward, model)
 
     # optionally resume from a checkpoint
     if args.resume:

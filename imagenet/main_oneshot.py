@@ -492,17 +492,8 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
 
-    print('distributed:',args.distributed)
     if not args.distributed:
-        # DataParallel
-        model.cuda()
-        if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
-            # see discussion
-            # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
-            model.features = torch.nn.DataParallel(model.features)
-        else:
-            model = torch.nn.DataParallel(model).cuda()
-    else:
+        from types import MethodType
         # DistributedDataParallel
         def modified_forward(self, x):
             x = self.conv1(x)
@@ -530,8 +521,15 @@ def main_worker(gpu, ngpus_per_node, args):
             return x, x_aux
 
         model.forward = MethodType(modified_forward, model)
-        print('...???????')
-
+        # DataParallel
+        model.cuda()
+        if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
+            # see discussion
+            # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
+            model.features = torch.nn.DataParallel(model.features)
+        else:
+            model = torch.nn.DataParallel(model).cuda()
+    else:
         model.cuda()
         model = torch.nn.parallel.DistributedDataParallel(model)
 

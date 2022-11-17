@@ -503,6 +503,33 @@ def main_worker(gpu, ngpus_per_node, args):
             model = torch.nn.DataParallel(model).cuda()
     else:
         # DistributedDataParallel
+        def modified_forward(self, x):
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            x = self.maxpool(x)
+
+            x = self.layer1(x)  # 32x32
+            x = self.layer2(x)  # 16x16
+            x = self.layer3(x)  # 8x8
+
+            if self.enable_aux_fc:
+                x_aux = self.avgpool(x)
+                x_aux = x_aux.view(x_aux.size(0), -1)
+                x_aux = self.aux_fc_layer(x_aux)
+            else:
+                x_aux = None
+
+            x = self.layer4(x)
+
+            x = self.avgpool(x)
+            x = x.view(x.size(0), -1)
+            x = self.fc(x)
+
+            return x, x_aux
+
+        model.forward = MethodType(modified_forward, model)
+
         model.cuda()
         model = torch.nn.parallel.DistributedDataParallel(model)
     # define loss function (criterion) and optimizer
@@ -607,32 +634,8 @@ def main_worker(gpu, ngpus_per_node, args):
         #     x = x.view(x.size(0), -1)
         #     x = self.fc(x)
             # return x, None
-        def modified_forward(self, x):
-            x = self.conv1(x)
-            x = self.bn1(x)
-            x = self.relu(x)
-            x = self.maxpool(x)
 
-            x = self.layer1(x)  # 32x32
-            x = self.layer2(x)  # 16x16
-            x = self.layer3(x)  # 8x8
-
-            if self.enable_aux_fc:
-                x_aux = self.avgpool(x)
-                x_aux = x_aux.view(x_aux.size(0), -1)
-                x_aux = self.aux_fc_layer(x_aux)
-            else:
-                x_aux = None
-
-            x = self.layer4(x)
-
-            x = self.avgpool(x)
-            x = x.view(x.size(0), -1)
-            x = self.fc(x)
-
-            return x, x_aux
-
-        model.module.forward = MethodType(modified_forward, model.module)
+        # model.module.forward = MethodType(modified_forward, model.module)
 
     # optionally resume from a checkpoint
     if args.resume:

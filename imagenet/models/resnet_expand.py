@@ -12,7 +12,7 @@ __all__ = ['ResNetExpand', 'Bottleneck', 'resnet50']
 import models
 from models.common import SparseGate, ChannelExpand, ChannelSelect, Identity, Pruner, compute_conv_flops_weight
 from utils.common import SparseLayerCollection
-
+import torch.nn.functional as F
 
 class Bottleneck(nn.Module):
     expansion = 4

@@ -586,7 +586,7 @@ def main_worker(gpu, ngpus_per_node, args):
         elif args.VLB_conv_type == 9:
             # looks goooood
             sampling_interval = 3
-            cfg = [352,model.module.in_planes]
+            cfg = [352,2048]
         elif args.VLB_conv_type == 10:
             # best as good as 2
             sampling_interval = 3

@@ -391,7 +391,7 @@ class ResNetExpand(nn.Module):
         if bridge_type>=0:
             if bridge_type == 9:
                 sampling_interval = 3
-                cfg = [3907,2048]
+                cfg = [3904,2048]
             else:
                 exit(0)
             aggr_layers = []

@@ -566,7 +566,6 @@ def main_worker(gpu, ngpus_per_node, args):
         # 3->352
         def modified_forward(self,x):
             out_list = []
-            print(self.conv1.weight.device,x.device,x.size())
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)
@@ -590,9 +589,9 @@ def main_worker(gpu, ngpus_per_node, args):
                 x = l(x)
                 out_list.append(x)
 
-            x = torch.cat(out_list,1)
-            # aggregate layer
-            x = self.aggr(x)
+            # x = torch.cat(out_list,1)
+            # # aggregate layer
+            # x = self.aggr(x)
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)

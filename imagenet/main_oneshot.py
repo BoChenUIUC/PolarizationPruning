@@ -44,6 +44,7 @@ class LossType(Enum):
     L2_POLARIZATION = 6
     POLARIZATION_GRAD = 7  # in this mode, the gradient does not propagate through the mean term
     LOG_QUANTIZATION = 8
+    PARTITION = 9
     PROGRESSIVE_SHRINKING = 10
 
     @staticmethod
@@ -59,6 +60,7 @@ class LossType(Enum):
                 "zol2": LossType.L2_POLARIZATION,
                 "pol_grad": LossType.POLARIZATION_GRAD,
                 "logq": LossType.LOG_QUANTIZATION,
+                "par": LossType.PARTITION,
                 "ps": LossType.PROGRESSIVE_SHRINKING,
                 }
 
@@ -217,6 +219,14 @@ parser.add_argument('--isotarget', type=int, nargs='+', default=[0],
                     help='Subnets that use isolation.')
 parser.add_argument('--ps_batch', default=4, type=int, 
                     help='super batch size')
+parser.add_argument('--partition_ratio', default=0.25, type=float,
+                    help="The partition ratio")
+parser.add_argument('--VLB_conv', action='store_true',
+                    help='enable VLB')
+parser.add_argument('--VLB_conv_type', default=0, type=int,
+                    help="Type of vlb conv")
+parser.add_argument('--split_num', default=2, type=int,
+                    help="Number of splits on the ring")
 
 best_prec1 = 0
 best_avg_prec1 = 0
@@ -531,6 +541,109 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
         args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
+    args.BASEFLOPS = compute_conv_flops(model, cuda=True)
+
+    if len(args.alphas)>1:
+        args.ps_batch = len(args.alphas)*4
+    else:
+        args.ps_batch = 1
+
+    if args.VLB_conv:
+        if args.VLB_conv_type == 0:
+            print('Deprecated. Not quite effective.')
+            exit(0)
+            sampling_interval = 1
+            cfg = [1024,model.in_planes]
+        elif args.VLB_conv_type == 1:
+            print('Deprecated. Too computation heavy.')
+            exit(0)
+            sampling_interval = 1
+            cfg = [1024,512,256,128,model.in_planes]
+        elif args.VLB_conv_type == 2:
+            # best for 0.25 now
+            sampling_interval = 3
+            cfg = [352,128,128,model.in_planes]
+        elif args.VLB_conv_type == 3:
+            sampling_interval = 3
+            cfg = [352,96,96,96,model.in_planes]
+        elif args.VLB_conv_type == 4:
+            sampling_interval = 3
+            cfg = [352,64,64,model.in_planes]
+        elif args.VLB_conv_type == 5:
+            # not as good as 2
+            sampling_interval = 3
+            cfg = [352,128,model.in_planes]
+        elif args.VLB_conv_type == 6:
+            sampling_interval = 3
+            cfg = [352,128,128,128,model.in_planes]
+        elif args.VLB_conv_type == 7:
+            # to try
+            sampling_interval = 3
+            cfg = [352,96,96,model.in_planes]
+        elif args.VLB_conv_type == 8:
+            sampling_interval = 3
+            cfg = [352,192,192,model.in_planes]
+        elif args.VLB_conv_type == 9:
+            # looks goooood
+            sampling_interval = 3
+            cfg = [352,model.in_planes]
+        elif args.VLB_conv_type == 10:
+            # best as good as 2
+            sampling_interval = 3
+            cfg = [352,144,model.in_planes]
+        else:
+            exit(0)
+        layers = []
+        for i in range(1,len(cfg)):
+            layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))
+            layers.append(nn.BatchNorm2d(cfg[i]))
+            layers.append(nn.ReLU())
+        model.aggr = nn.Sequential(*layers).cuda()
+
+        from types import MethodType
+        # 3->352
+        def modified_forward(self,x):
+            out_list = []
+            
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            x = self.maxpool(x)
+            out_list.append(x)
+
+            # x = self.layer1(x)  # 32x32
+            for idx,l in enumerate(self.layer1):
+                x = l(x)
+                print(idx,x.size())
+                out_list.append(F.avg_pool2d(x, 4))
+            # x = self.layer2(x)  # 16x16
+            for idx,l in enumerate(self.layer2):
+                x = l(x)
+                print(idx,x.size())
+                out_list.append(F.avg_pool2d(x, 2))
+            # x = self.layer3(x)  # 8x8
+            for idx,l in enumerate(self.layer3):
+                x = l(x)
+                print(idx,x.size())
+                out_list.append(x)
+            # x = self.layer4(x)
+            for idx,l in enumerate(self.layer4):
+                x = l(x)
+                print(idx,x.size())
+                out_list.append(x)
+
+            x = torch.cat(out_list,1)
+            print(x.size())
+            exit(0)
+            # aggregate layer
+            x = self.aggr(x)
+            x = self.avgpool(x)
+            x = x.view(x.size(0), -1)
+            x = self.fc(x)
+
+            return x, None
+        model.forward = MethodType(modified_forward, model)
+
     # optionally resume from a checkpoint
     if args.resume:
         if os.path.isfile(args.resume):
@@ -662,9 +775,11 @@ def main_worker(gpu, ngpus_per_node, args):
 
     print("rank #{}: dataloader loaded!".format(args.rank))
     if args.evaluate:
-        for fake_prune in [True]:
-            prec1,prune_str,saved_prec1s = prune_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, criterion, 0, args, fake_prune=fake_prune, check_size=fake_prune)
-            print(args.save,prune_str,args.alphas)
+        if args.loss in {LossType.PARTITION}:
+            prec1,prune_str,saved_prec1s = partition_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, criterion, 0, args)
+        else:
+            prec1,prune_str,saved_prec1s = prune_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, criterion, 0, args)
+        print(args.save,prune_str,args.alphas)
         return
 
     # restore the learning rate
@@ -687,7 +802,11 @@ def main_worker(gpu, ngpus_per_node, args):
 
         # prune the network and record FLOPs at each epoch
         if epoch >= 0:
-            prec1,prune_str,saved_prec1s = prune_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, criterion, epoch, args, avg_loss=avg_loss, fake_prune=True)
+            if args.loss in {LossType.PARTITION}:
+                prec1,prune_str,saved_prec1s = partition_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, \
+                                            criterion, epoch, args, avg_loss=avg_loss, epoch=epoch,lr=optimizer.param_groups[0]['lr'])
+            else:
+                prec1,prune_str,saved_prec1s = prune_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, criterion, epoch, args, avg_loss=avg_loss)
             print(f"Epoch {epoch}/{args.epochs}",args.arch,args.save,prune_str,args.alphas)
         else:
             prec1 = validate(val_loader, model, criterion, epoch=epoch, args=args, writer=None)
@@ -721,6 +840,70 @@ def main_worker(gpu, ngpus_per_node, args):
                 
     print("Best prec@1: {}".format(best_prec1))
 
+def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
+    """
+    compute the FLOPs for CIFAR models
+    NOTE: ONLY compute the FLOPs for Convolution layers and Linear layers
+    """
+
+    list_conv = []
+
+    def conv_hook(self, input, output):
+        batch_size, input_channels, input_height, input_width = input[0].size()
+        output_channels, output_height, output_width = output[0].size()
+
+        if self.groups == 1:
+            kernel_ops = self.kernel_size[0] * self.kernel_size[1] * self.in_channels
+        else:
+            kernel_ops = self.kernel_size[0] * self.kernel_size[1]
+
+        flops = kernel_ops * output_channels * output_height * output_width
+
+        if hasattr(self, 'flops_multiplier'):
+            flops *= self.flops_multiplier
+
+        list_conv.append(flops)
+
+    list_linear = []
+
+    def linear_hook(self, input, output):
+        weight_ops = self.weight.nelement()
+
+        flops = weight_ops
+
+        if hasattr(self, 'flops_multiplier'):
+            flops *= self.flops_multiplier
+
+        list_linear.append(flops)
+
+    def add_hooks(net, hook_handles: list):
+        """
+        apply FLOPs handles to conv layers recursively
+        """
+        children = list(net.children())
+        if not children:
+            if isinstance(net, torch.nn.Conv2d):
+                hook_handles.append(net.register_forward_hook(conv_hook))
+            if isinstance(net, torch.nn.Linear):
+                hook_handles.append(net.register_forward_hook(linear_hook))
+            return
+        for c in children:
+            add_hooks(c, hook_handles)
+
+    handles = []
+    add_hooks(model, handles)
+    demo_input = torch.rand(8, 3, 32, 32)
+    if cuda:
+        demo_input = demo_input.cuda()
+        model = model.cuda()
+    model(demo_input)
+
+    total_flops = sum(list_conv) + sum(list_linear)
+
+    # clear handles
+    for h in handles:
+        h.remove()
+    return total_flops
 
 def updateBN(model, sparsity, sparsity_on_bn3, gate: bool, exclude_out: bool, is_mobilenet=False):
     """Apply L1-Norm on sparse layers"""
@@ -1067,6 +1250,136 @@ def zero_bn(model, gate):
         m.weight.data.zero_()
         #m.bias.data.zero_()
 
+def gen_partition_mask(net_id,weight_size):
+    if args.split_num == 2:
+        return gen_partition_mask_two_split(net_id,weight_size)
+    else:
+        exit(0)
+
+def gen_partition_mask_two_split(net_id,weight_size):
+    # different net_id map to different nets
+    # different layer map to differnet subnets
+    mask = torch.zeros(weight_size[:2]).long().cuda()
+    c1,c2 = weight_size[:2]
+    r = args.partition_ratio
+    if len(weight_size)==2:
+        if net_id < 2:
+            mask[:] = 1
+            flops_multiplier = 1
+        elif net_id == 2:
+            mask[:,:int(c2*(1-r))] = 1
+            flops_multiplier = 1-r
+        elif net_id == 3:
+            mask[:,int(c2*r):] = 1
+            flops_multiplier = 1-r
+        return mask,flops_multiplier
+    if net_id == 0:
+        if 3 != c2:
+            mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+            mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
+            flops_multiplier = (1-r)**2 + r**2
+        else:
+            mask[:] = 1
+            flops_multiplier = 1
+    elif net_id == 1:
+        if 3 != c2:
+            mask[:int(c1*r),:int(c2*r)] = 1
+            mask[int(c1*r):,int(c2*r):] = 1
+            flops_multiplier = (1-r)**2 + r**2
+        else:
+            mask[:] = 1
+            flops_multiplier = 1
+    elif net_id == 2:
+        if 3 != c2:
+            mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
+            flops_multiplier = (1-r)**2
+        else:
+            mask[:int(c1*(1-r))] = 1
+            flops_multiplier = 1-r
+    elif net_id == 3:
+        if 3 != c2:
+            mask[int(c1*r):,int(c2*r):] = 1
+            flops_multiplier = (1-r)**2
+        else:
+            mask[int(c1*r):] = 1
+            flops_multiplier = 1-r
+    return mask.view(c1,c2,1,1),flops_multiplier
+
+def sample_partition_network(old_model,net_id=None,deepcopy=True):
+    if deepcopy:
+        dynamic_model = copy.deepcopy(old_model)
+    else:
+        dynamic_model = old_model
+    if isinstance(dynamic_model, nn.DataParallel) or isinstance(dynamic_model, nn.parallel.DistributedDataParallel):
+        dynamic_model = dynamic_model.module
+    for module_name,bn_module in dynamic_model.named_modules():
+        if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
+        if args.split_running_stat:
+            bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
+            bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
+
+    for sub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
+        with torch.no_grad():
+            if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, nn.Linear): 
+                mask,flops_multiplier = gen_partition_mask(net_id,sub_module.weight.size())
+                sub_module.weight.data *= mask
+                sub_module.flops_multiplier = flops_multiplier
+    return dynamic_model
+
+def update_partitioned_model(old_model,new_model,net_id,batch_idx):
+    def copy_module_grad(old_module,new_module,subnet_mask=None):
+        # copy running mean/var
+        if isinstance(new_module,nn.BatchNorm2d) or isinstance(new_module,nn.BatchNorm1d):
+            if args.split_running_stat:
+                old_module._buffers[f"mean{net_id}"] = new_module.running_mean.data.clone().detach()
+                old_module._buffers[f"var{net_id}"] = new_module.running_var.data.clone().detach()
+            else:
+                old_module.running_mean.data = new_module.running_mean.data
+                old_module.running_var.data = new_module.running_var.data
+
+        # weight
+        w_grad0 = new_module.weight.grad.clone().detach()
+        if subnet_mask is not None:
+            w_grad0.data *= subnet_mask
+
+        copy_param_grad(old_module.weight,w_grad0)
+        # only update grad for specific targets
+        if batch_idx%args.ps_batch == args.ps_batch-1:
+            old_module.weight.grad = old_module.weight.grad_tmp.clone().detach()
+            old_module.weight.grad_tmp = None
+
+        # bias
+        if hasattr(new_module,'bias') and new_module.bias is not None:
+            b_grad0 = new_module.bias.grad.clone().detach()
+            copy_param_grad(old_module.bias,b_grad0)
+            if batch_idx%args.ps_batch == args.ps_batch-1:
+                old_module.bias.grad = old_module.bias.grad_tmp.clone().detach()
+                old_module.bias.grad_tmp = None
+            
+    def copy_param_grad(old_param,new_grad):
+        new_grad *= args.alphas[net_id]
+        if not hasattr(old_param,'grad_tmp') or old_param.grad_tmp is None:
+            old_param.grad_tmp = new_grad
+        else:
+            old_param.grad_tmp += new_grad
+    if isinstance(old_model, nn.DataParallel) or isinstance(old_model, nn.parallel.DistributedDataParallel):
+        old_model = old_model.module
+        new_model = new_model.module
+    bns1,convs1 = old_model.get_partitionable_bns_n_convs()
+    bns2,convs2 = new_model.get_partitionable_bns_n_convs()
+    with torch.no_grad():
+        for conv1,conv2 in zip(convs1,convs2):
+            subnet_mask,_ = gen_partition_mask(net_id,conv1.weight.size())
+            copy_module_grad(conv1,conv2,subnet_mask)
+        for bn1,bn2 in zip(bns1,bns2):
+            copy_module_grad(bn1,bn2)
+
+    with torch.no_grad():
+        old_non_par_modules = old_model.get_non_partitionable_modules()
+        new_non_par_modules = new_model.get_non_partitionable_modules()
+        for old_module,new_module in zip(old_non_par_modules,new_non_par_modules):
+            copy_module_grad(old_module,new_module)
+
 def sample_network(args,old_model,net_id=None,eval=False,fake_prune=True,check_size=False):
     num_subnets = len(args.alphas)
     if net_id is None:
@@ -1330,6 +1643,33 @@ def prune_while_training(model, arch, prune_mode, width_multiplier, val_loader, 
         f.write(log_str+'\n')
     return prec1,prune_str,saved_prec1s
 
+def partition_while_training(model, arch, prune_mode, width_multiplier, val_loader, criterion, epoch, args, avg_loss=None, fake_prune=True, check_size=False, epoch=0,lr=0):
+    model.eval()
+    saved_prec1s = []
+    saved_flops = []
+    if arch == "resnet56":
+        for i in range(len(args.alphas)):
+            if args.alphas[i]==0:continue
+            masked_model = sample_partition_network(model,net_id=i)
+            prec1 = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None)
+            flop = compute_conv_flops_par(masked_model, cuda=True)
+            saved_prec1s += [prec1]
+            saved_flops += [flop]
+    else:
+        # not available
+        raise NotImplementedError(f"do not support arch {arch}")
+
+    prune_str = ''
+    for flop,prec1 in zip(saved_flops,saved_prec1s):
+        prune_str += f"{prec1:.4f}({(flop / args.BASEFLOPS):.4f}),"
+    log_str = f'{epoch} '
+    if avg_loss is not None:
+        log_str += f"{avg_loss:.3f},{lr:.4f},"
+    for flop,prec1 in zip(saved_flops,saved_prec1s):
+        log_str += f"{prec1:.4f}({(flop / args.BASEFLOPS):.4f}),"
+    with open(os.path.join(args.save,'train.log'),'a+') as f:
+        f.write(log_str+'\n')
+    return saved_prec1s[0],prune_str,saved_prec1s
 
 def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_debug=False,
           writer=None):

@@ -566,7 +566,7 @@ class ResNetExpand(nn.Module):
 
         return sparse_modules
         
-    def get_sparse_layers_and_convs(self, sparse1: bool = True, sparse2: bool = True, sparse3: bool = False):
+    def get_sparse_layers_and_convs(self, sparse1: bool = True, sparse2: bool = True, sparse3: bool = False):# maybe all true?
         sparse_layers = []
         sparse_convs = []
         for m_name, sub_module in self.named_modules():
@@ -585,6 +585,35 @@ class ResNetExpand(nn.Module):
                     sparse_layers.append(sub_module.bn3)
                     sparse_convs.append(sub_module.conv3)
         return sparse_layers,sparse_convs
+
+    def get_partitionable_bns_n_convs(self) -> List[nn.Module]:
+        par_bns = []
+        par_convs = []
+        for n,m in self.named_modules():
+            if isinstance(m, Bottleneck):
+                m: Bottleneck
+                par_convs.append(m.conv1)
+                par_convs.append(m.conv2)
+                par_convs.append(m.conv3)
+                par_bns.append(m.bn1)
+                par_bns.append(m.bn2)
+                par_bns.append(m.bn3)
+        par_bns += [self.bn1]
+        par_convs += [self.conv1]
+        return par_bns,par_convs
+
+    def get_non_partitionable_modules(self):
+        par_modules = []
+        bn_modules,conv_modules = self.get_partitionable_bns_n_convs()
+        for bn in bn_modules: par_modules.append(bn)
+        for conv in conv_modules: par_modules.append(conv)
+        par_modules_set = set(par_modules)
+        non_par_modules = []
+        for module_name, module in self.named_modules():
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d) or isinstance(module, nn.Linear):
+                if module not in par_modules_set:
+                    non_par_modules.append(module)
+        return non_par_modules
 
     def get_output_gate(self) -> List[SparseGate]:
         """

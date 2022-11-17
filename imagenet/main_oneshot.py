@@ -566,7 +566,7 @@ def main_worker(gpu, ngpus_per_node, args):
         # 3->352
         def modified_forward(self,x):
             out_list = []
-            print(self.conv1.device,x.device,x.size())
+            print(self.conv1.weight.device,x.device,x.size())
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)

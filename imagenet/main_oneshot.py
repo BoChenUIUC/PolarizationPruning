@@ -492,6 +492,7 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
 
+    print('distributed:',args.distributed)
     if not args.distributed:
         # DataParallel
         model.cuda()

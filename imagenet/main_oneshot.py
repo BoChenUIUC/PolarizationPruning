@@ -492,46 +492,8 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
 
-    if not args.distributed:
-        # DataParallel
-        model.cuda()
-        if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
-            # see discussion
-            # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
-            model.features = torch.nn.DataParallel(model.features)
-        else:
-            model = torch.nn.DataParallel(model).cuda()
-    else:
-        # DistributedDataParallel
-        model.cuda()
-        model = torch.nn.parallel.DistributedDataParallel(model)
-
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
-
-    if args.fix_gate:
-        freeze_gate(model)
-
-    if args.pretrain:
-        if os.path.isfile(args.pretrain):
-            print("=> loading pre-train checkpoint '{}'".format(args.pretrain))
-            checkpoint = torch.load(args.pretrain)
-            pretrain_state_dict = {}
-            for key, value in model.state_dict().items():
-                if key in checkpoint['state_dict']:
-                    pretrain_state_dict[key] = checkpoint['state_dict'][key]
-                else:
-                    print(f"\tMissing parameter in pre-train model: {key}")
-            model.load_state_dict(pretrain_state_dict)
-
-            print("=> Pre-train checkpoint loaded.")
-        else:
-            raise ValueError("=> no checkpoint found at '{}'".format(os.path.abspath(args.pretrain)))
-
-    # load the refine epoch, continue training from the refine point
-    if args.refine:
-        args.start_epoch = refine_checkpoint['epoch']
-        best_prec1 = refine_checkpoint['best_prec1']
 
     if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
         args.teacher_model = copy.deepcopy(model)
@@ -540,6 +502,8 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
         args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+        args.teacher_model.cuda()
+        args.teacher_model = torch.nn.parallel.DistributedDataParallel(args.teacher_model)
 
     args.BASEFLOPS = compute_conv_flops(model, cuda=True)
 
@@ -596,7 +560,7 @@ def main_worker(gpu, ngpus_per_node, args):
             layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))
             layers.append(nn.BatchNorm2d(cfg[i]))
             layers.append(nn.ReLU())
-        model.module.aggr = nn.Sequential(*layers).cuda()
+        model.module.aggr = nn.Sequential(*layers)
 
         from types import MethodType
         # 3->352
@@ -635,6 +599,20 @@ def main_worker(gpu, ngpus_per_node, args):
 
             return x, None
         model.module.forward = MethodType(modified_forward, model.module)
+
+    if not args.distributed:
+        # DataParallel
+        model.cuda()
+        if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
+            # see discussion
+            # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
+            model.features = torch.nn.DataParallel(model.features)
+        else:
+            model = torch.nn.DataParallel(model).cuda()
+    else:
+        # DistributedDataParallel
+        model.cuda()
+        model = torch.nn.parallel.DistributedDataParallel(model)
 
     # optionally resume from a checkpoint
     if args.resume:

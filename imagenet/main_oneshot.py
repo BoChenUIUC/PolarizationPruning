@@ -584,11 +584,9 @@ def main_worker(gpu, ngpus_per_node, args):
             sampling_interval = 3
             cfg = [352,192,192,model.in_planes]
         elif args.VLB_conv_type == 9:
-            # looks goooood
             sampling_interval = 3
-            cfg = [352,2048]
+            cfg = [15168,2048]
         elif args.VLB_conv_type == 10:
-            # best as good as 2
             sampling_interval = 3
             cfg = [352,144,model.in_planes]
         else:
@@ -614,27 +612,21 @@ def main_worker(gpu, ngpus_per_node, args):
             # x = self.layer1(x)  # 32x32
             for idx,l in enumerate(self.layer1):
                 x = l(x)
-                print(idx,x.size())
                 out_list.append(F.avg_pool2d(x, 8))
             # x = self.layer2(x)  # 16x16
             for idx,l in enumerate(self.layer2):
                 x = l(x)
-                print(idx,x.size())
                 out_list.append(F.avg_pool2d(x, 4))
             # x = self.layer3(x)  # 8x8
             for idx,l in enumerate(self.layer3):
                 x = l(x)
-                print(idx,x.size())
                 out_list.append(F.avg_pool2d(x, 2))
             # x = self.layer4(x)
             for idx,l in enumerate(self.layer4):
                 x = l(x)
-                print(idx,x.size())
                 out_list.append(x)
 
             x = torch.cat(out_list,1)
-            print(x.size())
-            exit(0)
             # aggregate layer
             x = self.aggr(x)
             x = self.avgpool(x)

@@ -221,8 +221,6 @@ parser.add_argument('--ps_batch', default=4, type=int,
                     help='super batch size')
 parser.add_argument('--partition_ratio', default=0.25, type=float,
                     help="The partition ratio")
-parser.add_argument('--VLB_conv', action='store_true',
-                    help='enable VLB')
 parser.add_argument('--VLB_conv_type', default=0, type=int,
                     help="Type of vlb conv")
 parser.add_argument('--split_num', default=2, type=int,
@@ -485,7 +483,8 @@ def main_worker(gpu, ngpus_per_node, args):
         elif args.arch == "resnet50":
             model = resnet50(aux_fc=False,
                              width_multiplier=args.width_multiplier,
-                             gate=args.gate)
+                             gate=args.gate,
+                             bridge_type=args.VLB_conv_type)
         elif args.arch == "mobilenetv2":
             model = mobilenet_v2(width_mult=args.width_multiplier,
                                  use_gate=args.gate)
@@ -522,93 +521,6 @@ def main_worker(gpu, ngpus_per_node, args):
         args.ps_batch = len(args.alphas)*4
     else:
         args.ps_batch = 1
-
-    if args.VLB_conv:
-        if args.VLB_conv_type == 0:
-            print('Deprecated. Not quite effective.')
-            exit(0)
-            sampling_interval = 1
-            cfg = [1024,model.in_planes]
-        elif args.VLB_conv_type == 1:
-            print('Deprecated. Too computation heavy.')
-            exit(0)
-            sampling_interval = 1
-            cfg = [1024,512,256,128,model.in_planes]
-        elif args.VLB_conv_type == 2:
-            # best for 0.25 now
-            sampling_interval = 3
-            cfg = [352,128,128,model.in_planes]
-        elif args.VLB_conv_type == 3:
-            sampling_interval = 3
-            cfg = [352,96,96,96,model.in_planes]
-        elif args.VLB_conv_type == 4:
-            sampling_interval = 3
-            cfg = [352,64,64,model.in_planes]
-        elif args.VLB_conv_type == 5:
-            # not as good as 2
-            sampling_interval = 3
-            cfg = [352,128,model.in_planes]
-        elif args.VLB_conv_type == 6:
-            sampling_interval = 3
-            cfg = [352,128,128,128,model.in_planes]
-        elif args.VLB_conv_type == 7:
-            # to try
-            sampling_interval = 3
-            cfg = [352,96,96,model.in_planes]
-        elif args.VLB_conv_type == 8:
-            sampling_interval = 3
-            cfg = [352,192,192,model.in_planes]
-        elif args.VLB_conv_type == 9:
-            sampling_interval = 3
-            cfg = [15168,2048]
-        elif args.VLB_conv_type == 10:
-            sampling_interval = 3
-            cfg = [352,144,model.in_planes]
-        else:
-            exit(0)
-        layers = []
-        for i in range(1,len(cfg)):
-            layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))
-            layers.append(nn.BatchNorm2d(cfg[i]))
-            layers.append(nn.ReLU())
-        model.aggr = nn.Sequential(*layers)
-
-        from types import MethodType
-        # 3->352
-        # def modified_forward(self,x):
-        #     out_list = []
-        #     x = self.conv1(x)
-        #     x = self.bn1(x)
-        #     x = self.relu(x)
-        #     x = self.maxpool(x)
-        #     out_list.append(F.avg_pool2d(x, 8))
-
-        #     # x = self.layer1(x)  # 32x32
-        #     for idx,l in enumerate(self.layer1):
-        #         x = l(x)
-        #         out_list.append(F.avg_pool2d(x, 8))
-        #     # x = self.layer2(x)  # 16x16
-        #     for idx,l in enumerate(self.layer2):
-        #         x = l(x)
-        #         out_list.append(F.avg_pool2d(x, 4))
-        #     # x = self.layer3(x)  # 8x8
-        #     for idx,l in enumerate(self.layer3):
-        #         x = l(x)
-        #         out_list.append(F.avg_pool2d(x, 2))
-        #     # x = self.layer4(x)
-        #     for idx,l in enumerate(self.layer4):
-        #         x = l(x)
-        #         out_list.append(x)
-
-        #     # x = torch.cat(out_list,1)
-        #     # # aggregate layer
-        #     # x = self.aggr(x)
-        #     x = self.avgpool(x)
-        #     x = x.view(x.size(0), -1)
-        #     x = self.fc(x)
-        #     return x, None
-
-        # model.forward = MethodType(modified_forward, model)
 
     # optionally resume from a checkpoint
     if args.resume:

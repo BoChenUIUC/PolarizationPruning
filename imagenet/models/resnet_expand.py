@@ -282,7 +282,7 @@ class Bottleneck(nn.Module):
 
 class ResNetExpand(nn.Module):
     def __init__(self, gate: bool, layers=None, cfg=None, downsample_cfg=None, mask=False, aux_fc=False,
-                 width_multiplier=1.0, expand_idx=None):
+                 width_multiplier=1.0, expand_idx=None, bridge_type=-1):
         super(ResNetExpand, self).__init__()
 
         if mask:
@@ -387,6 +387,20 @@ class ResNetExpand(nn.Module):
         else:
             self.aux_fc_layer = None
 
+        self.aggr = None
+        if bridge_type>=0:
+            if bridge_type == 9:
+                sampling_interval = 3
+                cfg = [15168,2048]
+            else:
+                exit(0)
+            aggr_layers = []
+            for i in range(1,len(cfg)):
+                aggr_layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))
+                aggr_layers.append(nn.BatchNorm2d(cfg[i]))
+                aggr_layers.append(nn.ReLU())
+            self.aggr = nn.Sequential(*aggr_layers)
+
         if expand_idx:
             # set channel expand index
             if expand_idx is not None:
@@ -429,30 +443,62 @@ class ResNetExpand(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        print('?')
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
+        if self.aggr is None:
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            x = self.maxpool(x)
 
-        x = self.layer1(x)  # 32x32
-        x = self.layer2(x)  # 16x16
-        x = self.layer3(x)  # 8x8
+            x = self.layer1(x)  # 32x32
+            x = self.layer2(x)  # 16x16
+            x = self.layer3(x)  # 8x8
 
-        if self.enable_aux_fc:
-            x_aux = self.avgpool(x)
-            x_aux = x_aux.view(x_aux.size(0), -1)
-            x_aux = self.aux_fc_layer(x_aux)
+            if self.enable_aux_fc:
+                x_aux = self.avgpool(x)
+                x_aux = x_aux.view(x_aux.size(0), -1)
+                x_aux = self.aux_fc_layer(x_aux)
+            else:
+                x_aux = None
+
+            x = self.layer4(x)
+
+            x = self.avgpool(x)
+            x = x.view(x.size(0), -1)
+            x = self.fc(x)
+
+            return x, x_aux
         else:
-            x_aux = None
+            out_list = []
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            x = self.maxpool(x)
+            out_list.append(F.avg_pool2d(x, 8))
 
-        x = self.layer4(x)
+            # x = self.layer1(x)  # 32x32
+            for idx,l in enumerate(self.layer1):
+                x = l(x)
+                out_list.append(F.avg_pool2d(x, 8))
+            # x = self.layer2(x)  # 16x16
+            for idx,l in enumerate(self.layer2):
+                x = l(x)
+                out_list.append(F.avg_pool2d(x, 4))
+            # x = self.layer3(x)  # 8x8
+            for idx,l in enumerate(self.layer3):
+                x = l(x)
+                out_list.append(F.avg_pool2d(x, 2))
+            # x = self.layer4(x)
+            for idx,l in enumerate(self.layer4):
+                x = l(x)
+                out_list.append(x)
 
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
-
-        return x, x_aux
+            x = torch.cat(out_list,1)
+            # aggregate layer
+            x = self.aggr(x)
+            x = self.avgpool(x)
+            x = x.view(x.size(0), -1)
+            x = self.fc(x)
+            return x, None
 
     def prune_model(self, **kwargs):
         """
@@ -682,12 +728,12 @@ class ResNetExpand(nn.Module):
         return default_cfg
 
 
-def resnet50(aux_fc, width_multiplier, gate: bool):
+def resnet50(aux_fc, width_multiplier, gate: bool, bridge_type: int=-1):
     if aux_fc is True:
         raise ValueError("Auxiliary fully connected layer is deprecated.")
     model = ResNetExpand(width_multiplier=width_multiplier,
                          layers=[3, 4, 6, 3], aux_fc=aux_fc,
-                         gate=gate)
+                         gate=gate,bridge_type=bridge_type)
     return model
 
 

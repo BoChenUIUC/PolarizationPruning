@@ -528,7 +528,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
             return x, x_aux
 
-        model.forward = MethodType(modified_forward, model)
+        # model.forward = MethodType(modified_forward, model)
 
         model.cuda()
         model = torch.nn.parallel.DistributedDataParallel(model)

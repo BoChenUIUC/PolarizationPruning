@@ -111,8 +111,6 @@ parser.add_argument('--OFA', action='store_true',
                     help='OFA training')
 parser.add_argument('--partition_ratio', default=0.25, type=float,
                     help="The partition ratio")
-parser.add_argument('--VLB_linear', action='store_true',
-                    help='enable VLB linear')
 parser.add_argument('--VLB_conv', action='store_true',
                     help='enable VLB')
 parser.add_argument('--VLB_conv_type', default=0, type=int,
@@ -1112,6 +1110,14 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
     with open(os.path.join(args.save,'train.log'),'a+') as f:
         f.write(log_str+'\n')
     return saved_prec1s[0],prune_str,saved_prec1s
+
+def distributed_simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
+    # compute all results of all models (label,completion time)
+    # record compute latency
+    # simulate inter-node, edge-cloud latency
+    # locate target network, select the result
+    # compute final result
+    return
 
 def cross_entropy_loss_with_soft_target(pred, soft_target):
     logsoftmax = nn.LogSoftmax()

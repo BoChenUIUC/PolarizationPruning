@@ -595,6 +595,7 @@ def main_worker(gpu, ngpus_per_node, args):
         #     x = self.avgpool(x)
         #     x = x.view(x.size(0), -1)
         #     x = self.fc(x)
+            # return x, None
         def modified_forward(self, x):
             x = self.conv1(x)
             x = self.bn1(x)
@@ -620,8 +621,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
             return x, x_aux
 
-            return x, None
-        model.forward = MethodType(modified_forward, model)
+        # model.forward = MethodType(modified_forward, model)
 
     if not args.distributed:
         # DataParallel

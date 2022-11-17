@@ -642,7 +642,7 @@ def main_worker(gpu, ngpus_per_node, args):
             x = self.fc(x)
 
             return x, None
-        model.module.forward = MethodType(modified_forward, model)
+        model.module.forward = MethodType(modified_forward, model.module)
 
     # optionally resume from a checkpoint
     if args.resume:

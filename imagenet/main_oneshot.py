@@ -609,7 +609,7 @@ def main_worker(gpu, ngpus_per_node, args):
             x = self.bn1(x)
             x = self.relu(x)
             x = self.maxpool(x)
-            out_list.append(x)
+            out_list.append(F.avg_pool2d(x, 8))
 
             # x = self.layer1(x)  # 32x32
             for idx,l in enumerate(self.layer1):

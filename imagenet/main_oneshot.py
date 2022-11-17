@@ -564,37 +564,61 @@ def main_worker(gpu, ngpus_per_node, args):
 
         from types import MethodType
         # 3->352
-        def modified_forward(self,x):
-            out_list = []
+        # def modified_forward(self,x):
+        #     out_list = []
+        #     x = self.conv1(x)
+        #     x = self.bn1(x)
+        #     x = self.relu(x)
+        #     x = self.maxpool(x)
+        #     out_list.append(F.avg_pool2d(x, 8))
+
+        #     # x = self.layer1(x)  # 32x32
+        #     for idx,l in enumerate(self.layer1):
+        #         x = l(x)
+        #         out_list.append(F.avg_pool2d(x, 8))
+        #     # x = self.layer2(x)  # 16x16
+        #     for idx,l in enumerate(self.layer2):
+        #         x = l(x)
+        #         out_list.append(F.avg_pool2d(x, 4))
+        #     # x = self.layer3(x)  # 8x8
+        #     for idx,l in enumerate(self.layer3):
+        #         x = l(x)
+        #         out_list.append(F.avg_pool2d(x, 2))
+        #     # x = self.layer4(x)
+        #     for idx,l in enumerate(self.layer4):
+        #         x = l(x)
+        #         out_list.append(x)
+
+        #     # x = torch.cat(out_list,1)
+        #     # # aggregate layer
+        #     # x = self.aggr(x)
+        #     x = self.avgpool(x)
+        #     x = x.view(x.size(0), -1)
+        #     x = self.fc(x)
+        def forward(self, x):
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)
             x = self.maxpool(x)
-            out_list.append(F.avg_pool2d(x, 8))
 
-            # x = self.layer1(x)  # 32x32
-            for idx,l in enumerate(self.layer1):
-                x = l(x)
-                out_list.append(F.avg_pool2d(x, 8))
-            # x = self.layer2(x)  # 16x16
-            for idx,l in enumerate(self.layer2):
-                x = l(x)
-                out_list.append(F.avg_pool2d(x, 4))
-            # x = self.layer3(x)  # 8x8
-            for idx,l in enumerate(self.layer3):
-                x = l(x)
-                out_list.append(F.avg_pool2d(x, 2))
-            # x = self.layer4(x)
-            for idx,l in enumerate(self.layer4):
-                x = l(x)
-                out_list.append(x)
+            x = self.layer1(x)  # 32x32
+            x = self.layer2(x)  # 16x16
+            x = self.layer3(x)  # 8x8
 
-            # x = torch.cat(out_list,1)
-            # # aggregate layer
-            # x = self.aggr(x)
+            if self.enable_aux_fc:
+                x_aux = self.avgpool(x)
+                x_aux = x_aux.view(x_aux.size(0), -1)
+                x_aux = self.aux_fc_layer(x_aux)
+            else:
+                x_aux = None
+
+            x = self.layer4(x)
+
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)
+
+            return x, x_aux
 
             return x, None
         model.forward = MethodType(modified_forward, model)

@@ -560,7 +560,7 @@ def main_worker(gpu, ngpus_per_node, args):
             layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))
             layers.append(nn.BatchNorm2d(cfg[i]))
             layers.append(nn.ReLU())
-        model.module.aggr = nn.Sequential(*layers)
+        model.aggr = nn.Sequential(*layers)
 
         from types import MethodType
         # 3->352
@@ -598,7 +598,7 @@ def main_worker(gpu, ngpus_per_node, args):
             x = self.fc(x)
 
             return x, None
-        model.module.forward = MethodType(modified_forward, model.module)
+        model.forward = MethodType(modified_forward, model)
 
     if not args.distributed:
         # DataParallel

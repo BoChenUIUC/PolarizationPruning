@@ -595,7 +595,7 @@ def main_worker(gpu, ngpus_per_node, args):
         #     x = self.avgpool(x)
         #     x = x.view(x.size(0), -1)
         #     x = self.fc(x)
-        def forward(self, x):
+        def modified_forward(self, x):
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)

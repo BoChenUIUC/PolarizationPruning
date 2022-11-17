@@ -388,6 +388,7 @@ class ResNetExpand(nn.Module):
             self.aux_fc_layer = None
 
         self.aggr = None
+        print(bridge_type,'.....///////////')
         if bridge_type>=0:
             if bridge_type == 9:
                 sampling_interval = 3

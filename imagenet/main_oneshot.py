@@ -615,17 +615,17 @@ def main_worker(gpu, ngpus_per_node, args):
             for idx,l in enumerate(self.layer1):
                 x = l(x)
                 print(idx,x.size())
-                out_list.append(F.avg_pool2d(x, 4))
+                out_list.append(F.avg_pool2d(x, 8))
             # x = self.layer2(x)  # 16x16
             for idx,l in enumerate(self.layer2):
                 x = l(x)
                 print(idx,x.size())
-                out_list.append(F.avg_pool2d(x, 2))
+                out_list.append(F.avg_pool2d(x, 4))
             # x = self.layer3(x)  # 8x8
             for idx,l in enumerate(self.layer3):
                 x = l(x)
                 print(idx,x.size())
-                out_list.append(x)
+                out_list.append(F.avg_pool2d(x, 2))
             # x = self.layer4(x)
             for idx,l in enumerate(self.layer4):
                 x = l(x)

@@ -391,7 +391,7 @@ class ResNetExpand(nn.Module):
         if bridge_type>=0:
             if bridge_type == 9:
                 sampling_interval = 3
-                cfg = [15168,2048]
+                cfg = [3907,2048]
             else:
                 exit(0)
             aggr_layers = []
@@ -485,8 +485,6 @@ class ResNetExpand(nn.Module):
             out_list.append(x)
 
             x = torch.cat(out_list,1)
-            print(x.size())
-            exit(0)
             # aggregate layer
             x = self.aggr(x)
             x = self.avgpool(x)

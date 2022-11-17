@@ -221,7 +221,7 @@ parser.add_argument('--ps_batch', default=4, type=int,
                     help='super batch size')
 parser.add_argument('--partition_ratio', default=0.25, type=float,
                     help="The partition ratio")
-parser.add_argument('--VLB_conv_type', default=0, type=int,
+parser.add_argument('--VLB_conv_type', default=-1, type=int,
                     help="Type of vlb conv")
 parser.add_argument('--split_num', default=2, type=int,
                     help="Number of splits on the ring")

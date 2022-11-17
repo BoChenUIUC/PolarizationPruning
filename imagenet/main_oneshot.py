@@ -520,7 +520,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
             return x, x_aux
 
-        model.forward = MethodType(modified_forward, model)
+        # model.forward = MethodType(modified_forward, model)
         # DataParallel
         model.cuda()
         if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):

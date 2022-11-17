@@ -529,9 +529,11 @@ def main_worker(gpu, ngpus_per_node, args):
             return x, x_aux
 
         model.forward = MethodType(modified_forward, model)
+        print('...???????')
 
         model.cuda()
         model = torch.nn.parallel.DistributedDataParallel(model)
+
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
 
@@ -633,9 +635,9 @@ def main_worker(gpu, ngpus_per_node, args):
         #     x = self.avgpool(x)
         #     x = x.view(x.size(0), -1)
         #     x = self.fc(x)
-            # return x, None
+        #     return x, None
 
-        # model.module.forward = MethodType(modified_forward, model.module)
+        # model.forward = MethodType(modified_forward, model)
 
     # optionally resume from a checkpoint
     if args.resume:

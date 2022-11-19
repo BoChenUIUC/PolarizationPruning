@@ -375,37 +375,41 @@ if args.VLB_conv:
         sampling_interval = 1
         cfg = [1024,512,256,128,model.in_planes]
     elif args.VLB_conv_type == 2:
-        # best for 0.25 now
+        # best for 0.25 now, but a little expensive
         sampling_interval = 3
         cfg = [352,128,128,model.in_planes]
-    elif args.VLB_conv_type == 3:
-        sampling_interval = 3
-        cfg = [352,96,96,96,model.in_planes]
-    elif args.VLB_conv_type == 4:
-        sampling_interval = 3
-        cfg = [352,64,64,model.in_planes]
-    elif args.VLB_conv_type == 5:
-        # not as good as 2
-        sampling_interval = 3
-        cfg = [352,128,model.in_planes]
-    elif args.VLB_conv_type == 6:
-        sampling_interval = 3
-        cfg = [352,128,128,128,model.in_planes]
-    elif args.VLB_conv_type == 7:
-        # to try
-        sampling_interval = 3
-        cfg = [352,96,96,model.in_planes]
-    elif args.VLB_conv_type == 8:
-        sampling_interval = 3
-        cfg = [352,192,192,model.in_planes]
-    elif args.VLB_conv_type == 9:
-        # looks goooood
-        sampling_interval = 3
-        cfg = [352,model.in_planes]
     elif args.VLB_conv_type == 10:
-        # best as good as 2
+        # best for two split
         sampling_interval = 3
         cfg = [352,144,model.in_planes]
+    elif args.VLB_conv_type == 11:
+        # best for two split
+        sampling_interval = 3
+        cfg = [352,192,model.in_planes]
+    # elif args.VLB_conv_type == 3:
+    #     sampling_interval = 3
+    #     cfg = [352,96,96,96,model.in_planes]
+    # elif args.VLB_conv_type == 4:
+    #     sampling_interval = 3
+    #     cfg = [352,64,64,model.in_planes]
+    # elif args.VLB_conv_type == 5:
+    #     # not useful
+    #     sampling_interval = 3
+    #     cfg = [352,128,model.in_planes]
+    # elif args.VLB_conv_type == 6:
+    #     sampling_interval = 3
+    #     cfg = [352,128,128,128,model.in_planes]
+    # elif args.VLB_conv_type == 7:
+    #     # to try
+    #     sampling_interval = 3
+    #     cfg = [352,96,96,model.in_planes]
+    # elif args.VLB_conv_type == 8:
+    #     sampling_interval = 3
+    #     cfg = [352,192,192,model.in_planes]
+    # elif args.VLB_conv_type == 9:
+    #     # two sub good, four sub not god
+    #     sampling_interval = 3
+    #     cfg = [352,model.in_planes]
     else:
         exit(0)
     layers = []

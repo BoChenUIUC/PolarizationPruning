@@ -1127,6 +1127,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # 
     # read network traces or generate random traces
     # equal to the number of queries
+    import csv
     with open('curr_videostream.csv', mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         line_count = 0

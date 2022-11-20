@@ -117,6 +117,8 @@ parser.add_argument('--VLB_conv_type', default=0, type=int,
                     help="Type of vlb conv")
 parser.add_argument('--split_num', default=2, type=int,
                     help="Number of splits on the ring")
+parser.add_argument('--simulate', action='store_true',
+                    help='simulate model on validation set')
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -1115,13 +1117,42 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
         f.write(log_str+'\n')
     return saved_prec1s[0],prune_str,saved_prec1s
 
-def distributed_simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
-    # compute all results of all models (label,completion time)
+def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
+    # batch size: 1
+    # compute all results of all models (label,completion time (realistic),), need to real-prune model to save time (check consistency)
     # record compute latency
-    # simulate inter-node, edge-cloud latency
+    # simulate inter-node (0.171+0.016ms), edge->cloud and cloud->edge latency (mean+std or trace)
     # locate target network, select the result
     # compute final result
-    return
+    # 
+    # read network traces or generate random traces
+    # equal to the number of queries
+    with open('curr_videostream.csv', mode='r') as csv_file:
+    csv_reader = csv.DictReader(csv_file)
+    line_count = 0
+    for row in csv_reader:
+        if line_count == 0:
+            print(f'Column names are {", ".join(row)}')
+            line_count += 1
+        print(f'\t id:{row["unit_id"]}, throughput: {row["downthrpt"]}, latency: {row["latency"]}.')
+        line_count += 1
+        if line_count>10:break
+    print(f'Processed {line_count} lines.')
+    exit(0)
+
+    model.eval()
+    saved_prec1s = []
+    saved_flops = []
+    if arch == "resnet56":
+        for i in range(len(args.alphas)):
+            masked_model = sample_partition_network(model,net_id=i)
+            prec1 = test(masked_model)
+            flop = compute_conv_flops_par(masked_model, cuda=True)
+            saved_prec1s += [prec1]
+            saved_flops += [flop]
+    else:
+        # not available
+        raise NotImplementedError(f"do not support arch {arch}")
 
 def cross_entropy_loss_with_soft_target(pred, soft_target):
     logsoftmax = nn.LogSoftmax()
@@ -1260,6 +1291,10 @@ if args.evaluate:
         prec1,prune_str,_ = prune_while_training(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
     print(prec1,prune_str)
     exit(0)
+
+if args.simulate:
+    assert args.test_batch_size == 1, 'only test one batch per query'
+    simulation(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
 
 for epoch in range(args.start_epoch, args.epochs):
     if args.max_epoch is not None and epoch >= args.max_epoch:

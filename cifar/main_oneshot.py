@@ -1128,16 +1128,16 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # read network traces or generate random traces
     # equal to the number of queries
     with open('curr_videostream.csv', mode='r') as csv_file:
-    csv_reader = csv.DictReader(csv_file)
-    line_count = 0
-    for row in csv_reader:
-        if line_count == 0:
-            print(f'Column names are {", ".join(row)}')
+        csv_reader = csv.DictReader(csv_file)
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                print(f'Column names are {", ".join(row)}')
+                line_count += 1
+            print(f'\t id:{row["unit_id"]}, throughput: {row["downthrpt"]}, latency: {row["latency"]}.')
             line_count += 1
-        print(f'\t id:{row["unit_id"]}, throughput: {row["downthrpt"]}, latency: {row["latency"]}.')
-        line_count += 1
-        if line_count>10:break
-    print(f'Processed {line_count} lines.')
+            if line_count>10:break
+        print(f'Processed {line_count} lines.')
     exit(0)
 
     model.eval()

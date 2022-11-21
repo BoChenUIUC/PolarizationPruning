@@ -21,6 +21,7 @@ from models.common import SparseGate, Identity
 from models.resnet_expand import BasicBlock
 from tqdm import tqdm
 import copy
+import time
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch CIFAR training with Polarization')
@@ -388,6 +389,10 @@ if args.VLB_conv:
         # best for two split
         sampling_interval = 3
         cfg = [352,192,model.in_planes]
+    elif args.VLB_conv_type == 12:
+        # best for two split
+        sampling_interval = 3
+        cfg = [352,256,model.in_planes]
     # elif args.VLB_conv_type == 3:
     #     sampling_interval = 3
     #     cfg = [352,96,96,96,model.in_planes]
@@ -424,6 +429,7 @@ if args.VLB_conv:
     from types import MethodType
     # 3->352
     def modified_forward(self,x):
+        end = time.time()
         out_list = []
         out = F.relu(self.bn1(self.conv1(x)))
         out_list.append(F.avg_pool2d(out, 4))
@@ -439,13 +445,16 @@ if args.VLB_conv:
             out = l(out)
             if idx%sampling_interval == sampling_interval-1:
                 out_list.append(out)
+        map_time = time.time() - end
+        end = time.time()
         out = torch.cat(out_list,1)
         # aggregate layer
         out = self.aggr(out)
         out = F.avg_pool2d(out, out.size()[3])
         out = out.view(out.size(0), -1)
         out = self.linear(out)
-        return out, None
+        reduce_time = time.time() - end
+        return out, (map_time,reduce_time)
     model.forward = MethodType(modified_forward, model)
 
 if args.split_running_stat:
@@ -1125,35 +1134,101 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # locate target network, select the result
     # compute final result
     # 
+
+    model.eval()
+    all_map_time = []
+    all_reduce_time = []
+    all_correct = []
+    # map/reduce time for net[0-1] will not be used, but their preds will be used
+    # every thing for net[2-3] will be used
+    if arch == "resnet56":
+        for i in range(len(args.alphas)):
+            masked_model = sample_partition_network(model,net_id=i)
+            map_time_lst,reduce_time_lst,correct_lst = test(masked_model)
+            all_map_time += [map_time_lst]
+            all_reduce_time += [reduce_time_lst]
+            all_correct += [correct_lst]
+    else:
+        # not available
+        raise NotImplementedError(f"do not support arch {arch}")
+
     # read network traces or generate random traces
     # equal to the number of queries
     import csv
+    downthrpt_list = []
+    latency_list = []
+    print('Reading network trace...')
     with open('curr_videostream.csv', mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         line_count = 0
         for row in csv_reader:
-            if line_count == 0:
-                print(f'Column names are {", ".join(row)}')
-                line_count += 1
-            print(f'\t id:{row["unit_id"]}, throughput: {row["downthrpt"]}, latency: {row["latency"]}.')
+            downthrpt_list += [row["downthrpt"]/1000.]
+            latency_list += [row["latency"]/1000.]
+            if line_count == len(correct_lst):break
             line_count += 1
-            if line_count>10:break
         print(f'Processed {line_count} lines.')
-    exit(0)
 
-    model.eval()
-    saved_prec1s = []
-    saved_flops = []
-    if arch == "resnet56":
-        for i in range(len(args.alphas)):
-            masked_model = sample_partition_network(model,net_id=i)
-            prec1 = test(masked_model)
-            flop = compute_conv_flops_par(masked_model, cuda=True)
-            saved_prec1s += [prec1]
-            saved_flops += [flop]
-    else:
-        # not available
-        raise NotImplementedError(f"do not support arch {arch}")
+    # random inter-node latency
+    mu, sigma = 0.171, 0.016 # mean and standard deviation
+    # randomly set latency to a large number if simulating node failure
+    inter_node_latency = [np.random.normal(mu, sigma, len(correct_lst)) for i in range(2)]
+
+    # analyze RMLaaS
+    # calculate complete time for different subnets
+    # find the result on each node and find the best among nodes
+    # complete partition's time is infinite if its deadline is passed
+    latency_thresh = 0.5
+    # each node keeps the largest partition within time limit
+    # result of the fastest node will be kept 
+    # complete and in-complete execution time
+    RMLaaS_res = []
+    RMLaaS_latency = []
+    for mt0,mt1,mt2,mt3,rt0,rt1,rt2,rt3,c0,c1,c2,c3 in zip(*all_map_time,*all_reduce_time,*all_correct):
+        # consider node 0: subnet{0,2}
+        # mt0: complete latency on node 0
+        # mt1: complete latency on node 1
+        # mt2: partial latency on node 0
+        # mt3: partial latency on node 1
+        if mt3 + inter_node_latency[0] <= mt2 + latency_thresh:
+            # complete partition
+            node0_res = c0 # complete result on node 0
+            node0_latency = mt3 + inter_node_latency[0] + rt0 # latency on node 0
+        else:
+            # in-complete
+            node0_res = c2 # partial result on node 0
+            node0_latency = mt2 + latency_thresh + rt2 # latency on node 0
+        # consider node 1: subnet{1,3}
+        if mt2 + inter_node_latency[1] <= mt3 + latency_thresh:
+            node1_res = c1
+            node1_latency = mt2 + inter_node_latency[1] + rt1
+        else:
+            node1_res = c3
+            node1_latency = mt3 + latency_thresh + rt3
+        # choose between 0 and 1
+        if node0_latency <= node1_latency:
+            res = node0_res
+            latency = node0_latency
+        else:
+            res = node1_res
+            latency = node1_latency
+        RMLaaS_res += [res]
+        RMLaaS_latency += [latency]
+
+    # run originial model
+    map_time_lst,reduce_time_lst,correct_lst = test(model)
+    # analyze no replication
+
+    # analyze total replication
+
+    # compare different metrics
+    # effective accuracy under different deadlines
+    # PDF
+    # response time, if too large means no response, a threshold will cap it and used as response
+
+    # todo: realistic prune
+
+
+    exit(0)
 
 def cross_entropy_loss_with_soft_target(pred, soft_target):
     logsoftmax = nn.LogSoftmax()
@@ -1236,8 +1311,10 @@ def train(epoch):
 
 def test(modelx):
     modelx.eval()
-    test_loss = 0
     correct = 0
+    map_time_lst = []
+    reduce_time_lst = []
+    correct_lst = []
     test_iter = tqdm(test_loader)
     with torch.no_grad():
         for batch_idx, (data, target) in enumerate(test_iter):
@@ -1246,12 +1323,17 @@ def test(modelx):
             output = modelx(data)
             if isinstance(output, tuple):
                 output, output_aux = output
-            test_loss += F.cross_entropy(output, target, size_average=False).data.item()  # sum up batch loss
             pred = output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability
+            if args.simulate:
+                map_time_lst.append(output_aux[0])
+                reduce_time_lst.append(output_aux[1])
             correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-
-    test_loss /= len(test_loader.dataset)
-    return float(correct) / float(len(test_loader.dataset))
+            if args.simulate:
+                correct_lst.append(correct)
+    if args.simulate:
+        return map_time_lst,reduce_time_lst,correct_lst
+    else:
+        return float(correct) / float(len(test_loader.dataset))
 
 
 def save_checkpoint(state, is_best, filepath, backup: bool, backup_path: str, epoch: int, max_backup: int, is_avg_best: bool=False):
@@ -1295,6 +1377,7 @@ if args.evaluate:
 
 if args.simulate:
     assert args.test_batch_size == 1, 'only test one batch per query'
+    assert args.split_num == 2
     simulation(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
 
 for epoch in range(args.start_epoch, args.epochs):

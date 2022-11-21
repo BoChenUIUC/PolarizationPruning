@@ -392,7 +392,7 @@ if args.VLB_conv:
     elif args.VLB_conv_type == 12:
         # best for two split
         sampling_interval = 3
-        cfg = [352,256,model.in_planes]
+        cfg = [352,224,model.in_planes]
     # elif args.VLB_conv_type == 3:
     #     sampling_interval = 3
     #     cfg = [352,96,96,96,model.in_planes]

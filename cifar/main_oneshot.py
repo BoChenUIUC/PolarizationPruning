@@ -823,7 +823,7 @@ def gen_partition_mask_two_split(net_id,weight_size):
             flops_multiplier = 1-r
     return mask.view(c1,c2,1,1),flops_multiplier
 
-def sample_partition_network(old_model,net_id=None,deepcopy=True):
+def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
     if deepcopy:
         dynamic_model = copy.deepcopy(old_model)
     else:
@@ -834,12 +834,28 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True):
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
-    for sub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
+    for bn_module,sub_module in zip(dynamic_model.get_partitionable_bns_n_convs()):
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, nn.Linear): 
                 mask,flops_multiplier = gen_partition_mask(net_id,sub_module.weight.size())
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
+                # realistic prune
+                if not inplace and args.split_num == 2:
+                    if sub_module.weight.size(1) == 3:
+                        sub_module.weight.data = sub_module.weight.data[mask[:,0,0,0]==1,:,:,:].clone()
+                        bn_module.weight.data = bn_module.weight.data[mask[:,0,0,0]==1].clone()
+                        bn_module.bias.data = bn_module.bias.data[mask[:,0,0,0]==1].clone()
+                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[mask[:,0,0,0]==1].clone()
+                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[mask[:,0,0,0]==1].clone()
+                    elif bn_module is None:
+                        sub_module.weight.data = sub_module.weight.data[:,mask[0,:,0,0]==1].clone()
+                    else:
+                        sub_module.weight.data = sub_module.weight.data[mask[:,0,0,0]==1,mask[0,:,0,0]==1,:,:].clone()
+                        bn_module.weight.data = bn_module.weight.data[mask[:,0,0,0]==1].clone()
+                        bn_module.bias.data = bn_module.bias.data[mask[:,0,0,0]==1].clone()
+                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[mask[:,0,0,0]==1].clone()
+                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[mask[:,0,0,0]==1].clone()
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):
@@ -886,6 +902,7 @@ def update_partitioned_model(old_model,new_model,net_id,batch_idx):
             subnet_mask,_ = gen_partition_mask(net_id,conv1.weight.size())
             copy_module_grad(conv1,conv2,subnet_mask)
         for bn1,bn2 in zip(bns1,bns2):
+            if bn1 is None:continue
             copy_module_grad(bn1,bn2)
 
     with torch.no_grad():
@@ -1126,15 +1143,25 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
         f.write(log_str+'\n')
     return saved_prec1s[0],prune_str,saved_prec1s
 
-def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
-    # batch size: 1
-    # compute all results of all models (label,completion time (realistic),), need to real-prune model to save time (check consistency)
-    # record compute latency
-    # simulate inter-node (0.171+0.016ms), edge->cloud and cloud->edge latency (mean+std or trace)
-    # locate target network, select the result
-    # compute final result
-    # 
+def evaluate_result_n_latency(result_list,latency_list):
+    mean_acc = np.array(result_list).mean()
+    print('Mean Top-1 accuracy:',mean_acc)
 
+    mean_latency = np.array(latency_list).mean()
+    print('Mean latency:',mean_latency)
+
+    # CDF
+    N = len(latency_list)
+    cdf_x = np.sort(np.array(latency_list))
+    cdf_p = np.array(range(N))/float(N)
+    cdf_str = ''
+    for i in range(10):
+        cdf_str += f"{cdf_x[int(N*(i+1)/10)]:.4f}({cdf_p[int(N*(i+1)/10)]:.4f}),"
+    print(cdf_str)
+
+    # effective accuracy vs. deadline
+
+def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
     model.eval()
     all_map_time = []
     all_reduce_time = []
@@ -1143,8 +1170,8 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # every thing for net[2-3] will be used
     if arch == "resnet56":
         for i in range(len(args.alphas)):
-            masked_model = sample_partition_network(model,net_id=i)
-            map_time_lst,reduce_time_lst,correct_lst = test(masked_model)
+            masked_model = sample_partition_network(model,net_id=i,inplace=False)
+            map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
             all_correct += [correct_lst]
@@ -1152,26 +1179,27 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
 
+    num_query = len(all_correct[0])
     # read network traces or generate random traces
     # equal to the number of queries
     import csv
-    downthrpt_list = []
-    latency_list = []
+    downthrpt_list = [[] for _ in range(2)]
+    latency_list = [[] for _ in range(2)]
     print('Reading network trace...')
     with open('curr_videostream.csv', mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         line_count = 0
         for row in csv_reader:
-            downthrpt_list += [row["downthrpt"]/1000.]
-            latency_list += [row["latency"]/1000.]
-            if line_count == len(correct_lst):break
+            downthrpt_list[line_count/num_query] += [row["downthrpt"]/1000.]
+            latency_list[line_count/num_query] += [row["latency"]/1000.]
             line_count += 1
+            if line_count == num_query*2:break
         print(f'Processed {line_count} lines.')
 
     # random inter-node latency
     mu, sigma = 0.171, 0.016 # mean and standard deviation
     # randomly set latency to a large number if simulating node failure
-    inter_node_latency = [np.random.normal(mu, sigma, len(correct_lst)) for i in range(2)]
+    inter_node_latency = [np.random.normal(mu, sigma, num_query) for i in range(2)]
 
     # analyze RMLaaS
     # calculate complete time for different subnets
@@ -1181,29 +1209,35 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # each node keeps the largest partition within time limit
     # result of the fastest node will be kept 
     # complete and in-complete execution time
+    # query size
+    query_size = 3*32*32*4
     RMLaaS_res = []
     RMLaaS_latency = []
+    query_index = 0
     for mt0,mt1,mt2,mt3,rt0,rt1,rt2,rt3,c0,c1,c2,c3 in zip(*all_map_time,*all_reduce_time,*all_correct):
         # consider node 0: subnet{0,2}
         # mt0: complete latency on node 0
         # mt1: complete latency on node 1
         # mt2: partial latency on node 0
         # mt3: partial latency on node 1
-        if mt3 + inter_node_latency[0] <= mt2 + latency_thresh:
+        if mt3 + inter_node_latency[0][query_index] <= mt2 + latency_thresh:
             # complete partition
             node0_res = c0 # complete result on node 0
-            node0_latency = mt3 + inter_node_latency[0] + rt0 # latency on node 0
+            node0_latency = mt3 + inter_node_latency[0][query_index] + rt0 # latency on node 0
         else:
             # in-complete
             node0_res = c2 # partial result on node 0
             node0_latency = mt2 + latency_thresh + rt2 # latency on node 0
         # consider node 1: subnet{1,3}
-        if mt2 + inter_node_latency[1] <= mt3 + latency_thresh:
+        if mt2 + inter_node_latency[1][query_index] <= mt3 + latency_thresh:
             node1_res = c1
-            node1_latency = mt2 + inter_node_latency[1] + rt1
+            node1_latency = mt2 + inter_node_latency[1][query_index] + rt1
         else:
             node1_res = c3
             node1_latency = mt3 + latency_thresh + rt3
+        # add cloud-edge latency
+        node0_latency += downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]
+        node1_latency += downthrpt_list[1][query_index]/query_size + latency_list[1][query_index]
         # choose between 0 and 1
         if node0_latency <= node1_latency:
             res = node0_res
@@ -1213,20 +1247,39 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
             latency = node1_latency
         RMLaaS_res += [res]
         RMLaaS_latency += [latency]
+        query_index += 1
+
+    evaluate_result_n_latency(RMLaaS_res,RMLaaS_latency)
 
     # run originial model
-    map_time_lst,reduce_time_lst,correct_lst = test(model)
+    infer_time_lst,correct_lst = test(teacher_model,standalone=True)
     # analyze no replication
+    no_rep_res = []
+    no_rep_latency = []
+    query_index = 0
+    for ift0,c0 in zip(infer_time_lst,correct_lst):
+        latency = ift0 + downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]
+        no_rep_res += [c0]
+        no_rep_latency += [latency]
+        query_index += 1
+
+    evaluate_result_n_latency(no_rep_res,no_rep_latency)
 
     # analyze total replication
+    total_rep_res = []
+    total_rep_latency = []
+    query_index = 0
+    for ift0,c0 in zip(infer_time_lst,correct_lst):
+        if downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]<=downthrpt_list[1][query_index]/query_size + latency_list[1][query_index]:
+            latency = ift0 + downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]
+            total_rep_res += [c0]
+        else:
+            latency = ift0 + downthrpt_list[1][query_index]/query_size + latency_list[1][query_index]
+            total_rep_res += [c1]
+        total_rep_latency += [latency]
+        query_index += 1
 
-    # compare different metrics
-    # effective accuracy under different deadlines
-    # PDF
-    # response time, if too large means no response, a threshold will cap it and used as response
-
-    # todo: realistic prune
-
+    evaluate_result_n_latency(total_rep_res,total_rep_latency)
 
     exit(0)
 
@@ -1309,29 +1362,36 @@ def train(epoch):
     return avg_loss / len(train_loader)
 
 
-def test(modelx):
+def test(modelx,map_reduce=False,standalone=False):
     modelx.eval()
     correct = 0
     map_time_lst = []
     reduce_time_lst = []
+    infer_time_lst = []
     correct_lst = []
     test_iter = tqdm(test_loader)
     with torch.no_grad():
         for batch_idx, (data, target) in enumerate(test_iter):
             if args.cuda:
                 data, target = data.cuda(), target.cuda()
+            if standalone:
+                end = time.time()
             output = modelx(data)
             if isinstance(output, tuple):
                 output, output_aux = output
             pred = output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability
-            if args.simulate:
+            if map_reduce:
                 map_time_lst.append(output_aux[0])
                 reduce_time_lst.append(output_aux[1])
+            elif standalone:
+                infer_time_lst.append(time.time()-end)
             correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-            if args.simulate:
+            if map_reduce or standalone:
                 correct_lst.append(correct)
-    if args.simulate:
+    if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
+    elif standalone:
+        return infer_time_lst,correct_lst
     else:
         return float(correct) / float(len(test_loader.dataset))
 

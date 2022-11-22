@@ -851,6 +851,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                     elif bn_module is None:
                         sub_module.weight.data = sub_module.weight.data[:,mask[0,:,0,0]==1].clone()
                     else:
+                        print(sub_module.weight.data.size(),(mask[:,0,0,0]==1).size(),(mask[0,:,0,0]==1).size())
                         sub_module.weight.data = sub_module.weight.data[mask[:,0,0,0]==1,mask[0,:,0,0]==1,:,:].clone()
                         bn_module.weight.data = bn_module.weight.data[mask[:,0,0,0]==1].clone()
                         bn_module.bias.data = bn_module.bias.data[mask[:,0,0,0]==1].clone()

@@ -193,7 +193,7 @@ class BasicBlock(BuildingBlock):
             out = self.gate2(out)
 
             out = self.expand_layer(out)
-
+            print(out.size(),x.size(),self.shortcut(x).size())
             out += self.shortcut(x)
             out = F.relu(out)
             return out

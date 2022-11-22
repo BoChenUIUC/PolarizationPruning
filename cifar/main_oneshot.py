@@ -458,7 +458,7 @@ if args.VLB_conv:
         reduce_time = time.time() - end
         return out, (map_time,reduce_time)
     model.forward = MethodType(modified_forward, model)
-    for l in [self.layer1[-1],self.layer2[-1],self.layer3[-1]]:
+    for l in [model.layer1[-1],model.layer2[-1],model.layer3[-1]]:
         in_planes,outplanes = l.conv1.weight.size(1),l.conv2.weight.size(0)
         l.shortcut = LambdaLayer(lambda x:
                                 F.pad(x[:, :, ::2, ::2], (

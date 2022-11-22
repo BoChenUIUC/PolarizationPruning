@@ -849,7 +849,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                         bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[mask[:,0,0,0]==1].clone()
                         bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[mask[:,0,0,0]==1].clone()
                     elif bn_module is None:
-                        sub_module.weight.data = sub_module.weight.data[:,mask[0,:,0,0]==1].clone()
+                        sub_module.weight.data = sub_module.weight.data[:,mask[0,:]==1].clone()
                     else:
                         sub_module.weight.data = sub_module.weight.data[mask[:,0,0,0]==1,:,:,:].clone()
                         sub_module.weight.data = sub_module.weight.data[:,mask[0,:,0,0]==1,:,:].clone()

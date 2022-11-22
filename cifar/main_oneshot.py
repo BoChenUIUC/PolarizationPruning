@@ -434,7 +434,6 @@ if args.VLB_conv:
         out = F.relu(self.bn1(self.conv1(x)))
         out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer1):
-            print(out.size(),l.conv1.weight.size(),l.conv2.weight.size())
             out = l(out)
             if idx%sampling_interval == sampling_interval-1:
                 out_list.append(F.avg_pool2d(out, 4))
@@ -834,7 +833,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
         if args.split_running_stat:
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
-
+    print(net_id)
     for bn_module,sub_module in zip(*dynamic_model.get_partitionable_bns_n_convs()):
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, nn.Linear): 

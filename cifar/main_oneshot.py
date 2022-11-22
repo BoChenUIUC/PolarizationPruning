@@ -843,6 +843,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 sub_module.flops_multiplier = flops_multiplier
                 # realistic prune
                 if not inplace and args.split_num == 2:
+                    print(sub_module.weight.size())
                     if sub_module.weight.size(1) == 3:
                         sub_module.weight.data = sub_module.weight.data[mask[:,0,0,0]==1,:,:,:].clone()
                         bn_module.weight.data = bn_module.weight.data[mask[:,0,0,0]==1].clone()
@@ -858,6 +859,8 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                         bn_module.bias.data = bn_module.bias.data[mask[:,0,0,0]==1].clone()
                         bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[mask[:,0,0,0]==1].clone()
                         bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[mask[:,0,0,0]==1].clone()
+
+                    print('after',sub_module.weight.size())
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):

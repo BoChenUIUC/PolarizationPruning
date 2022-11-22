@@ -1163,6 +1163,7 @@ def evaluate_result_n_latency(result_list,latency_list):
     # effective accuracy vs. deadline
 
 def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
+    print('Simulation with test batch size:',args.test_batch_size)
     model.eval()
     all_map_time = []
     all_reduce_time = []
@@ -1211,7 +1212,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # result of the fastest node will be kept 
     # complete and in-complete execution time
     # query size
-    query_size = 3*32*32*4
+    query_size = 3*32*32*4*args.test_batch_size
     RMLaaS_res = []
     RMLaaS_latency = []
     query_index = 0
@@ -1437,7 +1438,6 @@ if args.evaluate:
     exit(0)
 
 if args.simulate:
-    assert args.test_batch_size == 1, 'only test one batch per query'
     assert args.split_num == 2
     simulation(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
 

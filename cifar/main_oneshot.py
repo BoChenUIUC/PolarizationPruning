@@ -834,7 +834,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
-    for bn_module,sub_module in zip(dynamic_model.get_partitionable_bns_n_convs()):
+    for bn_module,sub_module in zip(*dynamic_model.get_partitionable_bns_n_convs()):
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, nn.Linear): 
                 mask,flops_multiplier = gen_partition_mask(net_id,sub_module.weight.size())

@@ -434,7 +434,7 @@ if args.VLB_conv:
         out = F.relu(self.bn1(self.conv1(x)))
         out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer1):
-            print(out.size(),l.weight.size())
+            print(out.size(),l.conv1.weight.size(),l.conv2.weight.size())
             out = l(out)
             if idx%sampling_interval == sampling_interval-1:
                 out_list.append(F.avg_pool2d(out, 4))

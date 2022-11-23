@@ -876,6 +876,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
 
             def forward(self, x):
                 out = self.lambd(x)
+                print('lbd:',out.size())
                 return out
         for l in [*dynamic_model.layer1,*dynamic_model.layer2,*dynamic_model.layer3]:
             if isinstance(l.shortcut,nn.Sequential):continue
@@ -887,7 +888,6 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                                           "constant",
                                           0))
         # modify aggr, only use a portion connections by concat masks
-        assert sum(dynamic_model.aggr_sizes) == 352
         mask = torch.tensor([]).long().cuda()
         for sz in dynamic_model.aggr_sizes:
             mask_par = torch.zeros(sz).long().cuda()

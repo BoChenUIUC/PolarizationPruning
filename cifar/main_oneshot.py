@@ -287,7 +287,6 @@ if args.cuda:
     model.cuda()
 
 BASEFLOPS = compute_conv_flops(model, cuda=True)
-print('Baseflops:',BASEFLOPS)
 
 if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     teacher_model = copy.deepcopy(model)

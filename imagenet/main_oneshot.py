@@ -770,7 +770,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
 
     handles = []
     add_hooks(model, handles)
-    demo_input = torch.rand(8, 3, 32, 32)
+    demo_input = torch.rand(1, 3, 32, 32)
     if cuda:
         demo_input = demo_input.cuda()
         model = model.cuda()

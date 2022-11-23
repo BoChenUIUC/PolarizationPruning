@@ -138,7 +138,7 @@ def compute_conv_flops(model: torch.nn.Module, cuda=False):
 
     handles = []
     add_hooks(model, handles)
-    demo_input = torch.rand(8, 3, 224, 224)
+    demo_input = torch.rand(1, 3, 224, 224)
     if cuda:
         demo_input = demo_input.cuda()
         model = model.cuda()

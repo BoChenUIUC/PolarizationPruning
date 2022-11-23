@@ -846,6 +846,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
                 # realistic prune
+                print(sub_module.weight.size())
                 if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
                     if sub_module.weight.size(1) == 3:
                         sub_module.weight.data = sub_module.weight.data[mask[:,0,0,0]==1,:,:,:].clone()
@@ -862,6 +863,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                         bn_module.bias.data = bn_module.bias.data[mask[:,0,0,0]==1].clone()
                         bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[mask[:,0,0,0]==1].clone()
                         bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[mask[:,0,0,0]==1].clone()
+                print('after:',sub_module.weight.size())
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
         class LambdaLayer(nn.Module):
             def __init__(self, lambd):
@@ -1205,7 +1207,6 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # every thing for net[2-3] will be used
     if arch == "resnet56":
         for i in [2,3]:#range(len(args.alphas)):
-            print('network:',i)
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
             all_map_time += [map_time_lst]

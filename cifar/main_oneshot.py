@@ -878,7 +878,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 print(out.size())
                 return out
         for l in [*dynamic_model.layer1,*dynamic_model.layer2,*dynamic_model.layer3]:
-            if len(l.shortcut)==0:continue
+            if isinstance(l.shortcut,nn.Sequential)==0:continue
             in_planes,outplanes = l.conv1.weight.size(1),l.conv2.weight.size(0)
             l.shortcut = LambdaLayer(lambda x:
                                     F.pad(x[:, :, ::2, ::2], (

@@ -826,7 +826,6 @@ def gen_partition_mask_two_split(net_id,weight_size):
         else:
             mask[int(c1*r):] = 1
             flops_multiplier = 1-r
-    print(mask)
     return mask.view(c1,c2,1,1),flops_multiplier
 
 def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
@@ -849,11 +848,11 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 # realistic prune
                 if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
                     if net_id == 2:
-                        in_chan_mask = mask[0,:]==1
-                        out_chan_mask = mask[:,0]==1
+                        in_chan_mask = mask[0,:,0,0]==1
+                        out_chan_mask = mask[:,0,0,0]==1
                     elif net_id == 3:
-                        in_chan_mask = mask[-1,:]==1
-                        out_chan_mask = mask[:,-1]==1
+                        in_chan_mask = mask[-1,:,0,0]==1
+                        out_chan_mask = mask[:,-1,0,0]==1
                     if sub_module.weight.size(1) == 3:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                         bn_module.weight.data = bn_module.weight.data[out_chan_mask].clone()

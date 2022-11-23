@@ -1209,7 +1209,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # every thing for net[2-3] will be used
     if arch == "resnet56":
         for i in range(len(args.alphas)):
-            masked_model = sample_partition_network(model,net_id=i,inplace=False)
+            masked_model = sample_partition_network(model,net_id=i,inplace=True)
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
@@ -1427,7 +1427,7 @@ def test(modelx,map_reduce=False,standalone=False):
             correct += pred.eq(target.data.view_as(pred)).cpu().sum()
             if map_reduce or standalone:
                 correct_lst.append(pred.eq(target.data.view_as(pred)).cpu().sum()/data.size(0))
-    print(float(correct) / float(len(test_loader.dataset)))
+    
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

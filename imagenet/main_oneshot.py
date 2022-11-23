@@ -1183,7 +1183,7 @@ def gen_partition_mask_two_split(net_id,weight_size):
             flops_multiplier = 1-r
     return mask.view(c1,c2,1,1),flops_multiplier
 
-def sample_partition_network(old_model,net_id=None,deepcopy=True):
+def sample_partition_network(args,old_model,net_id=None,deepcopy=True):
     if deepcopy:
         dynamic_model = copy.deepcopy(old_model)
     else:
@@ -1528,7 +1528,7 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
     if arch == "resnet56":
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
-            masked_model = sample_partition_network(model,net_id=i)
+            masked_model = sample_partition_network(args,model,net_id=i)
             prec1 = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             saved_prec1s += [prec1]
@@ -1588,7 +1588,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
             nonzero = torch.nonzero(torch.tensor(args.alphas))
             # net_id = int(nonzero[batch_idx%len(nonzero)][0])
             net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
-            dynamic_model = sample_partition_network(model,net_id,deepcopy=deepcopy)
+            dynamic_model = sample_partition_network(args,model,net_id,deepcopy=deepcopy)
         # the adjusting only work when epoch is at decay_epoch
         adjust_learning_rate(optimizer, epoch, lr=args.lr, decay_epoch=args.decay_epoch,
                              total_epoch=args.epochs,

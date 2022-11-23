@@ -847,24 +847,26 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
                 # realistic prune
-                print(sub_module.weight.size())
                 if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
+                    if net_id == 2:
+                        in_chan_mask = mask[0,:]==1
+                        out_chan_mask = mask[:,0]==1
+                    elif net_id == 3:
+                        in_chan_mask = mask[-1,:]==1
+                        out_chan_mask = mask[:,-1]==1
                     if sub_module.weight.size(1) == 3:
-                        sub_module.weight.data = sub_module.weight.data[mask[:,0,0,0]==1,:,:,:].clone()
-                        bn_module.weight.data = bn_module.weight.data[mask[:,0,0,0]==1].clone()
-                        bn_module.bias.data = bn_module.bias.data[mask[:,0,0,0]==1].clone()
-                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[mask[:,0,0,0]==1].clone()
-                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[mask[:,0,0,0]==1].clone()
-                    elif bn_module is None:
-                        sub_module.weight.data = sub_module.weight.data[:,mask[0,:]==1].clone()
+                        sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
+                        bn_module.weight.data = bn_module.weight.data[out_chan_mask].clone()
+                        bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
+                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
+                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
                     else:
-                        sub_module.weight.data = sub_module.weight.data[mask[:,0,0,0]==1,:,:,:].clone()
-                        sub_module.weight.data = sub_module.weight.data[:,mask[0,:,0,0]==1,:,:].clone()
-                        bn_module.weight.data = bn_module.weight.data[mask[:,0,0,0]==1].clone()
-                        bn_module.bias.data = bn_module.bias.data[mask[:,0,0,0]==1].clone()
-                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[mask[:,0,0,0]==1].clone()
-                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[mask[:,0,0,0]==1].clone()
-                print('after:',sub_module.weight.size())
+                        sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
+                        sub_module.weight.data = sub_module.weight.data[:,in_chan_mask].clone()
+                        bn_module.weight.data = bn_module.weight.data[out_chan_mask].clone()
+                        bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
+                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
+                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
         class LambdaLayer(nn.Module):
             def __init__(self, lambd):

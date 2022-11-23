@@ -873,9 +873,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 self.lambd = lambd
 
             def forward(self, x):
-                print('?')
                 out = self.lambd(x)
-                print(out.size())
                 return out
         for l in [*dynamic_model.layer1,*dynamic_model.layer2,*dynamic_model.layer3]:
             if isinstance(l.shortcut,nn.Sequential)==0:continue

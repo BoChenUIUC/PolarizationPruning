@@ -1253,6 +1253,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     RMLaaS_res = []
     RMLaaS_latency = []
     query_index = 0
+    print(all_correct)
     for mt0,mt1,mt2,mt3,rt0,rt1,rt2,rt3,c0,c1,c2,c3 in zip(*all_map_time,*all_reduce_time,*all_correct):
         # consider node 0: subnet{0,2}
         # mt0: complete latency on node 0

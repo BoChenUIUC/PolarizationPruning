@@ -367,6 +367,7 @@ else:
     args.ps_batch = 1
 
 if args.VLB_conv:
+    print('Neural bridge type:',args.VLB_conv_type)
     if args.VLB_conv_type == 0:
         print('Deprecated. Not quite effective.')
         exit(0)

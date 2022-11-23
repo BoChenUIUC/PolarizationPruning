@@ -889,7 +889,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 mask[int(sz*r):] = 1
             mask = torch.cat((mask,mask_par))
         with torch.no_grad():
-            dynamic_model.aggr[0].weight.data = dynamic_model.aggr[0].weight.data[mask==1].clone()
+            dynamic_model.aggr[0].weight.data = dynamic_model.aggr[0].weight.data[:,mask==1,:,:].clone()
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):

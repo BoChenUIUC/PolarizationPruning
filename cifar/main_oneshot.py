@@ -890,7 +890,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
             if net_id == 2:
                 mask_par[:int(sz*(1-r))] = 1
             elif net_id == 3:
-                mask[int(sz*r):] = 1
+                mask_par[int(sz*r):] = 1
             mask = torch.cat((mask,mask_par))
         with torch.no_grad():
             dynamic_model.aggr[0].weight.data = dynamic_model.aggr[0].weight.data[:,mask==1,:,:].clone()

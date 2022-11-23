@@ -161,6 +161,7 @@ class BasicBlock(BuildingBlock):
         if stride != 1 or in_planes != outplanes:
             if option == 'A':
                 """For CIFAR10 ResNet paper uses option A."""
+                print(in_planes,outplanes)
                 self.shortcut = LambdaLayer(lambda x:
                                             F.pad(x[:, :, ::2, ::2], (
                                                 0, 0, 0, 0, (outplanes - in_planes) // 2, (outplanes - in_planes) // 2),

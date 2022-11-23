@@ -1192,7 +1192,7 @@ def evaluate_result_n_latency(result_list,latency_list):
     N = len(latency_list)
     cdf_x = np.sort(np.array(latency_list))
     cdf_p = np.array(range(N))/float(N)
-    cdf_str = ''
+    cdf_str = 'LatencyCDF: '
     for i in range(10):
         cdf_str += f"{cdf_x[int((N-1)*(i+1)/10)]:.4f}({cdf_p[int((N-1)*(i+1)/10)]:.4f}),"
     print(cdf_str)
@@ -1209,7 +1209,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # every thing for net[2-3] will be used
     if arch == "resnet56":
         for i in range(len(args.alphas)):
-            masked_model = sample_partition_network(model,net_id=i,inplace=True)
+            masked_model = sample_partition_network(model,net_id=i,inplace=False)
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]

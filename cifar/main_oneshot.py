@@ -873,6 +873,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 self.lambd = lambd
 
             def forward(self, x):
+                print('?')
                 return self.lambd(x)
         for l in [dynamic_model.layer1[-1],dynamic_model.layer2[-1],dynamic_model.layer3[-1]]:
             in_planes,outplanes = l.conv1.weight.size(1),l.conv2.weight.size(0)
@@ -1208,7 +1209,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # map/reduce time for net[0-1] will not be used, but their preds will be used
     # every thing for net[2-3] will be used
     if arch == "resnet56":
-        for i in range(len(args.alphas)):
+        for i in [2,3]:#range(len(args.alphas)):
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
             all_map_time += [map_time_lst]

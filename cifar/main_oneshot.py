@@ -456,21 +456,6 @@ if args.VLB_conv:
         reduce_time = time.time() - end
         return out, (map_time,reduce_time)
     model.forward = MethodType(modified_forward, model)
-    if args.simulate:
-        class LambdaLayer(nn.Module):
-            def __init__(self, lambd):
-                super(LambdaLayer, self).__init__()
-                self.lambd = lambd
-
-            def forward(self, x):
-                return self.lambd(x)
-        for l in [model.layer1[-1],model.layer2[-1],model.layer3[-1]]:
-            in_planes,outplanes = l.conv1.weight.size(1),l.conv2.weight.size(0)
-            l.shortcut = LambdaLayer(lambda x:
-                                    F.pad(x[:, :, ::2, ::2], (
-                                        0, 0, 0, 0, (outplanes - in_planes) // 2, (outplanes - in_planes) // 2),
-                                          "constant",
-                                          0))
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
@@ -872,6 +857,22 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                         bn_module.bias.data = bn_module.bias.data[mask[:,0,0,0]==1].clone()
                         bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[mask[:,0,0,0]==1].clone()
                         bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[mask[:,0,0,0]==1].clone()
+    if not inplace and args.split_num == 2 and net_id >=2:
+        class LambdaLayer(nn.Module):
+            def __init__(self, lambd):
+                super(LambdaLayer, self).__init__()
+                self.lambd = lambd
+
+            def forward(self, x):
+                return self.lambd(x)
+        for l in [dynamic_model.layer1[-1],dynamic_model.layer2[-1],dynamic_model.layer3[-1]]:
+            in_planes,outplanes = l.conv1.weight.size(1),l.conv2.weight.size(0)
+            l.shortcut = LambdaLayer(lambda x:
+                                    F.pad(x[:, :, ::2, ::2], (
+                                        0, 0, 0, 0, (outplanes - in_planes) // 2, (outplanes - in_planes) // 2),
+                                          "constant",
+                                          0))
+        # modify aggr, only use a portion connections by concat masks
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):

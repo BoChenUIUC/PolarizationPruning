@@ -1204,7 +1204,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True):
                 sub_module.flops_multiplier = flops_multiplier
     return dynamic_model
 
-def update_partitioned_model(old_model,new_model,net_id,batch_idx):
+def update_partitioned_model(args,old_model,new_model,net_id,batch_idx):
     def copy_module_grad(old_module,new_module,subnet_mask=None):
         # copy running mean/var
         if isinstance(new_module,nn.BatchNorm2d) or isinstance(new_module,nn.BatchNorm1d):
@@ -1583,6 +1583,12 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(args,model,net_id)
             else:
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(args,model)
+        elif args.loss in {LossType.PARTITION} and i%num_mini_batch==0:
+            deepcopy = len(args.alphas)>1
+            nonzero = torch.nonzero(torch.tensor(args.alphas))
+            # net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
+            dynamic_model = sample_partition_network(model,net_id,deepcopy=deepcopy)
         # the adjusting only work when epoch is at decay_epoch
         adjust_learning_rate(optimizer, epoch, lr=args.lr, decay_epoch=args.decay_epoch,
                              total_epoch=args.epochs,
@@ -1596,7 +1602,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
         target = target.cuda(non_blocking=True)
 
         # compute output
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING} or (args.loss in {LossType.PARTITION} and deepcopy):
             soft_logits = args.teacher_model(image)
             if isinstance(soft_logits, tuple):
                 soft_logits, _ = soft_logits
@@ -1606,7 +1612,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
             output = model(image)
         if isinstance(output, tuple):
             output, extra_info = output
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION}:
             loss = cross_entropy_loss_with_soft_target(output, soft_label)
         else:
             loss = criterion(output, target)
@@ -1614,7 +1620,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
 
         # measure accuracy and record loss
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING} and not args.OFA:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} and not args.OFA:
             top1_list[net_id].update(prec1[0], image.size(0))
             top5_list[net_id].update(prec5[0], image.size(0))
         else:
@@ -1734,7 +1740,9 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
         if (i)%num_mini_batch == num_mini_batch-1:
             if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
                 update_shared_model(args,model,dynamic_model,freeze_mask,batch_idx,ch_indices,net_id)
-            if args.loss not in {LossType.PROGRESSIVE_SHRINKING} or batch_idx%args.ps_batch==(args.ps_batch-1):
+            if args.loss in {LossType.PARTITION} and deepcopy:
+                update_partitioned_model(args,model,dynamic_model,net_id,batch_idx)
+            if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1):
                 optimizer.step()
                 optimizer.zero_grad()
             if args.loss == LossType.L1_SPARSITY_REGULARIZATION:
@@ -1756,7 +1764,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
             end = time.time()
 
         if args.rank == 0 and (i+1)%num_mini_batch == 0:
-            if args.loss in {LossType.PROGRESSIVE_SHRINKING} and not args.OFA:
+            if args.loss in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} and not args.OFA:
                 lr=optimizer.param_groups[0]['lr']
                 prec_str = ''
                 for top1,top5 in zip(top1_list,top5_list):

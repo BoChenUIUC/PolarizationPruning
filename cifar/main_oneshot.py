@@ -1229,8 +1229,8 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
         csv_reader = csv.DictReader(csv_file)
         line_count = 0
         for row in csv_reader:
-            downthrpt_list[line_count//num_query] += [row["downthrpt"]/1000.]
-            latency_list[line_count//num_query] += [row["latency"]/1000.]
+            downthrpt_list[line_count//num_query] += [float(row["downthrpt"])/1000.]
+            latency_list[line_count//num_query] += [float(row["latency"])/1000.]
             line_count += 1
             if line_count == num_query*2:break
         print(f'Processed {line_count} lines.')

@@ -1194,7 +1194,7 @@ def evaluate_result_n_latency(result_list,latency_list):
     cdf_p = np.array(range(N))/float(N)
     cdf_str = ''
     for i in range(10):
-        cdf_str += f"{cdf_x[int(N*(i+1)/10)]:.4f}({cdf_p[int(N*(i+1)/10)]:.4f}),"
+        cdf_str += f"{cdf_x[int((N-1)*(i+1)/10)]:.4f}({cdf_p[int((N-1)*(i+1)/10)]:.4f}),"
     print(cdf_str)
 
     # effective accuracy vs. deadline
@@ -1287,7 +1287,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
         RMLaaS_res += [res]
         RMLaaS_latency += [latency]
         query_index += 1
-
+    print(RMLaaS_res)
     evaluate_result_n_latency(RMLaaS_res,RMLaaS_latency)
 
     # run originial model

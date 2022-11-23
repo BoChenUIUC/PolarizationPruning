@@ -1253,7 +1253,6 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     RMLaaS_res = []
     RMLaaS_latency = []
     query_index = 0
-    print(all_correct)
     for mt0,mt1,mt2,mt3,rt0,rt1,rt2,rt3,c0,c1,c2,c3 in zip(*all_map_time,*all_reduce_time,*all_correct):
         # consider node 0: subnet{0,2}
         # mt0: complete latency on node 0
@@ -1288,7 +1287,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
         RMLaaS_res += [res]
         RMLaaS_latency += [latency]
         query_index += 1
-    print(RMLaaS_res)
+
     evaluate_result_n_latency(RMLaaS_res,RMLaaS_latency)
 
     # run originial model
@@ -1427,7 +1426,8 @@ def test(modelx,map_reduce=False,standalone=False):
                 infer_time_lst.append(time.time()-end)
             correct += pred.eq(target.data.view_as(pred)).cpu().sum()
             if map_reduce or standalone:
-                correct_lst.append(correct)
+                correct_lst.append(pred.eq(target.data.view_as(pred)).cpu().sum()/data.size(0))
+    print(float(correct) / float(len(test_loader.dataset)))
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

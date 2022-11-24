@@ -439,7 +439,6 @@ if args.VLB_conv:
             if idx%sampling_interval == sampling_interval-1:
                 out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer2):
-            print(idx,out.size())
             out = l(out)
             if idx%sampling_interval == sampling_interval-1:
                 out_list.append(F.avg_pool2d(out, 2))
@@ -1209,7 +1208,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # map/reduce time for net[0-1] will not be used, but their preds will be used
     # every thing for net[2-3] will be used
     if arch == "resnet56":
-        for i in [2,3]:#range(len(args.alphas)):
+        for i in range(len(args.alphas)):
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
             all_map_time += [map_time_lst]

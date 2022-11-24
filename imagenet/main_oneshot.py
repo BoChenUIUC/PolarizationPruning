@@ -1140,17 +1140,6 @@ def gen_partition_mask_two_split(net_id,weight_size):
     mask = torch.zeros(weight_size[:2]).long().cuda()
     c1,c2 = weight_size[:2]
     r = args.partition_ratio
-    if len(weight_size)==2:
-        if net_id < 2:
-            mask[:] = 1
-            flops_multiplier = 1
-        elif net_id == 2:
-            mask[:,:int(c2*(1-r))] = 1
-            flops_multiplier = 1-r
-        elif net_id == 3:
-            mask[:,int(c2*r):] = 1
-            flops_multiplier = 1-r
-        return mask,flops_multiplier
     if net_id == 0:
         if 3 != c2:
             mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
@@ -1198,7 +1187,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True):
 
     for sub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
         with torch.no_grad():
-            if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, nn.Linear): 
+            if isinstance(sub_module, nn.Conv2d): 
                 mask,flops_multiplier = gen_partition_mask(net_id,sub_module.weight.size())
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier

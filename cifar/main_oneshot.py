@@ -869,24 +869,10 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                         bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
                         bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
-        class LambdaLayer(nn.Module):
-            def __init__(self, lambd):
-                super(LambdaLayer, self).__init__()
-                self.lambd = lambd
-
-            def forward(self, x):
-                out = self.lambd(x)
-                print('lbd:',x.size(),out.size())
-                return out
         for l in [*dynamic_model.layer1,*dynamic_model.layer2,*dynamic_model.layer3]:
             if isinstance(l.shortcut,nn.Sequential):continue
             in_planes,outplanes = l.conv1.weight.size(1),l.conv2.weight.size(0)
             print('?',in_planes,outplanes)
-            l.shortcut = LambdaLayer(lambda x:
-                                    F.pad(x[:, :, ::2, ::2], (
-                                        0, 0, 0, 0, (outplanes - in_planes) // 2, (outplanes - in_planes) // 2),
-                                          "constant",
-                                          0))
         # modify aggr, only use a portion connections by concat masks
         mask = torch.tensor([]).long().cuda()
         for sz in dynamic_model.aggr_sizes:

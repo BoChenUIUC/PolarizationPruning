@@ -517,16 +517,16 @@ def main_worker(gpu, ngpus_per_node, args):
 
     if args.loss in {LossType.PARTITION}:
         if args.arch == "resnet50":
-            model = resnet50(aux_fc=False,
+            args.teacher_model = resnet50(aux_fc=False,
                              width_multiplier=args.width_multiplier,
                              gate=args.gate)
         elif args.arch == "mobilenetv2":
-            model = mobilenet_v2(width_mult=args.width_multiplier,
+            args.teacher_model = mobilenet_v2(width_mult=args.width_multiplier,
                                  use_gate=args.gate)
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
-        model.cuda()
-        model = torch.nn.DataParallel(model).cuda()
+        args.teacher_model.cuda()
+        args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         if args.arch == 'resnet50':
             teacher_path = './original64/resnet/model_best.pth.tar'
         else:

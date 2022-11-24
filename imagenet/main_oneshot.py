@@ -1188,7 +1188,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True):
     for sub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
-                mask,flops_multiplier = gen_partition_mask(net_id,sub_module.weight.size())
+                mask,flops_multiplier = gen_partition_mask(args,net_id,sub_module.weight.size())
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
     return dynamic_model

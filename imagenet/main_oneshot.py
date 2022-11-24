@@ -1128,13 +1128,13 @@ def zero_bn(model, gate):
         m.weight.data.zero_()
         #m.bias.data.zero_()
 
-def gen_partition_mask(net_id,weight_size):
+def gen_partition_mask(args,net_id,weight_size):
     if args.split_num == 2:
-        return gen_partition_mask_two_split(net_id,weight_size)
+        return gen_partition_mask_two_split(args,net_id,weight_size)
     else:
         exit(0)
 
-def gen_partition_mask_two_split(net_id,weight_size):
+def gen_partition_mask_two_split(args,net_id,weight_size):
     # different net_id map to different nets
     # different layer map to differnet subnets
     mask = torch.zeros(weight_size[:2]).long().cuda()

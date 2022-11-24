@@ -507,10 +507,10 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
 
-    if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
+    if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
         args.teacher_model = copy.deepcopy(model)
         if args.arch == 'resnet50':
-            teacher_path = './original/resnet/model_best.pth.tar'
+            teacher_path = './original64/resnet/model_best.pth.tar'
         else:
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
         args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])

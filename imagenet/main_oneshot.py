@@ -507,8 +507,26 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
 
-    if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
+    if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
         args.teacher_model = copy.deepcopy(model)
+        if args.arch == 'resnet50':
+            teacher_path = './original/resnet/model_best.pth.tar'
+        else:
+            teacher_path = './original/mobilenetv2/model_best.pth.tar'
+        args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+
+    if args.loss in {LossType.PARTITION}:
+        if args.arch == "resnet50":
+            model = resnet50(aux_fc=False,
+                             width_multiplier=args.width_multiplier,
+                             gate=args.gate)
+        elif args.arch == "mobilenetv2":
+            model = mobilenet_v2(width_mult=args.width_multiplier,
+                                 use_gate=args.gate)
+        else:
+            raise NotImplementedError("model {} is not supported".format(args.arch))
+        model.cuda()
+        model = torch.nn.DataParallel(model).cuda()
         if args.arch == 'resnet50':
             teacher_path = './original64/resnet/model_best.pth.tar'
         else:

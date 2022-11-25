@@ -525,7 +525,7 @@ def main_worker(gpu, ngpus_per_node, args):
                                  use_gate=args.gate)
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
-        args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
+        # args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
         # args.teacher_model.cuda()
         # args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         # if args.arch == 'resnet50':
@@ -1532,6 +1532,7 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
     model.eval()
     saved_prec1s = []
     saved_flops = []
+    args.BASEFLOPS = compute_conv_flops_par(model, cuda=True)
     if arch == "resnet50":
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue

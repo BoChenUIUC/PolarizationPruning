@@ -1616,6 +1616,8 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
                 soft_logits, _ = soft_logits
             soft_label = F.softmax(soft_logits.detach(), dim=1)
             output = dynamic_model(image)
+        elif args.loss in {LossType.PARTITION} and deepcopy:
+            output = dynamic_model(image)
         else:
             output = model(image)
         if isinstance(output, tuple):

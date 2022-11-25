@@ -664,7 +664,7 @@ def main_worker(gpu, ngpus_per_node, args):
             train_sampler.set_epoch(epoch)
 
         # train for one epoch
-        avg_loss = train(train_loader, model, criterion, optimizer, epoch,
+        avg_loss = train(val_loader, model, criterion, optimizer, epoch,
               args.lbd, args=args,
               is_debug=args.debug)
 

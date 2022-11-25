@@ -525,9 +525,9 @@ def main_worker(gpu, ngpus_per_node, args):
                                  use_gate=args.gate)
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
-        # args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
-        # args.teacher_model.cuda()
-        # args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
+        args.teacher_model.cuda()
+        args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
+        args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
         # if args.arch == 'resnet50':
         #     teacher_path = './original64/resnet/model_best.pth.tar'
         # else:
@@ -1194,13 +1194,11 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True):
         dynamic_model = copy.deepcopy(old_model)
     else:
         dynamic_model = old_model
-    print(compute_conv_flops_par(dynamic_model, cuda=True)/args.BASEFLOPS)
     for module_name,bn_module in dynamic_model.module.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
-    print(compute_conv_flops_par(dynamic_model, cuda=True)/args.BASEFLOPS)
 
     for sub_module in dynamic_model.module.get_partitionable_bns_n_convs()[1]:
         with torch.no_grad():
@@ -1532,13 +1530,12 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
     model.eval()
     saved_prec1s = []
     saved_flops = []
-    args.BASEFLOPS = compute_conv_flops_par(model, cuda=True)
     if arch == "resnet50":
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
             masked_model = sample_partition_network(args,model,net_id=i)
-            flop = compute_conv_flops_par(masked_model, cuda=True)/args.BASEFLOPS
-            print(flop,'.....')
+            flop = compute_conv_flops_par(masked_model, cuda=True)
+            print(flop/args.BASEFLOPS,'.....')
             continue
             prec1 = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None)
             saved_prec1s += [prec1]

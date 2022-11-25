@@ -209,14 +209,6 @@ parser.add_argument('--load_running_stat', action='store_true',
                     help='load running mean/var for different subnets')
 parser.add_argument('--OFA', action='store_true',
                     help='OFA training')
-parser.add_argument('--load_enhance', action='store_true',
-                    help='load enhancement for different subnets')
-parser.add_argument('--enhance', action='store_true',
-                    help='add a network to enahnce performance')
-parser.add_argument('--isoratio', default=0.25, type=float,
-                    help="The isolation ratio")
-parser.add_argument('--isotarget', type=int, nargs='+', default=[0],
-                    help='Subnets that use isolation.')
 parser.add_argument('--ps_batch', default=4, type=int, 
                     help='super batch size')
 parser.add_argument('--partition_ratio', default=0.25, type=float,
@@ -551,15 +543,6 @@ def main_worker(gpu, ngpus_per_node, args):
                     for nid in range(len(args.alphas)):
                         bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
                         bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
-                if args.enhance and args.load_enhance:
-                    bns,convs = model.module.get_sparse_layers_and_convs()
-                    for conv,bn in zip(convs,bns):
-                        # add compensate weights
-                        conv.register_parameter("comp_weight",torch.nn.Parameter((conv.weight.data.clone().detach())))
-                        if hasattr(conv,"bias") and conv.bias is not None:
-                            conv.register_parameter("comp_bias",torch.nn.Parameter((conv.bias.data.clone().detach())))
-                        bn.register_parameter("comp_weight",torch.nn.Parameter((bn.weight.data.clone().detach())))
-                        bn.register_parameter("comp_bias",torch.nn.Parameter((bn.bias.data.clone().detach())))
             if hasattr(checkpoint,'prec_list'):print(checkpoint['prec_list'])
             model.load_state_dict(checkpoint['state_dict'])
             if not args.load_param_only:
@@ -585,16 +568,6 @@ def main_worker(gpu, ngpus_per_node, args):
                 for nid in range(len(args.alphas)):
                     bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
                     bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
-
-        if args.enhance and not args.load_enhance:
-            bns,convs = model.module.get_sparse_layers_and_convs()
-            for conv,bn in zip(convs,bns):
-                # add compensate weights
-                conv.register_parameter("comp_weight",torch.nn.Parameter((conv.weight.data.clone().detach())))
-                if hasattr(conv,"bias") and conv.bias is not None:
-                    conv.register_parameter("comp_bias",torch.nn.Parameter((conv.bias.data.clone().detach())))
-                bn.register_parameter("comp_weight",torch.nn.Parameter((bn.weight.data.clone().detach())))
-                bn.register_parameter("comp_bias",torch.nn.Parameter((bn.bias.data.clone().detach())))
 
     # create the optimizer
     if args.no_bn_wd:
@@ -1302,10 +1275,6 @@ def sample_network(args,old_model,net_id=None,eval=False,fake_prune=True,check_s
         weight_valid_mask[ch_indices[total_channels//num_subnets*(num_subnets-1-net_id):]] = 1
     else:
         weight_valid_mask[ch_indices[int(total_channels*(1 - net_id)):]] = 1
-
-    if args.enhance:
-        args.enhance_valid_mask = torch.zeros(total_channels).long().cuda()
-        args.enhance_valid_mask[ch_indices[int(total_channels*(1 - args.isoratio)):]] = 1
         
     freeze_mask = 1-weight_valid_mask
     
@@ -1313,15 +1282,6 @@ def sample_network(args,old_model,net_id=None,eval=False,fake_prune=True,check_s
     for bn_module,conv in zip(bn_modules,convs):
         with torch.no_grad():
             ch_len = len(bn_module.weight.data)
-            if args.enhance and net_id in args.isotarget:
-                # substitute original weights with selected isolated weights
-                enhance_mask = args.enhance_valid_mask[ch_start:ch_start+ch_len]==1
-                conv.weight.data[enhance_mask] = conv.comp_weight.data[enhance_mask].clone().detach()
-                if hasattr(conv,'bias') and conv.bias is not None:
-                    conv.bias.data[enhance_mask] = conv.comp_bias.data[enhance_mask].clone().detach()
-                bn_module.weight.data[enhance_mask] = bn_module.comp_weight.data[enhance_mask].clone().detach()
-                if hasattr(bn_module,'bias') and bn_module.bias is not None:
-                    bn_module.bias.data[enhance_mask] = bn_module.comp_bias.data[enhance_mask].clone().detach()
             inactive = weight_valid_mask[ch_start:ch_start+ch_len]==0
             # set useless channels to 0
             bn_module.weight.data[inactive] = 0
@@ -1385,41 +1345,23 @@ def update_shared_model(args,old_model,new_model,mask,batch_idx,ch_indices,net_i
         w_grad0 = new_module.weight.grad.clone().detach()
         if subnet_mask is not None:
             w_grad0.data[freeze_mask] = 0
-            if hasattr(old_module,'comp_weight') and net_id in args.isotarget:
-                w_grad1 = w_grad0.clone().detach()
-                w_grad0.data[enhance_mask==1] = 0
-                w_grad1.data[enhance_mask==0] = 0
 
         copy_param_grad(old_module.weight,w_grad0)
         # only update grad for specific targets
-        if hasattr(old_module,'comp_weight') and net_id in args.isotarget and subnet_mask is not None:
-            copy_param_grad(old_module.comp_weight,w_grad1)
         if batch_idx%args.ps_batch == args.ps_batch-1:
             old_module.weight.grad = old_module.weight.grad_tmp.clone().detach() / sum(args.alphas)
             old_module.weight.grad_tmp = None
-            if hasattr(old_module,'comp_weight'):
-                old_module.comp_weight.grad = old_module.comp_weight.grad_tmp.clone().detach() / sum(args.alphas)
-                old_module.comp_weight.grad_tmp = None
 
         # bias
         if hasattr(new_module,'bias') and new_module.bias is not None:
             b_grad0 = new_module.bias.grad.clone().detach()
             if subnet_mask is not None:
                 b_grad0.data[freeze_mask] = 0
-                if hasattr(old_module,'comp_bias') and net_id in args.isotarget:
-                    b_grad1 = b_grad0.clone().detach()
-                    b_grad0.data[enhance_mask==1] = 0
-                    b_grad1.data[enhance_mask==0] = 0
 
             copy_param_grad(old_module.bias,b_grad0)
-            if hasattr(old_module,'comp_bias') and net_id in args.isotarget and subnet_mask is not None:
-                copy_param_grad(old_module.comp_bias,b_grad1)
             if batch_idx%args.ps_batch == args.ps_batch-1:
                 old_module.bias.grad = old_module.bias.grad_tmp.clone().detach() / sum(args.alphas)
                 old_module.bias.grad_tmp = None
-                if hasattr(old_module,'comp_bias'):
-                    old_module.comp_bias.grad = old_module.comp_bias.grad_tmp.clone().detach() / sum(args.alphas)
-                    old_module.comp_bias.grad_tmp = None
             
     def copy_param_grad(old_param,new_grad):
         if not args.OFA:
@@ -1436,11 +1378,8 @@ def update_shared_model(args,old_model,new_model,mask,batch_idx,ch_indices,net_i
         ch_len = conv1.weight.data.size(0)
         with torch.no_grad():
             subnet_mask = mask[ch_start:ch_start+ch_len]
-            enhance_mask = None
-            if args.enhance:
-                enhance_mask = args.enhance_valid_mask[ch_start:ch_start+ch_len]
-            copy_module_grad(bn1,bn2,subnet_mask,enhance_mask)
-            copy_module_grad(conv1,conv2,subnet_mask,enhance_mask)
+            copy_module_grad(bn1,bn2,subnet_mask)
+            copy_module_grad(conv1,conv2,subnet_mask)
         ch_start += ch_len
     
     with torch.no_grad():
@@ -1541,7 +1480,7 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
-        
+
     prune_str = ''
     for flop,prec1 in zip(saved_flops,saved_prec1s):
         prune_str += f"{prec1:.4f}({(flop / args.BASEFLOPS):.4f}),"
@@ -1580,19 +1519,16 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
         if args.debug and batch_idx >= 10: break
         if args.loss in {LossType.PROGRESSIVE_SHRINKING} and i%num_mini_batch==0:
             if not args.OFA:
-                if not args.enhance:
-                    nonzero = torch.nonzero(torch.tensor(args.alphas))
-                    net_id = int(nonzero[batch_idx%len(nonzero)][0])
-                else:
-                    net_id = batch_idx%len(args.alphas)
+                nonzero = torch.nonzero(torch.tensor(args.alphas))
+                net_id = int(nonzero[batch_idx%len(nonzero)][0])
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(args,model,net_id)
             else:
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(args,model)
         elif args.loss in {LossType.PARTITION} and i%num_mini_batch==0:
             deepcopy = len(args.alphas)>1
             nonzero = torch.nonzero(torch.tensor(args.alphas))
-            # net_id = int(nonzero[batch_idx%len(nonzero)][0])
-            net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
+            net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            # net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
             dynamic_model = sample_partition_network(args,model,net_id,deepcopy=deepcopy)
         # the adjusting only work when epoch is at decay_epoch
         adjust_learning_rate(optimizer, epoch, lr=args.lr, decay_epoch=args.decay_epoch,

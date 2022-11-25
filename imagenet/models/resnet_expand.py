@@ -473,7 +473,6 @@ class ResNetExpand(nn.Module):
             x = self.bn1(x)
             x = self.relu(x)
             x = self.maxpool(x)
-            out_list.append(F.avg_pool2d(x, 8))
 
             x = self.layer1(x)  # 32x32
             out_list.append(F.avg_pool2d(x, 8))
@@ -485,6 +484,7 @@ class ResNetExpand(nn.Module):
             out_list.append(x)
 
             x = torch.cat(out_list,1)
+            print(x.size())
             # aggregate layer
             x = self.aggr(x)
             x = self.avgpool(x)

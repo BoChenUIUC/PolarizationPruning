@@ -1562,7 +1562,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
     data_time = AverageMeter()
     losses = AverageMeter()
     avg_sparsity_loss = AverageMeter()
-    if args.loss in {LossType.PROGRESSIVE_SHRINKING} and not args.OFA:
+    if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION} and not args.OFA:
         top1_list = [AverageMeter() for _ in args.alphas]
         top5_list = [AverageMeter() for _ in args.alphas]
     else:

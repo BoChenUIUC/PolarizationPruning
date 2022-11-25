@@ -1620,7 +1620,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
             output = model(image)
         if isinstance(output, tuple):
             output, extra_info = output
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION}:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
             loss = cross_entropy_loss_with_soft_target(output, soft_label)
         else:
             loss = criterion(output, target)

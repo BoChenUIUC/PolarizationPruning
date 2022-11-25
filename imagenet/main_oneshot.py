@@ -515,7 +515,7 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
         args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
-    if False:#args.loss in {LossType.PARTITION}:
+    if args.loss in {LossType.PARTITION}:
         if args.arch == "resnet50":
             args.teacher_model = resnet50(aux_fc=False,
                              width_multiplier=args.width_multiplier,
@@ -525,15 +525,14 @@ def main_worker(gpu, ngpus_per_node, args):
                                  use_gate=args.gate)
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
-        args.teacher_model.cuda()
-        args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
-        if args.arch == 'resnet50':
-            teacher_path = './original64/resnet/model_best.pth.tar'
-        else:
-            teacher_path = './original/mobilenetv2/model_best.pth.tar'
-        args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
-
-    args.BASEFLOPS = compute_conv_flops_par(model, cuda=True)
+        args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
+        # args.teacher_model.cuda()
+        # args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
+        # if args.arch == 'resnet50':
+        #     teacher_path = './original64/resnet/model_best.pth.tar'
+        # else:
+        #     teacher_path = './original/mobilenetv2/model_best.pth.tar'
+        # args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
     if len(args.alphas)>1:
         args.ps_batch = len(args.alphas)*4

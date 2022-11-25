@@ -1249,7 +1249,7 @@ def update_partitioned_model(args,old_model,new_model,net_id,batch_idx):
             old_param.grad_tmp += new_grad
     if isinstance(old_model, nn.DataParallel) or isinstance(old_model, nn.parallel.DistributedDataParallel):
         old_model = old_model.module
-    if isinstance(new_model, nn.DataParallel) or isinstance(onew_model, nn.parallel.DistributedDataParallel):
+    if isinstance(new_model, nn.DataParallel) or isinstance(new_model, nn.parallel.DistributedDataParallel):
         new_model = new_model.module
     bns1,convs1 = old_model.get_partitionable_bns_n_convs()
     bns2,convs2 = new_model.get_partitionable_bns_n_convs()

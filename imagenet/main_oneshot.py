@@ -515,7 +515,7 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
         args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
-    if args.loss in {LossType.PARTITION}:
+    if False:#args.loss in {LossType.PARTITION}:
         if args.arch == "resnet50":
             args.teacher_model = resnet50(aux_fc=False,
                              width_multiplier=args.width_multiplier,
@@ -1610,7 +1610,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
         target = target.cuda(non_blocking=True)
 
         # compute output
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING} or (args.loss in {LossType.PARTITION} and deepcopy):
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:# or (args.loss in {LossType.PARTITION} and deepcopy):
             soft_logits = args.teacher_model(image)
             if isinstance(soft_logits, tuple):
                 soft_logits, _ = soft_logits

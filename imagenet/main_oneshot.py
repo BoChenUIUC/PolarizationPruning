@@ -754,8 +754,8 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
 
         flops = kernel_ops * output_channels * output_height * output_width
 
-        # if hasattr(self, 'flops_multiplier'):
-        #     flops *= self.flops_multiplier
+        if hasattr(self, 'flops_multiplier'):
+            flops *= self.flops_multiplier
 
         list_conv.append(flops)
 
@@ -766,8 +766,8 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
 
         flops = weight_ops
 
-        # if hasattr(self, 'flops_multiplier'):
-        #     flops *= self.flops_multiplier
+        if hasattr(self, 'flops_multiplier'):
+            flops *= self.flops_multiplier
 
         list_linear.append(flops)
 

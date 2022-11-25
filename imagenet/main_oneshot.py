@@ -1194,9 +1194,9 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True):
         dynamic_model = copy.deepcopy(old_model)
     else:
         dynamic_model = old_model
-    print(compute_conv_flops_par(dynamic_model, cuda=True)/args.BASEFLOPS)
     if isinstance(dynamic_model, nn.DataParallel) or isinstance(dynamic_model, nn.parallel.DistributedDataParallel):
         dynamic_model = dynamic_model.module
+    print(compute_conv_flops_par(dynamic_model, cuda=True)/args.BASEFLOPS)
     for module_name,bn_module in dynamic_model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:

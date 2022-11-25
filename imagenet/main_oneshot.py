@@ -1194,6 +1194,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True):
         dynamic_model = copy.deepcopy(old_model)
     else:
         dynamic_model = old_model
+    print(compute_conv_flops_par(dynamic_model, cuda=True)/args.BASEFLOPS)
     if isinstance(dynamic_model, nn.DataParallel) or isinstance(dynamic_model, nn.parallel.DistributedDataParallel):
         dynamic_model = dynamic_model.module
     for module_name,bn_module in dynamic_model.named_modules():
@@ -1201,6 +1202,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True):
         if args.split_running_stat:
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
+    print(compute_conv_flops_par(dynamic_model, cuda=True)/args.BASEFLOPS)
 
     for sub_module in dynamic_model.get_partitionable_bns_n_convs()[1]:
         with torch.no_grad():
@@ -1537,8 +1539,8 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
             masked_model = sample_partition_network(args,model,net_id=i)
-            flop = compute_conv_flops_par(masked_model, cuda=True)
-            print(flop/args.BASEFLOPS)
+            flop = compute_conv_flops_par(masked_model, cuda=True)/args.BASEFLOPS
+            print(flop,'.....')
             continue
             prec1 = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None)
             saved_prec1s += [prec1]

@@ -1472,7 +1472,6 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
     saved_flops = []
     if arch == "resnet50":
         for i in range(len(args.alphas)):
-            if args.alphas[i]==0:continue
             masked_model = sample_partition_network(args,model,net_id=i)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             prec1 = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None)

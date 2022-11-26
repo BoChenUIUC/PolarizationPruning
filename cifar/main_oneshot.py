@@ -1205,11 +1205,15 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     all_map_time = []
     all_reduce_time = []
     all_correct = []
+    all_flop_ratios = []
     # map/reduce time for net[0-1] will not be used, but their preds will be used
     # every thing for net[2-3] will be used
+    print('Running RMLaaS...')
     if arch == "resnet56":
         for i in range(len(args.alphas)):
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
+            flop = compute_conv_flops_par(masked_model, cuda=True)
+            all_flop_ratios += [flop/BASEFLOPS]
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
@@ -1217,6 +1221,18 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
+    # evaluate map/reduce time
+    # map
+    node0_map_mean,node0_map_std = np.array(all_map_time[2]).mean(),np.array(all_map_time[2]).std()
+    node1_map_mean,node1_map_std = np.array(all_map_time[3]).mean(),np.array(all_map_time[3]).std()
+    # reduce
+    node0_red_mean,node0_red_std = np.array(all_reduce_time[0]).mean(),np.array(all_reduce_time[0]).std()
+    node1_red_mean,node1_red_std = np.array(all_reduce_time[1]).mean(),np.array(all_reduce_time[1]).std()
+    print('Break compute latency down...')
+    print(f'Map time: {node0_map_mean}({node0_map_std}), {node1_map_mean}({node1_map_std})')
+    print(f'Reduce time: {node0_red_mean}({node0_red_std}), {node1_red_mean}({node1_red_std})')
+    # flop ratios
+    print('FLOPS ratios:',all_flop_ratios)
 
     num_query = len(all_correct[0])
     # read network traces or generate random traces
@@ -1252,6 +1268,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     query_size = 3*32*32*4*args.test_batch_size
     RMLaaS_res = []
     RMLaaS_latency = []
+    RMLaaS_latency_breakdown = []
     query_index = 0
     for mt0,mt1,mt2,mt3,rt0,rt1,rt2,rt3,c0,c1,c2,c3 in zip(*all_map_time,*all_reduce_time,*all_correct):
         # consider node 0: subnet{0,2}
@@ -1262,21 +1279,21 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
         if mt3 + inter_node_latency[0][query_index] <= mt2 + latency_thresh:
             # complete partition
             node0_res = c0 # complete result on node 0
-            node0_latency = mt3 + inter_node_latency[0][query_index] + rt0 # latency on node 0
+            node0_latency = [mt3 + rt0, inter_node_latency[0][query_index]] # latency on node 0:full reduce
         else:
             # in-complete
             node0_res = c2 # partial result on node 0
-            node0_latency = mt2 + latency_thresh + rt2 # latency on node 0
+            node0_latency = [mt2 + rt2, latency_thresh] # latency on node 0:partial reduce
         # consider node 1: subnet{1,3}
         if mt2 + inter_node_latency[1][query_index] <= mt3 + latency_thresh:
             node1_res = c1
-            node1_latency = mt2 + inter_node_latency[1][query_index] + rt1
+            node1_latency = [mt2 + rt1, inter_node_latency[1][query_index]] # full reduce
         else:
             node1_res = c3
-            node1_latency = mt3 + latency_thresh + rt3
+            node1_latency = [mt3 + rt3, latency_thresh] # partial reduce
         # add cloud-edge latency
-        node0_latency += downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]
-        node1_latency += downthrpt_list[1][query_index]/query_size + latency_list[1][query_index]
+        node0_latency += [downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]]
+        node1_latency += [downthrpt_list[1][query_index]/query_size + latency_list[1][query_index]]
         # choose between 0 and 1
         if node0_latency <= node1_latency:
             res = node0_res
@@ -1285,13 +1302,22 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
             res = node1_res
             latency = node1_latency
         RMLaaS_res += [res]
-        RMLaaS_latency += [latency]
+        RMLaaS_latency += [sum(latency)]
+        RMLaaS_latency_breakdown += [latency]
         query_index += 1
+
+    # latency breakdown: datacenter (communication/wait cost)+outer network+compute
+    RMLaaS_latency_breakdown = np.array(RMLaaS_latency_breakdown)
+    print('Latency break down:',RMLaaS_latency_breakdown.mean(axis=0),RMLaaS_latency_breakdown.std(axis=0))
 
     evaluate_result_n_latency(RMLaaS_res,RMLaaS_latency)
 
     # run originial model
+    print('Running original ML service')
     infer_time_lst,correct_lst = test(teacher_model,standalone=True)
+    # evaluate standalone running time
+    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
+    print(f'Standalone inference time:{infer_time_mean}pm{infer_time_std}')
     # analyze no replication
     no_rep_res = []
     no_rep_latency = []

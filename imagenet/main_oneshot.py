@@ -520,6 +520,7 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model.cuda()
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
+        args.teacher_model = None
         # if args.arch == 'resnet50':
         #     teacher_path = './original64/resnet/model_best.pth.tar'
         # else:

@@ -391,7 +391,7 @@ class ResNetExpand(nn.Module):
         if bridge_type>=0:
             if bridge_type == 0:
                 sampling_interval = 3
-                cfg = [3904,768]
+                cfg = [3904,512,2048]
             else:
                 exit(0)
             aggr_layers = []
@@ -400,7 +400,6 @@ class ResNetExpand(nn.Module):
                 aggr_layers.append(nn.BatchNorm2d(cfg[i]))
                 aggr_layers.append(nn.ReLU())
             self.aggr = nn.Sequential(*aggr_layers)
-            self.fc = nn.Linear(int(cfg[-1] * width_multiplier), 1000)
 
         if expand_idx:
             # set channel expand index

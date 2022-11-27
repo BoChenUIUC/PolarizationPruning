@@ -392,7 +392,7 @@ class ResNetExpand(nn.Module):
             if bridge_type == 0:
                 sampling_interval = 3
                 cfg = [3904,512,2048]
-            elif bridge_type == 0:
+            elif bridge_type == 1:
                 sampling_interval = 3
                 cfg = [3904,768]
             else:

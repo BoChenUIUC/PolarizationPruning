@@ -120,6 +120,8 @@ parser.add_argument('--split_num', default=2, type=int,
                     help="Number of splits on the ring")
 parser.add_argument('--simulate', action='store_true',
                     help='simulate model on validation set')
+parser.add_argument('--rand_trace', action='store_true',
+                    help='generate random network traces')
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -1235,21 +1237,26 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     print('FLOPS ratios:',all_flop_ratios)
 
     num_query = len(all_correct[0])
-    # read network traces or generate random traces
-    # equal to the number of queries
-    import csv
-    downthrpt_list = [[] for _ in range(2)]
-    latency_list = [[] for _ in range(2)]
-    print('Reading network trace...')
-    with open('curr_videostream.csv', mode='r') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        line_count = 0
-        for row in csv_reader:
-            downthrpt_list[line_count//num_query] += [float(row["downthrpt"])/1000.]
-            latency_list[line_count//num_query] += [float(row["latency"])/1000.]
-            line_count += 1
-            if line_count == num_query*2:break
-        print(f'Processed {line_count} lines.')
+    if not args.rand_trace:
+        # read network traces 
+        import csv
+        downthrpt_list = [[] for _ in range(2)]
+        latency_list = [[] for _ in range(2)]
+        print('Reading network trace...')
+        with open('curr_videostream.csv', mode='r') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
+            line_count = 0
+            for row in csv_reader:
+                downthrpt_list[line_count//num_query] += [float(row["downthrpt"])/1000.]
+                latency_list[line_count//num_query] += [float(row["latency"])/1000.]
+                line_count += 1
+                if line_count == num_query*2:break
+            print(f'Processed {line_count} lines.')
+    else:
+        # generate random traces
+        print('Generate random network traces...')
+        downthrpt_mean,downthrpt_std = 800,50
+        latency_mean,latency_std = 13,1
 
     # random inter-node latency
     mu, sigma = 0.171, 0.016 # mean and standard deviation

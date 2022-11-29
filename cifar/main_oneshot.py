@@ -1197,7 +1197,7 @@ def create_wan_trace(trace_selection,num_query):
             for row in csv_reader:
                 # bytes per second-> kilo bytes per second
                 # micro seconds->milli seconds
-                wanlatency_list[line_count//num_query] += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6.] 
+                wanlatency_list[line_count//num_query] += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6] 
                 line_count += 1
                 if line_count == num_query*2:break
     elif args.trace_selection == 1:

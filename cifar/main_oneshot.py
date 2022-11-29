@@ -1413,7 +1413,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     num_query = len(all_correct[0])
     # inter-node latency
     lanlatency_list = [[] for _ in range(2)]
-    with open('DC/lanlatency','r') as f:
+    with open('Local/lanlatency','r') as f:
         line_count = 0
         for l in f.readlines():
             l = l.strip().split(' ')

@@ -1367,6 +1367,19 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,num_expe
         print(f'Deadline:{ddl}, {eacc_mean}({eacc_std})')
 
 def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
+
+    num_query = 1250#len(all_correct[0])
+    # inter-node latency
+    lanlatency_list = [[] for _ in range(2)]
+    with open('DC/000704','r') as f:
+        line_count = 0
+        for l in f.readlines():
+            l = l.strip().split(' ')
+            lanlatency_list[line_count//num_query] += [float(l[0])/1000.]
+            line_count += 1
+            if line_count == num_query*2:break
+    print(lanlatency_list)
+    print(np.array(lanlatency_list).size())
     # analyze trace
     analyze_all_recorded_traces()
     print('Simulation with test batch size:',args.test_batch_size)
@@ -1409,18 +1422,6 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean}pm{infer_time_std}')
-
-    num_query = len(all_correct[0])
-    # inter-node latency
-    lanlatency_list = [[] for _ in range(2)]
-    with open('DC/000704','r') as f:
-        line_count = 0
-        for l in f.readlines():
-            l = l.strip().split(' ')
-            lanlatency_list[line_count//num_query] += [float(l[0])/1000.]
-            line_count += 1
-            if line_count == num_query*2:break
-    print(np.array(lanlatency_list).size())
     # comm_size = 352*8*8*4*args.test_batch_size
 
     # wan latency

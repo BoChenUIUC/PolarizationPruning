@@ -1420,6 +1420,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
             lanlatency_list[line_count//num_query] += [float(l[0])/1000.]
             line_count += 1
             if line_count == num_query*2:break
+    print(np.array(lanlatency_list).size())
     # comm_size = 352*8*8*4*args.test_batch_size
 
     # wan latency

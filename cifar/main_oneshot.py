@@ -1229,8 +1229,8 @@ def analyze_all_recorded_traces():
         with open(filename,'r') as f:
             for l in f.readlines():
                 l = l.strip().split(' ')
-                latency_list += [float(l[0])/1e3.]
-                bandwidth_list += [float(l[1])/1e6.]
+                latency_list += [float(l[0])/1e3]
+                bandwidth_list += [float(l[1])/1e6]
         latency_mean,latency_std = np.array(latency_list).mean(),np.array(latency_list).std()
         bw_mean,bw_std = np.array(bandwidth_list).mean(),np.array(bandwidth_list).std()
         print(filename,f'{latency_mean:.3f}({latency_std:.3f}), {bw_mean:.3f}({bw_std:.3f})')

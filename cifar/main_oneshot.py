@@ -1212,7 +1212,7 @@ def create_wan_trace(trace_selection,num_query):
     elif args.trace_selection == 2:
         # generate random traces with increased std
         print('Generate random network traces...')
-        wanlatency_mean,wanlatency_std = query_size/.8,query_size/8
+        wanlatency_mean,wanlatency_std = 0.25,0.025
         wanlatency_list = [np.random.normal(wanlatency_mean, wanlatency_std, num_query) for i in range(2)]
     else:
         print('Unsupported trace selction.')
@@ -1234,7 +1234,6 @@ def analyze_all_recorded_traces():
         latency_mean,latency_std = np.array(latency_list).mean(),np.array(latency_list).std()
         bw_mean,bw_std = np.array(bandwidth_list).mean(),np.array(bandwidth_list).std()
         print(filename,f'{latency_mean:.3f}({latency_std:.3f}), {bw_mean:.3f}({bw_std:.3f})')
-    exit(0)
 
 def evaluate_one_trace(trace_selection,lanlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst):
     # analyze RMLaaS

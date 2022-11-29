@@ -120,8 +120,8 @@ parser.add_argument('--split_num', default=2, type=int,
                     help="Number of splits on the ring")
 parser.add_argument('--simulate', action='store_true',
                     help='simulate model on validation set')
-parser.add_argument('--rand_trace', action='store_true',
-                    help='generate random network traces')
+parser.add_argument('--trace_selection', default=0, type=int,
+                    help="0: FCC trace, 1: random trace, 2: recorded trace")
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -1183,14 +1183,150 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
         f.write(log_str+'\n')
     return saved_prec1s[0],prune_str,saved_prec1s
 
-def evaluate_result_n_latency(result_list,latency_list):
+def create_wan_trace(trace_selection,num_query):
+    # query size
+    query_size = 3*32*32*4*args.test_batch_size # bytes
+    wanlatency_list = [[] for _ in range(2)]
+    if args.trace_selection == 0:
+        # read network traces 
+        import csv
+        print('Reading network trace...')
+        with open('curr_videostream.csv', mode='r') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
+            line_count = 0
+            for row in csv_reader:
+                # bytes per second-> kilo bytes per second
+                # micro seconds->milli seconds
+                wanlatency_list[line_count//num_query] += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6.] 
+                line_count += 1
+                if line_count == num_query*2:break
+    elif args.trace_selection == 1:
+        # recorded trace
+        with open('Local/000096','r') as f:
+            line_count = 0
+            for l in f.readlines():
+                l = l.strip().split(' ')
+                wanlatency_list[line_count//num_query] += [float(l[0])/1000.]
+                line_count += 1
+                if line_count == num_query*2:break
+    elif args.trace_selection == 2:
+        # generate random traces with increased std
+        print('Generate random network traces...')
+        wanlatency_mean,wanlatency_std = query_size/.8,query_size/8
+        wanlatency_list = [np.random.normal(wanlatency_mean, wanlatency_std, num_query) for i in range(2)]
+    else:
+        print('Unsupported trace selction.')
+        exit(0)
+    return wanlatency_list
+
+def analyze_all_recorded_traces():
+    print('Analyzing all recorded traces...')
+    trace_filenames = ['Local/000012','Local/000024','Local/000048','Local/000096','Local/000192','Local/000384','Local/000768',
+                        'DC/000088','DC/000176','DC/000352','DC/000704','DC/001408','DC/002816','DC/005632']
+    for filename in trace_filenames:
+        latency_list = []
+        bandwidth_list = []
+        with open(filename,'r') as f:
+            for l in f.readlines():
+                l = l.strip().split(' ')
+                latency_list += [float(l[0])/1e3.]
+                bandwidth_list += [float(l[1])/1e6.]
+        latency_mean,latency_std = np.array(latency_list).mean(),np.array(latency_list).std()
+        bw_mean,bw_std = np.array(bandwidth_list).mean(),np.array(bandwidth_list).std()
+        print(filename,f'{latency_mean:.3f}({latency_std:.3f}), {bw_mean:.3f}({bw_std:.3f})')
+    exit(0)
+
+def evaluate_one_trace(trace_selection,lanlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst):
+    # analyze RMLaaS
+    # calculate complete time for different subnets
+    # find the result on each node and find the best among nodes
+    # complete partition's time is infinite if its deadline is passed
+    latency_thresh = 0.016 #s
+    # each node keeps the largest partition within time limit
+    # result of the fastest node will be kept 
+    # complete and in-complete execution time
+    RMLaaS_res = []
+    RMLaaS_latency = []
+    RMLaaS_latency_breakdown = []
+    query_index = 0
+    for mt0,mt1,mt2,mt3,rt0,rt1,rt2,rt3,c0,c1,c2,c3 in zip(*all_map_time,*all_reduce_time,*all_correct):
+        # consider node 0: subnet{0,2}
+        # mt0: complete latency on node 0
+        # mt1: complete latency on node 1
+        # mt2: partial latency on node 0
+        # mt3: partial latency on node 1
+        if mt3 + lanlatency_list[0][query_index] <= mt2 + latency_thresh:
+            # complete partition
+            node0_res = c0 # complete result on node 0
+            node0_latency = [mt3 + rt0, lanlatency_list[0][query_index]] # latency on node 0:full reduce
+        else:
+            # in-complete
+            node0_res = c2 # partial result on node 0
+            node0_latency = [mt2 + rt2, latency_thresh] # latency on node 0:partial reduce
+        # consider node 1: subnet{1,3}
+        if mt2 + lanlatency_list[1][query_index] <= mt3 + latency_thresh:
+            node1_res = c1
+            node1_latency = [mt2 + rt1, lanlatency_list[1][query_index]] # full reduce
+        else:
+            node1_res = c3
+            node1_latency = [mt3 + rt3, latency_thresh] # partial reduce
+        # add cloud-edge latency
+        node0_latency += [wanlatency_list[0][query_index]]
+        node1_latency += [wanlatency_list[1][query_index]]
+        # choose between 0 and 1
+        if node0_latency <= node1_latency:
+            res = node0_res
+            latency = node0_latency
+        else:
+            res = node1_res
+            latency = node1_latency
+        RMLaaS_res += [res]
+        RMLaaS_latency += [sum(latency)]
+        RMLaaS_latency_breakdown += [latency]
+        query_index += 1
+
+    # latency breakdown: datacenter (communication/wait cost)+outer network+compute
+    RMLaaS_latency_breakdown = np.array(RMLaaS_latency_breakdown)
+    print('Latency break down:',RMLaaS_latency_breakdown.mean(axis=0),RMLaaS_latency_breakdown.std(axis=0))
+
+    evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection)
+
+    # analyze no replication
+    no_rep_res = []
+    no_rep_latency = []
+    query_index = 0
+    for ift0,c0 in zip(infer_time_lst,correct_lst):
+        latency = ift0 + wanlatency_list[0][query_index]
+        no_rep_res += [c0]
+        no_rep_latency += [latency]
+        query_index += 1
+
+    evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection)
+
+    # analyze total replication
+    total_rep_res = []
+    total_rep_latency = []
+    query_index = 0
+    for ift0,c0 in zip(infer_time_lst,correct_lst):
+        if wanlatency_list[0][query_index]<=wanlatency_list[1][query_index]:
+            latency = ift0 + wanlatency_list[0][query_index]
+            total_rep_res += [c0]
+        else:
+            latency = ift0 + wanlatency_list[1][query_index]
+            total_rep_res += [c1]
+        total_rep_latency += [latency]
+        query_index += 1
+
+    evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection)
+
+def evaluate_service_metrics(result_list,latency_list,trace_selection=0,num_experiments=10):
+    # consistency
     mean_acc = np.array(result_list).mean()
     print('Mean Top-1 accuracy:',mean_acc)
 
+    # availability
     mean_latency = np.array(latency_list).mean()
     print('Mean latency:',mean_latency)
-
-    # CDF
     N = len(latency_list)
     cdf_x = np.sort(np.array(latency_list))
     cdf_p = np.array(range(N))/float(N)
@@ -1199,9 +1335,41 @@ def evaluate_result_n_latency(result_list,latency_list):
         cdf_str += f"{cdf_x[int((N-1)*(i+1)/10)]:.4f}({cdf_p[int((N-1)*(i+1)/10)]:.4f}),"
     print(cdf_str)
 
-    # effective accuracy vs. deadline
+    # availability and consistency
+    # loss/failure request rate: packets never arrive over all packets
+    # vary loss rate 0.1,0.2,...
+    # only work on FCC trace
+    # effective accuracy under loss
+    if trace_selection == 0:
+        for loss_rate in [0.05,0.1,0.15,0.2]:
+            # multiple exp for mean and std of effective accuracy
+            eacc_list = []
+            for i in range(num_experiments):
+                avail_mask = np.array([random.random()>loss_rate for _ in range(len(result_list))])
+                effective_result = np.array(result_list)
+                effective_result[avail_mask==0] = 0.1
+                eacc = effective_result.mean()
+                eacc_list += [eacc]
+            eacc_mean,eacc_std = np.array(eacc_list).mean(),np.array(eacc_list).std()
+            print(f'Loss rate:{loss_rate}, {eacc_mean}({eacc_std})')
+
+    # consistency+availability
+    # effective accuracy (treating missing deadline as random guess) vs. deadline for different approaches.
+    # effective accuracy under deadline, e.g., 100ms, 200ms, ...
+    for ddl in [0.1,0.2,0.3,0.4,0.5]:
+        eacc_list = []
+        for i in range(num_experiments):
+            avail_mask = np.array(latency_list)<ddl
+            effective_result = np.array(result_list)
+            effective_result[avail_mask==0] = 0.1
+            eacc = effective_result.mean()
+            eacc_list += [eacc]
+        eacc_mean,eacc_std = np.array(eacc_list).mean(),np.array(eacc_list).std()
+        print(f'Deadline:{ddl}, {eacc_mean}({eacc_std})')
 
 def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
+    # analyze trace
+    analyze_all_recorded_traces()
     print('Simulation with test batch size:',args.test_batch_size)
     model.eval()
     all_map_time = []
@@ -1236,124 +1404,31 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     # flop ratios
     print('FLOPS ratios:',all_flop_ratios)
 
-    num_query = len(all_correct[0])
-    if not args.rand_trace:
-        # read network traces 
-        import csv
-        downthrpt_list = [[] for _ in range(2)]
-        latency_list = [[] for _ in range(2)]
-        print('Reading network trace...')
-        with open('curr_videostream.csv', mode='r') as csv_file:
-            csv_reader = csv.DictReader(csv_file)
-            line_count = 0
-            for row in csv_reader:
-                downthrpt_list[line_count//num_query] += [float(row["downthrpt"])/1000.]
-                latency_list[line_count//num_query] += [float(row["latency"])/1000.]
-                line_count += 1
-                if line_count == num_query*2:break
-            print(f'Processed {line_count} lines.')
-    else:
-        # generate random traces
-        print('Generate random network traces...')
-        downthrpt_mean,downthrpt_std = 800,50
-        latency_mean,latency_std = 13,1
-
-    # random inter-node latency
-    mu, sigma = 0.171, 0.016 # mean and standard deviation
-    # randomly set latency to a large number if simulating node failure
-    inter_node_latency = [np.random.normal(mu, sigma, num_query) for i in range(2)]
-
-    # analyze RMLaaS
-    # calculate complete time for different subnets
-    # find the result on each node and find the best among nodes
-    # complete partition's time is infinite if its deadline is passed
-    latency_thresh = 0.5
-    # each node keeps the largest partition within time limit
-    # result of the fastest node will be kept 
-    # complete and in-complete execution time
-    # query size
-    query_size = 3*32*32*4*args.test_batch_size
-    RMLaaS_res = []
-    RMLaaS_latency = []
-    RMLaaS_latency_breakdown = []
-    query_index = 0
-    for mt0,mt1,mt2,mt3,rt0,rt1,rt2,rt3,c0,c1,c2,c3 in zip(*all_map_time,*all_reduce_time,*all_correct):
-        # consider node 0: subnet{0,2}
-        # mt0: complete latency on node 0
-        # mt1: complete latency on node 1
-        # mt2: partial latency on node 0
-        # mt3: partial latency on node 1
-        if mt3 + inter_node_latency[0][query_index] <= mt2 + latency_thresh:
-            # complete partition
-            node0_res = c0 # complete result on node 0
-            node0_latency = [mt3 + rt0, inter_node_latency[0][query_index]] # latency on node 0:full reduce
-        else:
-            # in-complete
-            node0_res = c2 # partial result on node 0
-            node0_latency = [mt2 + rt2, latency_thresh] # latency on node 0:partial reduce
-        # consider node 1: subnet{1,3}
-        if mt2 + inter_node_latency[1][query_index] <= mt3 + latency_thresh:
-            node1_res = c1
-            node1_latency = [mt2 + rt1, inter_node_latency[1][query_index]] # full reduce
-        else:
-            node1_res = c3
-            node1_latency = [mt3 + rt3, latency_thresh] # partial reduce
-        # add cloud-edge latency
-        node0_latency += [downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]]
-        node1_latency += [downthrpt_list[1][query_index]/query_size + latency_list[1][query_index]]
-        # choose between 0 and 1
-        if node0_latency <= node1_latency:
-            res = node0_res
-            latency = node0_latency
-        else:
-            res = node1_res
-            latency = node1_latency
-        RMLaaS_res += [res]
-        RMLaaS_latency += [sum(latency)]
-        RMLaaS_latency_breakdown += [latency]
-        query_index += 1
-
-    # latency breakdown: datacenter (communication/wait cost)+outer network+compute
-    RMLaaS_latency_breakdown = np.array(RMLaaS_latency_breakdown)
-    print('Latency break down:',RMLaaS_latency_breakdown.mean(axis=0),RMLaaS_latency_breakdown.std(axis=0))
-
-    evaluate_result_n_latency(RMLaaS_res,RMLaaS_latency)
-
     # run originial model
     print('Running original ML service')
     infer_time_lst,correct_lst = test(teacher_model,standalone=True)
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean}pm{infer_time_std}')
-    # analyze no replication
-    no_rep_res = []
-    no_rep_latency = []
-    query_index = 0
-    for ift0,c0 in zip(infer_time_lst,correct_lst):
-        latency = ift0 + downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]
-        no_rep_res += [c0]
-        no_rep_latency += [latency]
-        query_index += 1
 
-    evaluate_result_n_latency(no_rep_res,no_rep_latency)
+    num_query = len(all_correct[0])
+    # inter-node latency
+    lanlatency_list = [[] for _ in range(2)]
+    with open('DC/000704','r') as f:
+        line_count = 0
+        for l in f.readlines():
+            l = l.strip().split(' ')
+            lanlatency_list[line_count//num_query] += [float(l[0])/1000.]
+            line_count += 1
+            if line_count == num_query*2:break
+    # comm_size = 352*8*8*4*args.test_batch_size
 
-    # analyze total replication
-    total_rep_res = []
-    total_rep_latency = []
-    query_index = 0
-    for ift0,c0 in zip(infer_time_lst,correct_lst):
-        if downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]<=downthrpt_list[1][query_index]/query_size + latency_list[1][query_index]:
-            latency = ift0 + downthrpt_list[0][query_index]/query_size + latency_list[0][query_index]
-            total_rep_res += [c0]
-        else:
-            latency = ift0 + downthrpt_list[1][query_index]/query_size + latency_list[1][query_index]
-            total_rep_res += [c1]
-        total_rep_latency += [latency]
-        query_index += 1
-
-    evaluate_result_n_latency(total_rep_res,total_rep_latency)
-
-    exit(0)
+    # wan latency
+    for trace_selection in range(3):
+        wanlatency_list = create_wan_trace(trace_selection,num_query)
+        evaluate_one_trace(trace_selection,lanlatency_list,wanlatency_list,
+                            all_map_time,all_reduce_time,all_correct,
+                            infer_time_lst,correct_lst)
 
 def cross_entropy_loss_with_soft_target(pred, soft_target):
     logsoftmax = nn.LogSoftmax()
@@ -1510,7 +1585,9 @@ if args.evaluate:
 
 if args.simulate:
     assert args.split_num == 2
+    assert args.test_batch_size == 8
     simulation(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
+    exit(0)
 
 for epoch in range(args.start_epoch, args.epochs):
     if args.max_epoch is not None and epoch >= args.max_epoch:

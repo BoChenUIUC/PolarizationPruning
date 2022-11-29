@@ -1288,7 +1288,7 @@ def evaluate_one_trace(trace_selection,lanlatency_list,wanlatency_list,all_map_t
     RMLaaS_latency_breakdown = np.array(RMLaaS_latency_breakdown)
     print('Latency break down:',RMLaaS_latency_breakdown.mean(axis=0),RMLaaS_latency_breakdown.std(axis=0))
 
-    evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection)
+    evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection,service_type=0)
 
     # analyze no replication
     no_rep_res = []
@@ -1300,7 +1300,7 @@ def evaluate_one_trace(trace_selection,lanlatency_list,wanlatency_list,all_map_t
         no_rep_latency += [latency]
         query_index += 1
 
-    evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection)
+    evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection,service_type=1)
 
     # analyze total replication
     total_rep_res = []
@@ -1316,9 +1316,10 @@ def evaluate_one_trace(trace_selection,lanlatency_list,wanlatency_list,all_map_t
         total_rep_latency += [latency]
         query_index += 1
 
-    evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection)
+    evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)
 
-def evaluate_service_metrics(result_list,latency_list,trace_selection=0,num_experiments=10):
+def evaluate_service_metrics(result_list,latency_list,trace_selection=0,num_experiments=10,service_type=0):
+    print('SERVICE TYPE:',service_type)
     # consistency
     mean_acc = np.array(result_list).mean()
     print('Mean Top-1 accuracy:',mean_acc)
@@ -1343,14 +1344,19 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,num_expe
         for loss_rate in [0.05,0.1,0.15,0.2]:
             # multiple exp for mean and std of effective accuracy
             eacc_list = []
+            failrate_list = []
             for i in range(num_experiments):
-                avail_mask = np.array([random.random()>loss_rate for _ in range(len(result_list))])
-                effective_result = np.array(result_list)
+                if service_type == 0 or service_type == 2:
+                    avail_mask = np.array([random.random()>loss_rate or random.random()>loss_rate for _ in range(len(result_list))])
+                else:
+                    avail_mask = np.array([random.random()>loss_rate for _ in range(len(result_list))])
+                effective_result = np.array(result_list).copy()
                 effective_result[avail_mask==0] = 0.1
-                eacc = effective_result.mean()
-                eacc_list += [eacc]
+                eacc_list += [effective_result.mean()]
+                failrate_list += [avail_mask.mean()]
             eacc_mean,eacc_std = np.array(eacc_list).mean(),np.array(eacc_list).std()
-            print(f'Loss rate:{loss_rate}, {eacc_mean}({eacc_std})')
+            fr_mean,fr_std = np.array(failrate_list).mean(),np.array(failrate_list).std()
+            print(f'Loss rate:{loss_rate}, {eacc_mean:.3f}({eacc_std:.3f}), {fr_mean:.3f}({fr_std:.3f})')
 
     # consistency+availability
     # effective accuracy (treating missing deadline as random guess) vs. deadline for different approaches.
@@ -1359,12 +1365,12 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,num_expe
         eacc_list = []
         for i in range(num_experiments):
             avail_mask = np.array(latency_list)<ddl
-            effective_result = np.array(result_list)
+            effective_result = np.array(result_list).copy()
             effective_result[avail_mask==0] = 0.1
             eacc = effective_result.mean()
             eacc_list += [eacc]
         eacc_mean,eacc_std = np.array(eacc_list).mean(),np.array(eacc_list).std()
-        print(f'Deadline:{ddl}, {eacc_mean}({eacc_std})')
+        print(f'Deadline:{ddl}, {eacc_mean:.3f}({eacc_std:.3f})')
 
 def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=True ,epoch=0,lr=0):
     # analyze trace
@@ -1398,8 +1404,8 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     node0_red_mean,node0_red_std = np.array(all_reduce_time[0]).mean(),np.array(all_reduce_time[0]).std()
     node1_red_mean,node1_red_std = np.array(all_reduce_time[1]).mean(),np.array(all_reduce_time[1]).std()
     print('Break compute latency down...')
-    print(f'Map time: {node0_map_mean}({node0_map_std}), {node1_map_mean}({node1_map_std})')
-    print(f'Reduce time: {node0_red_mean}({node0_red_std}), {node1_red_mean}({node1_red_std})')
+    print(f'Map time: {node0_map_mean:.6f}({node0_map_std:.6f}), {node1_map_mean:.6f}({node1_map_std:.6f})')
+    print(f'Reduce time: {node0_red_mean:.6f}({node0_red_std:.6f}), {node1_red_mean:.6f}({node1_red_std:.6f})')
     # flop ratios
     print('FLOPS ratios:',all_flop_ratios)
 
@@ -1408,7 +1414,7 @@ def simulation(model, arch, prune_mode, num_classes, avg_loss=None, fake_prune=T
     infer_time_lst,correct_lst = test(teacher_model,standalone=True)
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
-    print(f'Standalone inference time:{infer_time_mean}pm{infer_time_std}')
+    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
 
     num_query = len(all_correct[0])
     # inter-node latency

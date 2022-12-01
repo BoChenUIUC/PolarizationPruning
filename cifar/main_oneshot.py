@@ -1280,7 +1280,7 @@ def analyze_all_recorded_traces():
         latency_list = []
         num_of_line = 0
         for row in csv_reader:
-            if float(row["latency"])<0 or float(row["downthrpt"])<0:
+            if float(row["latency"])<0 or float(row["downthrpt"])<100000:
                 print('Warning:',row)
                 continue
             for bs in [2**i for i in range(7)]:

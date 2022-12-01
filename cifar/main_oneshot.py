@@ -1273,7 +1273,10 @@ def analyze_all_recorded_traces():
         print(filename,f'{latency_mean:.3f}({latency_std:.3f})')
         measurements_to_cdf(latency_list,f'figures/trace{tidx}.eps')
         if tidx in [6,13]:
-            print(f'Latency vs. batch size trace{tidx}:',latency_mean_list,latency_std_list)
+            if tidx == 6:
+                print(f'Latency vs. batch size (WAN):',latency_mean_list,latency_std_list)
+            else:
+                print(f'Latency vs. batch size (DCN):',latency_mean_list,latency_std_list)
             latency_mean_list = []
             latency_std_list = []
 
@@ -1296,7 +1299,6 @@ def analyze_all_recorded_traces():
         for i in range(7):
             measurements_to_cdf(latency_list[:,i],f'figures/fcc{i}.eps')
         print('Latency vs. batch size (FCC):',latency_mean,latency_std)
-
 
 def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst):
     # analyze RMLaaS
@@ -1331,7 +1333,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
                     node_latency = other_node_latency
                     subnet_idx = node_idx
             # add reduce time for whole sub network
-            node_latency[0] += all_reduce_time[subnet_idx][query_index]
+            node_latency += [all_reduce_time[subnet_idx][query_index]]
             # add WAN communication latency to node
             node_latency += [wanlatency_list[node_idx][query_index]]
             if query_latency is None or sum(node_latency) < sum(query_latency):
@@ -1340,10 +1342,6 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
         RMLaaS_res += [query_result]
         RMLaaS_latency += [sum(query_latency)]
         RMLaaS_latency_breakdown += [query_latency]
-
-    # latency breakdown: datacenter (communication/wait cost)+outer network+compute
-    RMLaaS_latency_breakdown = np.array(RMLaaS_latency_breakdown)
-    print('RMLaaS latency break down:',RMLaaS_latency_breakdown.mean(axis=0),RMLaaS_latency_breakdown.std(axis=0))
 
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection,service_type=0,correct_lst=all_correct)
 
@@ -1376,17 +1374,14 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
 
     metrics2 = evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)
 
-    return metrics0,metrics1,metrics2
+    return metrics0,metrics1,metrics2,RMLaaS_latency_breakdown
 
 def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_type=0,correct_lst=None):
-    print('SERVICE TYPE:',service_type)
     # consistency
     mean_acc = np.array(result_list).mean()
-    print('Mean Top-1 accuracy:',mean_acc)
 
     # availability
     mean_latency = np.array(latency_list).mean()
-    print('Mean latency:',mean_latency)
 
     # consistency+availability
     # effective accuracy (treating missing deadline as random guess) vs. deadline for different approaches.
@@ -1403,15 +1398,15 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
         effective_result[avail_mask==0] = 0.1
         ea_list += [effective_result.mean()]
         fr_list += [1-avail_mask.mean()]
-        print(f'Deadline:{ddl}, effective accuracy:{effective_result.mean():.3f}, miss rate (failed query):{1-avail_mask.mean():.3f}')
     return [mean_acc],[mean_latency],ea_list,fr_list
 
-def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
+def analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax):
     all_accuracy = [[],[],[]]
     all_latency = [[],[],[]]
     all_effective_accuracy = [[],[],[]]
     all_failure_rate = [[],[],[]]
-    for metrics0,metrics1,metrics2 in metrics_of_all_traces:
+    latency_breakdown = []
+    for metrics0,metrics1,metrics2,RMLaaS_latency_breakdown in metrics_of_all_traces:
         # accumulate accuracy
         all_accuracy[0] += metrics0[0]
         all_accuracy[1] += metrics1[0]
@@ -1428,13 +1423,17 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         all_failure_rate[0] += metrics0[3]
         all_failure_rate[1] += metrics1[3]
         all_failure_rate[2] += metrics2[3]
+        # accumulate breakdown
+        latency_breakdown += RMLaaS_latency_breakdown
     print('Accuracy and latency stats...')
     for stats in [all_accuracy,all_latency]:
         print(np.array(stats).mean(axis=-1),np.array(stats).std(axis=-1))
     print('Effective accuracy and failure rate...')
     for stats in [all_effective_accuracy,all_failure_rate]:
         stats = np.array(stats).reshape(metrics_shape)
-        print(stats.mean(axis=-2),stats.std(axis=-2))
+        print(stats.mean(axis=ax),stats.std(axis=ax))
+    print('RMLaaS latency breakdown...')
+    print(np.array(latency_breakdown).mean(axis=0),np.array(latency_breakdown).std(axis=0))
 
 def simulation(model, arch, prune_mode, num_classes):
     # analyze trace
@@ -1463,7 +1462,7 @@ def simulation(model, arch, prune_mode, num_classes):
     # evaluate map/reduce time
     print('Break compute latency down...')
     # map
-    for sn_idx in range(args.split_num+1,args.split_num*2):
+    for sn_idx in range(args.split_num,args.split_num*2):
         map_mean,map_std = np.array(all_map_time[sn_idx]).mean(),np.array(all_map_time[sn_idx]).std()
         print(f'Map time {sn_idx}: {map_mean:.6f}({map_std:.6f})')
     # reduce
@@ -1492,7 +1491,7 @@ def simulation(model, arch, prune_mode, num_classes):
             line_count += 1
             if line_count == num_query*num_dcn_conns:break
     # comm_size = 352*8*8*4*args.test_batch_size
-    rep = 2
+    rep = 10
     if args.split_num == 2:
         # wan latency
         print('FCC broadband traces (10 reps)...')
@@ -1509,12 +1508,12 @@ def simulation(model, arch, prune_mode, num_classes):
             # end of each trace group
             if trace_selection in [rep-1,rep+9,rep*num_stds+99,rep*num_loss_rates+199]:
                 if trace_selection in [rep-1,rep+9]:
-                    metrics_shape = (3,rep,5)
+                    metrics_shape,ax = (3,rep,5),1
                 elif trace_selection == rep*num_stds+99:
-                    metrics_shape = (3,num_stds,rep,5)
+                    metrics_shape,ax = (3,num_stds,rep,5),2
                 elif trace_selection == rep*num_loss_rates+199:
-                    metrics_shape = (3,num_loss_rates,rep,1)
-                analyze_trace_metrics(metrics_of_all_traces,metrics_shape)
+                    metrics_shape,ax = (3,num_loss_rates,rep),2
+                analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax)
                 metrics_of_all_traces = []
 
         # change to long distance DC and test on FCC
@@ -1525,8 +1524,8 @@ def simulation(model, arch, prune_mode, num_classes):
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)
             metrics_of_all_traces += [metrics_of_one_trace]
-        metrics_shape = (3,rep,5)
-        analyze_trace_metrics(metrics_of_all_traces,metrics_shape)
+        metrics_shape,ax = (3,rep,5),1
+        analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax)
     else:
         print('Unsupported node number.')
         exit(0)

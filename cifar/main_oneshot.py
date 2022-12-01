@@ -1396,7 +1396,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
         fr_list += [1-avail_mask.mean()]
     return [mean_acc],[mean_latency],ea_list,fr_list
 
-def analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax):
+def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     all_accuracy = [[],[],[]]
     all_latency = [[],[],[]]
     all_effective_accuracy = [[],[],[]]
@@ -1429,8 +1429,8 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax):
     print(all_failure_rate)
     for stats in [all_effective_accuracy,all_failure_rate]:
         stats = np.array(stats).reshape(metrics_shape)
-        print((stats.mean(axis=ax)).tolist())
-        print((stats.std(axis=ax)).tolist())
+        print((stats.mean(axis=1)).tolist())
+        print((stats.std(axis=1)).tolist())
     print('RMLaaS latency breakdown...')
     print((np.array(latency_breakdown).mean(axis=0)).tolist())
     print((np.array(latency_breakdown).std(axis=0)).tolist())
@@ -1509,12 +1509,12 @@ def simulation(model, arch, prune_mode, num_classes):
             # end of each trace group
             if trace_selection in [rep-1,rep+9,rep*num_stds+99,rep*num_loss_rates+199]:
                 if trace_selection in [rep-1,rep+9]:
-                    metrics_shape,ax = (3,rep,num_ddls),1
+                    metrics_shape = (3,rep,num_ddls)
                 elif trace_selection == rep*num_stds+99:
-                    metrics_shape,ax = (3,num_stds,rep,num_ddls),2
+                    metrics_shape = (3,rep,num_stds,num_ddls)
                 elif trace_selection == rep*num_loss_rates+199:
-                    metrics_shape,ax = (3,num_loss_rates,rep),2
-                analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax)
+                    metrics_shape = (3,rep,num_loss_rates)
+                analyze_trace_metrics(metrics_of_all_traces,metrics_shape)
                 metrics_of_all_traces = []
 
         # change to long distance DC and test on FCC
@@ -1525,8 +1525,8 @@ def simulation(model, arch, prune_mode, num_classes):
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)
             metrics_of_all_traces += [metrics_of_one_trace]
-        metrics_shape,ax = (3,rep,num_ddls),1
-        analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax)
+        metrics_shape = (3,rep,num_ddls)
+        analyze_trace_metrics(metrics_of_all_traces,metrics_shape)
     else:
         print('Unsupported node number.')
         exit(0)

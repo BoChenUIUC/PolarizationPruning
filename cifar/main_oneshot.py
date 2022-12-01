@@ -1242,7 +1242,6 @@ def measurements_to_cdf(latency_list,epsfile):
     for i in range(10):
         cdf_str += f"{cdf_x[int((N-1)*(i+1)/10)]:.4f}({cdf_p[int((N-1)*(i+1)/10)]:.4f}),"
     print(cdf_str)
-    print(min(latency_list),max(latency_list))
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)
@@ -1285,6 +1284,7 @@ def analyze_all_recorded_traces():
             for bs in [2**i for i in range(7)]:
                 query_size = 3*32*32*4*bs # bytes
                 latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
+        print(min(latency_list),max(latency_list))
         latency_list = np.array(latency_list).reshape((num_of_line,7))
         latency_mean,latency_std = latency_list.mean(axis=0),latency_list.std(axis=0)
         for i in range(7):

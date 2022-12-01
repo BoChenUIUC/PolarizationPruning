@@ -1234,6 +1234,7 @@ def create_wan_trace(trace_selection,num_query):
                     wanlatency_list[line_count//num_query] += [1e6]
                 line_count += 1
                 if line_count == num_query*args.split_num:break
+        print('Loss rate:',loss_rate,np.array(wanlatency_list).mean())
     assert len(wanlatency_list)==args.split_num and len(wanlatency_list[0]) == len(wanlatency_list[-1])
     return wanlatency_list
 
@@ -1489,7 +1490,7 @@ def simulation(model, arch, prune_mode, num_classes):
             line_count += 1
             if line_count == num_query*num_dcn_conns:break
     # comm_size = 352*8*8*4*args.test_batch_size
-    rep = 10
+    rep = 1
     if args.split_num == 2:
         # wan latency
         print('FCC broadband traces (10 reps)...')

@@ -10,17 +10,8 @@ linewidth = 2
 plt.rcParams['xtick.labelsize'] = 16
 plt.rcParams['ytick.labelsize'] = 16
 plt.rcParams["font.family"] = "Times New Roman"
-colors = [
-'#3288bd',
-'#abdda4',
-'#66c2a5',
-'#9D5FFB',
-'#fee08b',
-'#fdae61',
-'#f46d43',
-'#d53e4f',
-]
-markers = ['o','P','s','D','v','^','<','>']
+colors = ['#DB1F48','#FF9636','#1C4670','#9D5FFB','#21B6A8','#D65780']
+markers = ['o','P','s','>','D','^']
 
 
 def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,lfsize=labelsize_b,legloc='best',
@@ -61,11 +52,24 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,lfsize=lab
 	fig.savefig(path,bbox_inches='tight')
 	plt.close()
 
-x = []
-y = []
-# original
-x += [[92.52,87.53,80.16,71.11,61.96,51.42,40.52,30.26,20.15,0.00]]
-y += [[0.1040,0.1216,0.1160,0.1655,0.1820,0.2294,0.4102,0.8530,0.9135,0.9411]]
-line_plot(x, y,['Ours','No rep','Optimal'],colors,
-		'/home/bo/Dropbox/Research/SIGCOMM23/images/test.eps',
-		'Deadline','Effective Top1 Accuracy (%)')	
+x = [[0.1*i for i in range(1,6)] for _ in range(3)]
+y = [[0.10300002, 0.54106605, 0.83518803, 0.91195405, 0.9342    ],
+ [0.104596,   0.40781993, 0.66554797, 0.7922,     0.858016  ],
+ [0.113564,   0.6185099,  0.857158,   0.91832,    0.93571204]]
+yerr = [[0.00276906, 0.02527536, 0.01103008, 0.00990747, 0.00698827],
+ [0.0052258,  0.04248973, 0.0337695,  0.0273513,  0.02132575],
+ [0.00765002, 0.0223185,  0.0100436,  0.00890443, 0.00524915]]
+line_plot(x, y,['Ours','No replica','Optimal'],colors,
+		'/home/bo/Dropbox/Research/SIGCOMM23/images/FCC_ea.eps',
+		'Deadline','Effective Top1 Accuracy (%)',
+		yerr=yerr)	
+y = [[0.9964,  0.47536, 0.12608, 0.03464, 0.0084 ],
+ [0.99456, 0.634,   0.32688, 0.1768,  0.09856],
+ [0.98384, 0.3836,  0.09968, 0.0272,  0.00632]] 
+yerr = [[0.00334186, 0.02968162, 0.01238941, 0.01124021, 0.00779949],
+ [0.00615324, 0.05072309, 0.04054698, 0.03244293, 0.02529519],
+ [0.00916899, 0.02624012, 0.0118454,  0.01067933, 0.00627324]]
+line_plot(x, y,['Ours','No replica','Optimal'],colors,
+		'/home/bo/Dropbox/Research/SIGCOMM23/images/FCC_fr.eps',
+		'Deadline','Failure Rate',
+		yerr=yerr)	

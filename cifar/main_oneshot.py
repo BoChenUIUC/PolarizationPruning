@@ -1204,7 +1204,7 @@ def create_wan_trace(trace_selection,num_query):
                 if line_count == num_query*args.split_num:break
     elif trace_selection < 20:
         # recorded trace
-        trace_start = (trace_selection-10)*1000
+        trace_start = (trace_selection-10)*800
         with open('../WAN/000096','r') as f:
             line_count = 0
             for l in f.readlines()[trace_start:]:
@@ -1214,13 +1214,13 @@ def create_wan_trace(trace_selection,num_query):
                 if line_count == num_query*args.split_num:break
     elif trace_selection < 200:
         # generate random traces with increased std
-        wanstds = [0.1,0.2,0.3,0.4]
+        wanstds = [0.1,0.2,0.3,0.4,0.5]
         wanlatency_mean,wanlatency_std = 0.25,wanstds[(trace_selection-100)%len(wanstds)]
         wanlatency_list = [np.random.normal(wanlatency_mean, wanlatency_std, num_query) for i in range(2)]
     else:
         # read network traces + large latency = loss
         import csv
-        loss_rates = [0.05,0.1,0.15,0.2]
+        loss_rates = [0.05,0.1,0.15,0.2,0.25]
         loss_rate = loss_rates[(trace_selection-200)%len(loss_rates)]
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1241,10 +1241,6 @@ def measurements_to_cdf(latency_list,epsfile):
     N = len(latency_list)
     cdf_x = np.sort(np.array(latency_list))
     cdf_p = np.array(range(N))/float(N)
-    cdf_str = f'LatencyCDF: '
-    for i in range(10):
-        cdf_str += f"{cdf_x[int((N-1)*(i+1)/10)]:.4f}({cdf_p[int((N-1)*(i+1)/10)]:.4f}),"
-    print(cdf_str)
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)
@@ -1387,7 +1383,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # effective accuracy (treating missing deadline as random guess) vs. deadline for different approaches.
     # effective accuracy under deadline, e.g., 100ms, 200ms, ...
     if trace_selection < 200:
-        deadlines = [0.1,0.2,0.3,0.4,0.5]
+        deadlines = [0.1*i for i in range(1,10)]
     elif trace_selection >=200:
         deadlines = [1000]
     ea_list = []
@@ -1401,6 +1397,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     return [mean_acc],[mean_latency],ea_list,fr_list
 
 def analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax):
+    float_formater = '{:.4f}'.format
     all_accuracy = [[],[],[]]
     all_latency = [[],[],[]]
     all_effective_accuracy = [[],[],[]]
@@ -1427,13 +1424,16 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax):
         latency_breakdown += RMLaaS_latency_breakdown
     print('Accuracy and latency stats...')
     for stats in [all_accuracy,all_latency]:
-        print(np.array(stats).mean(axis=-1),np.array(stats).std(axis=-1))
+        print(float_formater(np.array(stats).mean(axis=-1)))
+        print(float_formater(np.array(stats).std(axis=-1)))
     print('Effective accuracy and failure rate...')
     for stats in [all_effective_accuracy,all_failure_rate]:
         stats = np.array(stats).reshape(metrics_shape)
-        print(stats.mean(axis=ax),stats.std(axis=ax))
+        print(float_formater(stats.mean(axis=ax)))
+        print(float_formater(stats.std(axis=ax)))
     print('RMLaaS latency breakdown...')
-    print(np.array(latency_breakdown).mean(axis=0),np.array(latency_breakdown).std(axis=0))
+    print(float_formater(np.array(latency_breakdown).mean(axis=0)))
+    print(float_formater(np.array(latency_breakdown).std(axis=0)))
 
 def simulation(model, arch, prune_mode, num_classes):
     # analyze trace
@@ -1498,8 +1498,9 @@ def simulation(model, arch, prune_mode, num_classes):
         print('Recorded traces (10 reps)...')
         print('Varied std traces (10 reps*num of stds)...')
         print('Varied loss traces (10 reps*num of losses)...')
-        num_stds = 4
-        num_loss_rates = 4
+        num_stds = 5
+        num_loss_rates = 5
+        num_ddls = 9
         metrics_of_all_traces = []
         for trace_selection in [i for i in range(rep)]+[10+i for i in range(rep)]+[100+i for i in range(rep*num_stds)]+[200+i for i in range(rep*num_loss_rates)]:
             wanlatency_list = create_wan_trace(trace_selection,num_query)
@@ -1508,9 +1509,9 @@ def simulation(model, arch, prune_mode, num_classes):
             # end of each trace group
             if trace_selection in [rep-1,rep+9,rep*num_stds+99,rep*num_loss_rates+199]:
                 if trace_selection in [rep-1,rep+9]:
-                    metrics_shape,ax = (3,rep,5),1
+                    metrics_shape,ax = (3,rep,num_ddls),1
                 elif trace_selection == rep*num_stds+99:
-                    metrics_shape,ax = (3,num_stds,rep,5),2
+                    metrics_shape,ax = (3,num_stds,rep,num_ddls),2
                 elif trace_selection == rep*num_loss_rates+199:
                     metrics_shape,ax = (3,num_loss_rates,rep),2
                 analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax)
@@ -1524,7 +1525,7 @@ def simulation(model, arch, prune_mode, num_classes):
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)
             metrics_of_all_traces += [metrics_of_one_trace]
-        metrics_shape,ax = (3,rep,5),1
+        metrics_shape,ax = (3,rep,num_ddls),1
         analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax)
     else:
         print('Unsupported node number.')

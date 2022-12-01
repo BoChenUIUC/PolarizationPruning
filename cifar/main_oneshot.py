@@ -1235,6 +1235,7 @@ def create_wan_trace(trace_selection,num_query):
                 line_count += 1
                 if line_count == num_query*args.split_num:break
     assert len(wanlatency_list)==args.split_num and len(wanlatency_list[0]) == len(wanlatency_list[-1])
+    print(np.array(wanlatency_list).size())
     return wanlatency_list
 
 def measurements_to_cdf(latency_list,epsfile):
@@ -1404,7 +1405,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
         ea_list += [effective_result.mean()]
         fr_list += [1-avail_mask.mean()]
         print(f'Deadline:{ddl}, effective accuracy:{effective_result.mean():.3f}, miss rate (failed query):{1-avail_mask.mean():.3f}')
-    return mean_acc,mean_latency,ea_list,fr_list
+    return [mean_acc],[mean_latency],ea_list,fr_list
 
 def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     all_accuracy = [[],[],[]]
@@ -1492,7 +1493,7 @@ def simulation(model, arch, prune_mode, num_classes):
             line_count += 1
             if line_count == num_query*num_dcn_conns:break
     # comm_size = 352*8*8*4*args.test_batch_size
-    rep = 10
+    rep = 2
     if args.split_num == 2:
         # wan latency
         print('FCC broadband traces (10 reps)...')

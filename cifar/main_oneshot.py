@@ -23,7 +23,6 @@ from tqdm import tqdm
 import copy
 import time
 import matplotlib.pyplot as plt
-import csv
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch CIFAR training with Polarization')
@@ -1189,6 +1188,7 @@ def create_wan_trace(trace_selection,num_query):
     wanlatency_list = [[] for _ in range(args.split_num)]
     print(f'Network trace {trace_selection}...')
     if trace_selection < 10:
+        import csv
         trace_start = trace_selection*10000
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1274,6 +1274,7 @@ def analyze_all_recorded_traces():
             latency_mean_list = []
             latency_std_list = []
 
+    import csv
     with open('../curr_videostream.csv', mode='r') as csv_file:
         # read network traces 
         csv_reader = csv.DictReader(csv_file)

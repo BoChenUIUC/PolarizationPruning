@@ -1281,6 +1281,7 @@ def analyze_all_recorded_traces():
         num_of_line = 0
         for row in csv_reader:
             num_of_line += 1
+            print(row)
             for bs in [2**i for i in range(7)]:
                 query_size = 3*32*32*4*bs # bytes
                 latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]

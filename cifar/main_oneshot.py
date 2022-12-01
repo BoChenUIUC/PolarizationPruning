@@ -23,6 +23,7 @@ from tqdm import tqdm
 import copy
 import time
 import matplotlib.pyplot as plt
+import csv
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch CIFAR training with Polarization')
@@ -1275,7 +1276,6 @@ def analyze_all_recorded_traces():
 
     with open('../curr_videostream.csv', mode='r') as csv_file:
         # read network traces 
-        import csv
         csv_reader = csv.DictReader(csv_file)
         latency_list = []
         num_of_line = 0
@@ -1284,6 +1284,8 @@ def analyze_all_recorded_traces():
             for bs in [2**i for i in range(7)]:
                 query_size = 3*32*32*4*bs # bytes
                 latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
+                print(latency_list[-1])
+        exit(0)
         latency_list = np.array(latency_list).reshape((num_of_line,7))
         latency_mean,latency_std = latency_list.mean(axis=0),latency_list.std(axis=0)
         for i in range(7):

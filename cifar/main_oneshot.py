@@ -1426,6 +1426,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax):
         print((np.array(stats).mean(axis=-1)).tolist())
         print((np.array(stats).std(axis=-1)).tolist())
     print('Effective accuracy and failure rate...')
+    print(all_failure_rate)
     for stats in [all_effective_accuracy,all_failure_rate]:
         stats = np.array(stats).reshape(metrics_shape)
         print((stats.mean(axis=ax)).tolist())
@@ -1490,7 +1491,7 @@ def simulation(model, arch, prune_mode, num_classes):
             line_count += 1
             if line_count == num_query*num_dcn_conns:break
     # comm_size = 352*8*8*4*args.test_batch_size
-    rep = 1
+    rep = 2
     if args.split_num == 2:
         # wan latency
         print('FCC broadband traces (10 reps)...')

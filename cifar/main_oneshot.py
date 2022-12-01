@@ -1266,7 +1266,6 @@ def analyze_all_recorded_traces():
         latency_mean,latency_std = np.array(latency_list).mean(),np.array(latency_list).std()
         latency_mean_list += [latency_mean]
         latency_std_list += [latency_std]
-        print(filename,f'{latency_mean:.3f}({latency_std:.3f})')
         measurements_to_cdf(latency_list,f'figures/trace{tidx}.eps')
         if tidx in [6,13]:
             if tidx == 6:
@@ -1397,7 +1396,6 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     return [mean_acc],[mean_latency],ea_list,fr_list
 
 def analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax):
-    float_formater = '{:.4f}'.format
     all_accuracy = [[],[],[]]
     all_latency = [[],[],[]]
     all_effective_accuracy = [[],[],[]]
@@ -1424,16 +1422,16 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape,ax):
         latency_breakdown += RMLaaS_latency_breakdown
     print('Accuracy and latency stats...')
     for stats in [all_accuracy,all_latency]:
-        print(float_formater(np.array(stats).mean(axis=-1)))
-        print(float_formater(np.array(stats).std(axis=-1)))
+        print((np.array(stats).mean(axis=-1)).tolist())
+        print((np.array(stats).std(axis=-1)).tolist())
     print('Effective accuracy and failure rate...')
     for stats in [all_effective_accuracy,all_failure_rate]:
         stats = np.array(stats).reshape(metrics_shape)
-        print(float_formater(stats.mean(axis=ax)))
-        print(float_formater(stats.std(axis=ax)))
+        print((stats.mean(axis=ax)).tolist())
+        print((stats.std(axis=ax)).tolist())
     print('RMLaaS latency breakdown...')
-    print(float_formater(np.array(latency_breakdown).mean(axis=0)))
-    print(float_formater(np.array(latency_breakdown).std(axis=0)))
+    print((np.array(latency_breakdown).mean(axis=0)).tolist())
+    print((np.array(latency_breakdown).std(axis=0)).tolist())
 
 def simulation(model, arch, prune_mode, num_classes):
     # analyze trace

@@ -1189,19 +1189,22 @@ def create_wan_trace(trace_selection,num_query):
     print(f'Network trace {trace_selection}...')
     if trace_selection < 10:
         import csv
-        trace_start = trace_selection*10000
+        trace_start = trace_selection*1000
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
             line_count = 0
-            for row in csv_reader[trace_start:]:
+            for row in csv_reader:
                 # bytes per second-> kilo bytes per second
                 # micro seconds->milli seconds
+                if trace_start > 0:
+                    trace_start -= 1
+                    continue
                 wanlatency_list[line_count//num_query] += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6] 
                 line_count += 1
                 if line_count == num_query*args.split_num:break
     elif trace_selection < 20:
         # recorded trace
-        trace_start = 0#trace_selection*1000
+        trace_start = trace_selection*1000
         with open('../WAN/000096','r') as f:
             line_count = 0
             for l in f.readlines()[trace_start:]:

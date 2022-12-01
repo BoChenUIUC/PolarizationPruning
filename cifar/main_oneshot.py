@@ -1212,6 +1212,7 @@ def create_wan_trace(trace_selection,num_query):
                 wanlatency_list[line_count//num_query] += [float(l[0])/1000.]
                 line_count += 1
                 if line_count == num_query*args.split_num:break
+        print('~~~~~~~~~~~~',line_count)
     elif trace_selection < 200:
         # generate random traces with increased std
         wanstds = [0.1,0.2,0.3,0.4]

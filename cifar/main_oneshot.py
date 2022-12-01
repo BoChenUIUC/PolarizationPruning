@@ -1235,7 +1235,7 @@ def create_wan_trace(trace_selection,num_query):
                 line_count += 1
                 if line_count == num_query*args.split_num:break
     assert len(wanlatency_list)==args.split_num and len(wanlatency_list[0]) == len(wanlatency_list[-1])
-    print(np.array(wanlatency_list).size())
+    print(np.array(wanlatency_list).size)
     return wanlatency_list
 
 def measurements_to_cdf(latency_list,epsfile):

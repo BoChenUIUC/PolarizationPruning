@@ -1284,13 +1284,12 @@ def analyze_all_recorded_traces():
             for bs in [2**i for i in range(7)]:
                 query_size = 3*32*32*4*bs # bytes
                 latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
-                print(latency_list[-1])
-        exit(0)
         latency_list = np.array(latency_list).reshape((num_of_line,7))
         latency_mean,latency_std = latency_list.mean(axis=0),latency_list.std(axis=0)
         for i in range(7):
             measurements_to_cdf(latency_list[:,i],f'figures/fcc{i}.eps')
         print('Latency vs. batch size (FCC):',latency_mean,latency_std)
+        exit(0)
 
 
 def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst):

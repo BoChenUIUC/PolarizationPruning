@@ -1242,6 +1242,7 @@ def measurements_to_cdf(latency_list,epsfile):
     for i in range(10):
         cdf_str += f"{cdf_x[int((N-1)*(i+1)/10)]:.4f}({cdf_p[int((N-1)*(i+1)/10)]:.4f}),"
     print(cdf_str)
+    print(min(latency_list),max(latency_list))
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)

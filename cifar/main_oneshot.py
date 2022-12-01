@@ -1287,7 +1287,7 @@ def analyze_all_recorded_traces():
                 latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
                 if latency_list[-1]>8:print(row)
             num_of_line += 1
-            if num_of_line==10000:break
+            if num_of_line==100000:break
         latency_list = np.array(latency_list).reshape((num_of_line,7))
         latency_mean,latency_std = latency_list.mean(axis=0),latency_list.std(axis=0)
         for i in range(7):

@@ -1277,20 +1277,18 @@ def analyze_all_recorded_traces():
         # read network traces 
         import csv
         csv_reader = csv.DictReader(csv_file)
-        latency_mean_list = []
-        latency_std_list = []
-        for bs in [2**i for i in range(7)]:
-            query_size = 3*32*32*4*bs # bytes
-            latency_list = []
-            for row in csv_reader:
-                latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6] 
-                assert not np.isnan(latency_list[-1])
-            latency_mean,latency_std = np.array(latency_list).mean(),np.array(latency_list).std()
-            latency_mean_list += [latency_mean]
-            latency_std_list += [latency_std]
-            print(f'curr_videostream.csv {latency_mean:.3f}({latency_std:.3f})')
-            measurements_to_cdf(latency_list,f'figures/fcc{bs:02d}.eps')
-        print('Latency vs. batch size (FCC):',latency_mean_list,latency_std_list)
+        latency_list = []
+        num_of_line = 0
+        for row in csv_reader:
+            num_of_line += 1
+            for bs in [2**i for i in range(7)]:
+                query_size = 3*32*32*4*bs # bytes
+                latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
+        latency_list = np.array(latency_list).reshape((num_of_line,7))
+        latency_mean,latency_std = latency_list.mean(axis=0),latency_list.std(axis=0)
+        for i in range(7):
+            measurements_to_cdf(latency_list[:,i],f'figures/fcc{i}.eps')
+        print('Latency vs. batch size (FCC):',latency_mean,latency_std)
 
 
 def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst):

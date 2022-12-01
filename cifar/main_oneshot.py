@@ -1254,7 +1254,6 @@ def analyze_all_recorded_traces():
     print('Analyzing all recorded traces...')
     trace_filenames = ['../WAN/000012','../WAN/000024','../WAN/000048','../WAN/000096','../WAN/000192','../WAN/000384','../WAN/000768',
                         '../DCN/000088','../DCN/000176','../DCN/000352','../DCN/000704','../DCN/001408','../DCN/002816','../DCN/005632']
-    # todo: add DCN long distance
     latency_mean_list = []
     latency_std_list = []
     for tidx,filename in enumerate(trace_filenames):
@@ -1269,7 +1268,7 @@ def analyze_all_recorded_traces():
         latency_std_list += [latency_std]
         print(filename,f'{latency_mean:.3f}({latency_std:.3f})')
         measurements_to_cdf(latency_list,f'figures/trace{tidx}.eps')
-        if tidx in [6,13,20]:
+        if tidx in [6,13]:
             print(f'Latency vs. batch size trace{tidx}:',latency_mean_list,latency_std_list)
             latency_mean_list = []
             latency_std_list = []
@@ -1285,6 +1284,7 @@ def analyze_all_recorded_traces():
             latency_list = []
             for row in csv_reader:
                 latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6] 
+                assert not np.isnan(latency_list[-1])
             latency_mean,latency_std = np.array(latency_list).mean(),np.array(latency_list).std()
             latency_mean_list += [latency_mean]
             latency_std_list += [latency_std]

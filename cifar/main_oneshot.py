@@ -1326,7 +1326,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
                 if other_node_idx == node_idx:continue
                 dcn_conn_idx = node_idx*args.split_num + other_node_idx
                 dcn_latency = dcnlatency_list[dcn_conn_idx][query_index]
-                other_node_latency = [all_map_time[other_node_idx+args.split_num], dcn_latency]
+                other_node_latency = [all_map_time[other_node_idx+args.split_num][query_index], dcn_latency]
                 if sum(other_node_latency) < sum(node_latency):
                     node_latency = other_node_latency
                     subnet_idx = node_idx

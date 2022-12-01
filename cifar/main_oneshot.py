@@ -1287,6 +1287,7 @@ def analyze_all_recorded_traces():
                 query_size = 3*32*32*4*bs # bytes
                 latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
                 if latency_list[-1]>1000:
+                    print(latency_list[-1])
                     print(row)
                     exit(0)
             num_of_line += 1

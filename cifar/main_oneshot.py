@@ -1188,8 +1188,6 @@ def create_wan_trace(trace_selection,num_query):
     wanlatency_list = [[] for _ in range(args.split_num)]
     print(f'Network trace {trace_selection}...')
     if trace_selection < 10:
-        # read network traces 
-        import csv
         trace_start = trace_selection*10000
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1277,6 +1275,8 @@ def analyze_all_recorded_traces():
             latency_std_list = []
 
     with open('../curr_videostream.csv', mode='r') as csv_file:
+        # read network traces 
+        import csv
         csv_reader = csv.DictReader(csv_file)
         latency_mean_list = []
         latency_std_list = []

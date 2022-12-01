@@ -1733,13 +1733,17 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
     return losses.avg
 
 
-def validate(val_loader, model, criterion, epoch, args, writer=None):
+def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=False, standalone=False):
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
 
     # switch to evaluate mode
+    map_time_lst = []
+    reduce_time_lst = []
+    infer_time_lst = []
+    correct_lst = []
     model.eval()
     with torch.no_grad():
         end = time.time()
@@ -1752,6 +1756,16 @@ def validate(val_loader, model, criterion, epoch, args, writer=None):
             output = model(image)
             if isinstance(output, tuple):
                 output, out_aux = output
+            # evaluation stuff
+            if map_reduce:
+                map_time_lst.append(output_aux[0])
+                reduce_time_lst.append(output_aux[1])
+            elif standalone:
+                infer_time_lst.append(time.time()-end)
+            pred = output.data.max(1, keepdim=True)[1]
+            if map_reduce or standalone:
+                correct_lst.append(pred.eq(target.data.view_as(pred)).cpu().sum()/data.size(0))
+            # stuff end
             loss = criterion(output, target)
 
             # measure accuracy and record loss
@@ -1772,7 +1786,12 @@ def validate(val_loader, model, criterion, epoch, args, writer=None):
                 batch_time=batch_time, loss=losses, top1=top1, top5=top5))
             if args.debug and i >= 10:
                 break
-    return top1.avg
+    if map_reduce:
+        return map_time_lst,reduce_time_lst,correct_lst
+    elif standalone:
+        return infer_time_lst,correct_lst
+    else:
+        return top1.avg
 
 
 def save_checkpoint(state, is_best, filepath, save_backup, backup_path, epoch, name='checkpoint.pth.tar', is_avg_best=False):

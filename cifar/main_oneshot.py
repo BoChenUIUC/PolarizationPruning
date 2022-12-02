@@ -1215,7 +1215,7 @@ def create_wan_trace(trace_selection,num_query):
     elif trace_selection < 200:
         # generate random traces with increased std
         wanstds = [0.1,0.2,0.3,0.4,0.5]
-        wanlatency_mean,wanlatency_std = 0.25,wanstds[(trace_selection-100)%len(wanstds)]
+        wanlatency_mean,wanlatency_std = 1,wanstds[(trace_selection-100)%len(wanstds)]
         wanlatency_list = [np.random.normal(wanlatency_mean, wanlatency_std, num_query) for i in range(2)]
     else:
         # read network traces + large latency = loss
@@ -1241,7 +1241,7 @@ def measurements_to_cdf(b32_latency,epsfile):
     lbsize = 14
     colors = ['#DB1F48','#FF9636','#1C4670','#9D5FFB','#21B6A8','#D65780']
     markers = ['o','P','s','>','D','^']
-    labels = ['FCC','WAN','DCN-SD','DCN-LD']
+    labels = ['FCC','WAN','DCN-SD']
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)
@@ -1282,8 +1282,7 @@ def analyze_all_recorded_traces():
         b32_latency += [latency_list]
     # batch 1,2,4,8,16,32
     trace_filenames = ['WAN/000012','WAN/000024','WAN/000048','WAN/000096','WAN/000192','WAN/000384','WAN/000768',
-                        'DCN/000022','DCN/000044','DCN/000088','DCN/000176','DCN/000352','DCN/000704','DCN/001408',
-                        'DCN-LD/000022','DCN-LD/000044','DCN-LD/000088','DCN-LD/000176','DCN-LD/000352','DCN-LD/000704','DCN-LD/001408']
+                        'DCN/000022','DCN/000044','DCN/000088','DCN/000176','DCN/000352','DCN/000704','DCN/001408']
     latency_mean_list = []
     latency_std_list = []
     for tidx,filename in enumerate(trace_filenames):
@@ -1302,8 +1301,6 @@ def analyze_all_recorded_traces():
                 print(f'Latency vs. batch size (WAN):',latency_mean_list,latency_std_list)
             elif tidx == 13:
                 print(f'Latency vs. batch size (DCN):',latency_mean_list,latency_std_list)
-            else:
-                print(f'Latency vs. batch size (DCN-LD):',latency_mean_list,latency_std_list)
             b32_latency += [latency_list]
             latency_mean_list = []
             latency_std_list = []
@@ -1539,26 +1536,6 @@ def simulation(model, arch, prune_mode, num_classes):
     else:
         print('Unsupported node number.')
         exit(0)
-
-    if args.split_num == 2:
-        # wan latency
-        print('FCC broadband traces and DCN long distance (10 reps)...')
-        dcnlatency_list = [[] for _ in range(args.split_num**2)]
-        # actually need only 1/4
-        with open('DCN-LD/000704','r') as f:
-            line_count = 0
-            for l in f.readlines():
-                l = l.strip().split(' ')
-                dcnlatency_list[line_count//num_query] += [float(l[0])/1000.]
-                line_count += 1
-                if line_count == num_query*num_dcn_conns:break
-        num_ddls = 9
-        metrics_of_all_traces = []
-        for trace_selection in [i for i in range(rep)]:
-            wanlatency_list = create_wan_trace(trace_selection,num_query)
-            metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh=0.71)
-            metrics_of_all_traces += [metrics_of_one_trace]
-        analyze_trace_metrics(metrics_of_all_traces,(3,rep,num_ddls))
 
 def cross_entropy_loss_with_soft_target(pred, soft_target):
     logsoftmax = nn.LogSoftmax()

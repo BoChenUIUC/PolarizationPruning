@@ -1242,22 +1242,21 @@ def measurements_to_cdf(b32_latency,epsfile):
     colors = ['#DB1F48','#FF9636','#1C4670','#9D5FFB','#21B6A8','#D65780']
     markers = ['o','P','s','>','D','^']
     labels = ['FCC','WAN','DCN']
+    linestyles = ['solid','dashed','dashdot']
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)
     for i,latency_list in enumerate(b32_latency):
         N = len(latency_list)
-        print(N)
         cdf_x = np.sort(np.array(latency_list))
         cdf_p = np.array(range(N))/float(N)
-        plt.plot(cdf_x, cdf_p, color = colors[i], label = labels[i]) 
-        # marker = markers[i], linewidth=2, markersize=8)
-    plt.xlabel('RTT (s)', fontsize = lbsize)
+        plt.plot(cdf_x, cdf_p, color = colors[i], label = labels[i], linewidth=2, linestyle=linestyles[i])
+    plt.xlabel('Communication Delay (s)', fontsize = lbsize)
     plt.ylabel('CDF', fontsize = lbsize)
+    plt.legend(loc=legloc,fontsize = lbsize)
     plt.tight_layout()
     fig.savefig(epsfile,bbox_inches='tight')
     plt.close()
-    exit(0)
 
 def analyze_all_recorded_traces():
     print('Analyzing all recorded traces...')

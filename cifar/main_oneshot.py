@@ -1241,7 +1241,7 @@ def measurements_to_cdf(b32_latency,epsfile):
     lbsize = 14
     colors = ['#DB1F48','#FF9636','#1C4670','#9D5FFB','#21B6A8','#D65780']
     markers = ['o','P','s','>','D','^']
-    labels = ['FCC','WAN','DCN-SD']
+    labels = ['FCC','WAN','DCN']
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)
@@ -1249,8 +1249,8 @@ def measurements_to_cdf(b32_latency,epsfile):
         N = len(latency_list)
         cdf_x = np.sort(np.array(latency_list))
         cdf_p = np.array(range(N))/float(N)
-        plt.plot(cdf_x, cdf_p, color = colors[i], marker = markers[i], 
-                label = labels[i], linewidth=2, markersize=8)
+        plt.plot(cdf_x, cdf_p, color = colors[i], label = labels[i]) 
+        # marker = markers[i], linewidth=2, markersize=8)
     plt.xlabel('RTT (s)', fontsize = lbsize)
     plt.ylabel('CDF', fontsize = lbsize)
     plt.tight_layout()
@@ -1278,7 +1278,7 @@ def analyze_all_recorded_traces():
         latency_mean,latency_std = latency_list.mean(axis=0),latency_list.std(axis=0)
         # for i in range(7):
         #     measurements_to_cdf(latency_list[:,i],f'figures/fcc{i}.eps')
-        print('Latency vs. batch size (FCC):',latency_mean,latency_std)
+        print('Latency vs. batch size (FCC):',latency_mean.tolist(),latency_std.tolist())
         b32_latency += [latency_list]
     # batch 1,2,4,8,16,32
     trace_filenames = ['WAN/000012','WAN/000024','WAN/000048','WAN/000096','WAN/000192','WAN/000384','WAN/000768',
@@ -1296,7 +1296,7 @@ def analyze_all_recorded_traces():
         latency_mean_list += [latency_mean]
         latency_std_list += [latency_std]
         # measurements_to_cdf(latency_list,f'figures/trace{tidx}.eps')
-        if tidx in [6,13,20]:
+        if tidx in [6,13]:
             if tidx == 6:
                 print(f'Latency vs. batch size (WAN):',latency_mean_list,latency_std_list)
             elif tidx == 13:
@@ -1391,8 +1391,12 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # consistency+availability
     # effective accuracy (treating missing deadline as random guess) vs. deadline for different approaches.
     # effective accuracy under deadline, e.g., 100ms, 200ms, ...
-    if trace_selection < 200:
-        deadlines = [0.1*i for i in range(1,10)]
+    if trace_selection < 10:
+        deadlines = [0.2+0.1*i for i in range(1,10)]
+    elif trace_selection < 20:
+        deadlines = [0.2+0.1*i for i in range(1,10)]
+    elif trace_selection < 200:
+        deadlines = [0.2+0.1*i for i in range(1,10)]
     elif trace_selection >=200:
         deadlines = [1000]
     ea_list = []

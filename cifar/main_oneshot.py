@@ -1241,7 +1241,7 @@ def measurements_to_cdf(b32_latency,epsfile):
     lbsize = 14
     colors = ['#DB1F48','#FF9636','#1C4670','#9D5FFB','#21B6A8','#D65780']
     markers = ['o','P','s','>','D','^']
-    label = ['WAN','DCN-SD','DCN-LD']
+    labels = ['WAN','DCN-SD','DCN-LD']
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)
@@ -1249,8 +1249,8 @@ def measurements_to_cdf(b32_latency,epsfile):
         N = len(latency_list)
         cdf_x = np.sort(np.array(latency_list))
         cdf_p = np.array(range(N))/float(N)
-        plt.plot(cdf_x, cdf_p, color = color[i], marker = markers[i], 
-                label = label[i], linewidth=2, markersize=8)
+        plt.plot(cdf_x, cdf_p, color = colors[i], marker = markers[i], 
+                label = labels[i], linewidth=2, markersize=8)
     plt.xlabel('RTT (s)', fontsize = lbsize)
     plt.ylabel('CDF', fontsize = lbsize)
     plt.tight_layout()

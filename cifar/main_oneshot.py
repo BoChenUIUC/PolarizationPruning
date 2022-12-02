@@ -1247,6 +1247,7 @@ def measurements_to_cdf(b32_latency,epsfile):
     ax.grid(zorder=0)
     for i,latency_list in enumerate(b32_latency):
         N = len(latency_list)
+        print(N)
         cdf_x = np.sort(np.array(latency_list))
         cdf_p = np.array(range(N))/float(N)
         plt.plot(cdf_x, cdf_p, color = colors[i], label = labels[i]) 
@@ -1256,6 +1257,7 @@ def measurements_to_cdf(b32_latency,epsfile):
     plt.tight_layout()
     fig.savefig(epsfile,bbox_inches='tight')
     plt.close()
+    exit(0)
 
 def analyze_all_recorded_traces():
     print('Analyzing all recorded traces...')
@@ -1279,7 +1281,7 @@ def analyze_all_recorded_traces():
         # for i in range(7):
         #     measurements_to_cdf(latency_list[:,i],f'figures/fcc{i}.eps')
         print('Latency vs. batch size (FCC):',latency_mean.tolist(),latency_std.tolist())
-        b32_latency += [latency_list]
+        b32_latency += [latency_list[:,5]]
     # batch 1,2,4,8,16,32
     trace_filenames = ['WAN/000012','WAN/000024','WAN/000048','WAN/000096','WAN/000192','WAN/000384','WAN/000768',
                         'DCN/000022','DCN/000044','DCN/000088','DCN/000176','DCN/000352','DCN/000704','DCN/001408']
@@ -1304,9 +1306,6 @@ def analyze_all_recorded_traces():
             b32_latency += [latency_list]
             latency_mean_list = []
             latency_std_list = []
-    print(b32_latency)
-    print(np.array(b32_latency).shape)
-    exit(0)
     measurements_to_cdf(b32_latency,f'figures/latency_cdf.eps')
 
 def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh = 0.016):

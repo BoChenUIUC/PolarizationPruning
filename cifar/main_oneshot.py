@@ -1304,6 +1304,8 @@ def analyze_all_recorded_traces():
             b32_latency += [latency_list]
             latency_mean_list = []
             latency_std_list = []
+    print(np.array(b32_latency).size)
+    exit(0)
     measurements_to_cdf(b32_latency,f'figures/latency_cdf.eps')
 
 def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh = 0.016):
@@ -1392,11 +1394,11 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # effective accuracy (treating missing deadline as random guess) vs. deadline for different approaches.
     # effective accuracy under deadline, e.g., 100ms, 200ms, ...
     if trace_selection < 10:
-        deadlines = [0.2+0.1*i for i in range(1,10)]
+        deadlines = [0.4+0.1*i for i in range(1,10)]
     elif trace_selection < 20:
         deadlines = [0.2+0.1*i for i in range(1,10)]
     elif trace_selection < 200:
-        deadlines = [0.2+0.1*i for i in range(1,10)]
+        deadlines = [0.2*i for i in range(1,10)]
     elif trace_selection >=200:
         deadlines = [1000]
     ea_list = []

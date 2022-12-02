@@ -1253,7 +1253,7 @@ def measurements_to_cdf(b32_latency,epsfile):
         plt.plot(cdf_x, cdf_p, color = colors[i], label = labels[i], linewidth=2, linestyle=linestyles[i])
     plt.xlabel('Communication Delay (s)', fontsize = lbsize)
     plt.ylabel('CDF', fontsize = lbsize)
-    plt.legend(loc=legloc,fontsize = lbsize)
+    plt.legend(loc='best',fontsize = lbsize)
     plt.tight_layout()
     fig.savefig(epsfile,bbox_inches='tight')
     plt.close()

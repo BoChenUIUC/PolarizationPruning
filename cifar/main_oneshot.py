@@ -1540,7 +1540,7 @@ def simulation(model, arch, prune_mode, num_classes):
         print('Unsupported node number.')
         exit(0)
 
-    if args.split_num == 2
+    if args.split_num == 2:
         # wan latency
         print('FCC broadband traces and DCN long distance (10 reps)...')
         dcnlatency_list = [[] for _ in range(args.split_num**2)]

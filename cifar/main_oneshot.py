@@ -1241,7 +1241,7 @@ def measurements_to_cdf(b32_latency,epsfile):
     lbsize = 14
     colors = ['#DB1F48','#FF9636','#1C4670','#9D5FFB','#21B6A8','#D65780']
     markers = ['o','P','s','>','D','^']
-    labels = ['WAN','DCN-SD','DCN-LD']
+    labels = ['FCC','WAN','DCN-SD','DCN-LD']
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)

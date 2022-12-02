@@ -1259,6 +1259,7 @@ def measurements_to_cdf(b32_latency,epsfile):
 
 def analyze_all_recorded_traces():
     print('Analyzing all recorded traces...')
+    b32_latency = []
     import csv
     with open('../curr_videostream.csv', mode='r') as csv_file:
         # read network traces 
@@ -1285,7 +1286,6 @@ def analyze_all_recorded_traces():
                         'DCN-LD/000022','DCN-LD/000044','DCN-LD/000088','DCN-LD/000176','DCN-LD/000352','DCN-LD/000704','DCN-LD/001408']
     latency_mean_list = []
     latency_std_list = []
-    b32_latency = []
     for tidx,filename in enumerate(trace_filenames):
         latency_list = []
         bandwidth_list = []

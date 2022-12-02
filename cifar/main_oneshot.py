@@ -388,11 +388,11 @@ if args.VLB_conv:
         sampling_interval = 3
         cfg = [352,144,model.in_planes]
     elif args.VLB_conv_type == 11:
-        # best for two split
+        # best for three split
         sampling_interval = 3
         cfg = [352,192,model.in_planes]
     elif args.VLB_conv_type == 12:
-        # best for two split
+        # best for four split
         sampling_interval = 3
         cfg = [352,224,model.in_planes]
     # elif args.VLB_conv_type == 3:
@@ -1532,6 +1532,7 @@ def simulation(model, arch, prune_mode, num_classes):
                 metrics_of_all_traces = []
     elif args.split_num == 3 or args.split_num == 4:
         metrics_of_all_traces = []
+        num_ddls = 9
         for trace_selection in range(rep):
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)

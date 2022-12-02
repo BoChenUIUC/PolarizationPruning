@@ -1393,7 +1393,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # effective accuracy (treating missing deadline as random guess) vs. deadline for different approaches.
     # effective accuracy under deadline, e.g., 100ms, 200ms, ...
     if trace_selection < 10:
-        deadlines = [0.4+0.1*i for i in range(1,10)]
+        deadlines = [0.2*i for i in range(1,10)]
     elif trace_selection < 20:
         deadlines = [0.2+0.1*i for i in range(1,10)]
     elif trace_selection < 200:

@@ -1304,6 +1304,7 @@ def analyze_all_recorded_traces():
             b32_latency += [latency_list]
             latency_mean_list = []
             latency_std_list = []
+    print(b32_latency)
     print(np.array(b32_latency).shape)
     exit(0)
     measurements_to_cdf(b32_latency,f'figures/latency_cdf.eps')

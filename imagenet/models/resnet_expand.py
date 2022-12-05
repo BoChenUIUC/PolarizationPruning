@@ -499,7 +499,8 @@ class ResNetExpand(nn.Module):
             x = x.view(x.size(0), -1)
             x = self.fc(x)
             reduce_time = time.time() - end
-            return x, (map_time,reduce_time)
+            return x,None
+            # return x, (map_time,reduce_time)
 
     def prune_model(self, **kwargs):
         """

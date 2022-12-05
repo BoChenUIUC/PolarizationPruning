@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import typing
 from typing import List
+import time
 
 __all__ = ['ResNetExpand', 'Bottleneck', 'resnet50']
 

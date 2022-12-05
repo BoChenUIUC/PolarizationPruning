@@ -1214,7 +1214,7 @@ def create_wan_trace(trace_selection,num_query):
                 if line_count == num_query*args.split_num:break
     elif trace_selection < 200:
         # generate random traces with increased std
-        wanstds = [0.1,0.2,0.3,0.4,0.5]
+        wanstds = [0.1,0.2,0.4,0.8,1.6]
         wanlatency_mean,wanlatency_std = 1,wanstds[(trace_selection-100)%len(wanstds)]
         wanlatency_list = [np.random.normal(wanlatency_mean, wanlatency_std, num_query) for i in range(2)]
     else:
@@ -1277,8 +1277,6 @@ def analyze_all_recorded_traces():
             if num_of_line==10000:break
         latency_list = np.array(latency_list).reshape((num_of_line,7))
         latency_mean,latency_std = latency_list.mean(axis=0),latency_list.std(axis=0)
-        # for i in range(7):
-        #     measurements_to_cdf(latency_list[:,i],f'figures/fcc{i}.eps')
         print('Latency vs. batch size (FCC):',latency_mean.tolist(),latency_std.tolist())
         b32_latency += [latency_list[:,5]]
     # batch 1,2,4,8,16,32
@@ -1296,7 +1294,6 @@ def analyze_all_recorded_traces():
         latency_mean,latency_std = np.array(latency_list).mean(),np.array(latency_list).std()
         latency_mean_list += [latency_mean]
         latency_std_list += [latency_std]
-        # measurements_to_cdf(latency_list,f'figures/trace{tidx}.eps')
         if tidx in [6,13]:
             if tidx == 6:
                 print(f'Latency vs. batch size (WAN):',latency_mean_list,latency_std_list)
@@ -1390,8 +1387,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     mean_latency = np.array(latency_list).mean()
 
     # consistency+availability
-    # effective accuracy (treating missing deadline as random guess) vs. deadline for different approaches.
-    # effective accuracy under deadline, e.g., 100ms, 200ms, ...
+    # todo:[0.1*i for i in range(1,21)]
     if trace_selection < 10:
         deadlines = [0.2*i for i in range(1,10)]
     elif trace_selection < 20:
@@ -1437,8 +1433,9 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown += RMLaaS_latency_breakdown
     print('Accuracy and latency stats...')
     for stats in [all_accuracy,all_latency]:
-        print((np.array(stats).mean(axis=-1)).tolist())
-        print((np.array(stats).std(axis=-1)).tolist())
+        stats = np.array(stats).reshape(metrics_shape[:-1])
+        print(stats.mean(axis=-1).tolist())
+        print(stats.std(axis=-1).tolist())
     print('Effective accuracy and failure rate...')
     for stats in [all_effective_accuracy,all_failure_rate]:
         stats = np.array(stats).reshape(metrics_shape)
@@ -1450,7 +1447,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
 
 def simulation(model, arch, prune_mode, num_classes):
     # analyze trace
-    analyze_all_recorded_traces()
+    # analyze_all_recorded_traces()
     print('Simulation with test batch size:',args.test_batch_size)
     model.eval()
     all_map_time = []
@@ -1507,11 +1504,6 @@ def simulation(model, arch, prune_mode, num_classes):
     # comm_size = 352*8*8*4*args.test_batch_size
     rep = 10
     if args.split_num == 2:
-        # wan latency
-        print('FCC broadband traces (10 reps)...')
-        print('Recorded traces (10 reps)...')
-        print('Varied std traces (10 reps*num of stds)...')
-        print('Varied loss traces (10 reps*num of losses)...')
         num_stds = 5
         num_loss_rates = 5
         num_ddls = 9
@@ -1523,13 +1515,20 @@ def simulation(model, arch, prune_mode, num_classes):
             # end of each trace group
             if trace_selection in [rep-1,rep+9,rep*num_stds+99,rep*num_loss_rates+199]:
                 if trace_selection in [rep-1,rep+9]:
+                    if trace_selection == rep-1:
+                        print('Finished: FCC broadband traces (10 reps)...')
+                    else:
+                        print('Finished recorded Wi-Fi traces (10 reps)...')
                     metrics_shape = (3,rep,num_ddls)
                 elif trace_selection == rep*num_stds+99:
+                    print('Finished varied std traces (10 reps*num of stds)...')
                     metrics_shape = (3,rep,num_stds,num_ddls)
                 elif trace_selection == rep*num_loss_rates+199:
+                    print('Finished varied loss traces (10 reps*num of losses)...')
                     metrics_shape = (3,rep,num_loss_rates)
                 analyze_trace_metrics(metrics_of_all_traces,metrics_shape)
                 metrics_of_all_traces = []
+        # how about replicate two-node to four nodes
     elif args.split_num == 3 or args.split_num == 4:
         metrics_of_all_traces = []
         num_ddls = 9

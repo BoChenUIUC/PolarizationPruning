@@ -1433,8 +1433,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown += RMLaaS_latency_breakdown
     print('Accuracy and latency stats...')
     for stats in [all_accuracy,all_latency]:
-        print('DDDDDDDDDDDD:',len(stats),len(stats[0]),metrics_shape)
-        stats = np.array(stats).reshape(metrics_shape[:-1])
+        stats = np.array(stats)
         print(stats.mean(axis=-1).tolist())
         print(stats.std(axis=-1).tolist())
     print('Effective accuracy and failure rate...')

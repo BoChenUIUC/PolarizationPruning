@@ -1730,7 +1730,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
                     data_time=data_time, loss=losses, s_loss=avg_sparsity_loss,
                     top1=top1, top5=top5, lr=optimizer.param_groups[0]['lr']))
 
-        if args.debug and i == 2*num_mini_batch-1: break
+        if args.debug and i == 2*num_mini_batch-2: break
     return losses.avg
 
 

@@ -1306,17 +1306,9 @@ def analyze_all_recorded_traces():
 
 def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh = 0.016):
     # analyze RMLaaS
-    # calculate complete time for different subnets
-    # find the result on each node and find the best among nodes
-    # complete partition's time is infinite if its deadline is passed
-    #s
-    # each node keeps the largest partition within time limit
-    # result of the fastest node will be kept 
-    # complete and in-complete execution time
     RMLaaS_res = []
     RMLaaS_latency = []
     RMLaaS_latency_breakdown = []
-    subnet_size_list = [4,6,8] # possible number of different subnetworks for different node numbers
     num_query = len(all_correct[0])
     for query_index in range(num_query):
         # for each node, 
@@ -1488,6 +1480,10 @@ def simulation(model, arch, prune_mode, num_classes):
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
+    print(all_correct)
+    print('--------------------')
+    print(correct_lst)
+    exit(0)
 
     num_query = len(all_correct[0])
     # inter-node latency

@@ -179,8 +179,13 @@ def analyze_all_recorded_traces():
 		'/home/bo/Dropbox/Research/SIGCOMM23/images/latency_vs_bs.eps',
 		'Query Batch Size','Latency per Query (s)',yerr=yerr)	
 
+# correctness vs. # of Queries
+# one node: no loss vs. loss
+# two nodes: node 0/1 curve and total curve
+
+# success rate vs. nodes
+
 analyze_all_recorded_traces()
-exit(0)
 
 plot_latency_breakdown()
 

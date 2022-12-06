@@ -1729,8 +1729,8 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
                     epoch=epoch, batch_time=batch_time,
                     data_time=data_time, loss=losses, s_loss=avg_sparsity_loss,
                     top1=top1, top5=top5, lr=optimizer.param_groups[0]['lr']))
-        
-        if args.debug and batch_idx == 1: break
+
+        if args.debug and batch_idx == 10: break
     return losses.avg
 
 

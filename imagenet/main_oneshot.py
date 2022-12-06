@@ -1525,7 +1525,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
             else:
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(args,model)
         elif args.loss in {LossType.PARTITION} and i%num_mini_batch==0:
-            deepcopy = len(args.alphas)>1
+            deepcopy = False
             nonzero = torch.nonzero(torch.tensor(args.alphas))
             net_id = int(nonzero[batch_idx%len(nonzero)][0])
             # net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])

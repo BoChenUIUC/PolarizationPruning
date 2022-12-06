@@ -1642,7 +1642,8 @@ def test(modelx,map_reduce=False,standalone=False):
                 infer_time_lst.append(time.time()-end)
             correct += pred.eq(target.data.view_as(pred)).cpu().sum()
             if map_reduce or standalone:
-                correct_lst.append(pred.eq(target.data.view_as(pred)).cpu().sum()/data.size(0))
+                correctness = pred.eq(target.data.view_as(pred)).cpu().sum()/data.size(0)
+                correct_lst.append(float(correctness))
     
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst

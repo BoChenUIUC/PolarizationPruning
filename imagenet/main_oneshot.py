@@ -1516,7 +1516,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
     train_iter = tqdm(train_loader)
     for i, (image, target) in enumerate(train_iter):
         batch_idx = i//num_mini_batch
-        if args.debug and batch_idx >= 1: break
+        if args.debug and batch_idx >= 10: break
         if args.loss in {LossType.PROGRESSIVE_SHRINKING} and i%num_mini_batch==0:
             if not args.OFA:
                 nonzero = torch.nonzero(torch.tensor(args.alphas))

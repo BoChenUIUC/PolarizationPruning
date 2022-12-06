@@ -500,6 +500,7 @@ class ResNetExpand(nn.Module):
             x = self.fc(x)
             reduce_time = time.time() - end
             return x,None
+            # need to find out the fault
             # return x, (map_time,reduce_time)
 
     def prune_model(self, **kwargs):

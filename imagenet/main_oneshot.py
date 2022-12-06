@@ -1682,9 +1682,9 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
         if (i)%num_mini_batch == num_mini_batch-1:
             if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
                 update_shared_model(args,model,dynamic_model,freeze_mask,batch_idx,ch_indices,net_id)
-            if args.debug and i == 2*num_mini_batch-1: break
             if args.loss in {LossType.PARTITION} and deepcopy:
                 update_partitioned_model(args,model,dynamic_model,net_id,batch_idx)
+            if args.debug and i == 2*num_mini_batch-1: break
             if args.loss not in {LossType.PROGRESSIVE_SHRINKING, LossType.PARTITION} or batch_idx%args.ps_batch==(args.ps_batch-1):
                 optimizer.step()
                 optimizer.zero_grad()

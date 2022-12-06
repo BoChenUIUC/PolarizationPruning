@@ -1516,7 +1516,6 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
     train_iter = tqdm(train_loader)
     for i, (image, target) in enumerate(train_iter):
         batch_idx = i//num_mini_batch
-        if args.debug and batch_idx >= 1: break
         if args.loss in {LossType.PROGRESSIVE_SHRINKING} and i%num_mini_batch==0:
             if not args.OFA:
                 nonzero = torch.nonzero(torch.tensor(args.alphas))
@@ -1525,7 +1524,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
             else:
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(args,model)
         elif args.loss in {LossType.PARTITION} and i%num_mini_batch==0:
-            deepcopy = True
+            deepcopy = len(args.alphas)>1
             nonzero = torch.nonzero(torch.tensor(args.alphas))
             net_id = int(nonzero[batch_idx%len(nonzero)][0])
             # net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
@@ -1730,6 +1729,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
                     epoch=epoch, batch_time=batch_time,
                     data_time=data_time, loss=losses, s_loss=avg_sparsity_loss,
                     top1=top1, top5=top5, lr=optimizer.param_groups[0]['lr']))
+        if args.debug and batch_idx ==1: break
     return losses.avg
 
 

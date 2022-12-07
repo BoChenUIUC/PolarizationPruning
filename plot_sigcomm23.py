@@ -15,8 +15,8 @@ markers = ['o','^','s','>','P','D']
 
 
 def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,lfsize=labelsize_b,legloc='best',
-				xticks=None,yticks=None,ncol=None, yerr=None,
-				use_arrow=False,arrow_coord=(0.4,30)):
+				xticks=None,yticks=None,ncol=None, yerr=None, xticklabel=None,yticklabel=None,xlim=None,ylim=None,
+				use_arrow=False,arrow_coord=(0.4,30),markersize=8):
 	fig, ax = plt.subplots()
 	ax.grid(zorder=0)
 	for i in range(len(XX)):
@@ -25,17 +25,25 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,lfsize=lab
 			plt.plot(xx, yy, color = color[i], marker = markers[i], 
 				# linestyle = linestyles[i], 
 				label = label[i], 
-				linewidth=2, markersize=8)
+				linewidth=2, markersize=markersize)
 		else:
 			plt.errorbar(xx, yy, yerr=yerr[i], color = color[i], 
 				marker = markers[i], label = label[i], 
-				linewidth=2, markersize=8)
+				linewidth=2, markersize=markersize)
 	plt.xlabel(xlabel, fontsize = lbsize)
 	plt.ylabel(ylabel, fontsize = lbsize)
+	if xlim is not None:
+		ax.set_xlim(xlim)
+	if ylim is not None:
+		ax.set_ylim(ylim)
 	if xticks is not None:
 		plt.xticks(xticks,fontsize=lfsize)
 	if yticks is not None:
 		plt.yticks(yticks,fontsize=lfsize)
+	if xticklabel is not None:
+		ax.set_xticklabels(xticklabel)
+	if yticklabel is not None:
+		ax.set_yticklabels(yticklabel)
 	if use_arrow:
 		ax.text(
 		    arrow_coord[0], arrow_coord[1], "Better", ha="center", va="center", rotation=-45, size=lbsize-8,
@@ -189,20 +197,63 @@ our_correctness = [[1.0, 0.9375, 0.96875, 0.9375, 0.9375, 0.96875, 0.96875, 0.87
 solo_correctness = [0.75, 0.875, 0.9375, 0.9375, 0.9375, 0.9375, 0.9375, 0.9375, 0.96875, 0.9375, 0.90625, 0.9375, 0.9375, 0.9375, 1.0, 1.0, 0.9375, 0.90625, 0.9375, 0.90625, 0.96875, 0.96875, 1.0, 0.9375, 0.9375, 0.875, 0.9375, 0.90625, 0.875, 0.96875, 0.9375, 0.90625, 0.875, 0.96875, 0.96875, 0.9375, 0.96875, 0.96875, 0.96875, 0.9375, 0.9375, 0.90625, 0.90625, 0.90625, 0.90625, 1.0, 0.78125, 0.90625, 1.0, 0.9375, 0.9375, 1.0, 0.90625, 0.90625, 0.9375, 0.96875, 0.84375, 0.96875, 0.96875, 0.96875, 0.9375, 0.90625, 0.9375, 0.96875, 1.0, 1.0, 0.9375, 0.96875, 0.84375, 1.0, 1.0, 0.96875, 0.84375, 1.0, 0.90625, 0.9375, 0.96875, 1.0, 0.90625, 0.96875, 1.0, 0.96875, 0.96875, 1.0, 0.96875, 0.96875, 0.90625, 0.96875, 0.9375, 1.0, 0.96875, 1.0, 0.9375, 0.90625, 0.96875, 0.96875, 0.9375, 1.0, 0.9375, 1.0, 0.90625, 0.9375, 0.96875, 0.9375, 0.96875, 0.84375, 0.96875, 0.90625, 0.875, 0.90625, 0.9375, 0.96875, 1.0, 0.9375, 0.9375, 0.96875, 0.9375, 0.84375, 0.96875, 0.875, 0.90625, 0.9375, 0.96875, 0.90625, 0.96875, 0.9375, 1.0, 0.90625, 0.90625, 0.96875, 0.9375, 1.0, 0.90625, 0.90625, 0.9375, 0.90625, 0.96875, 0.8125, 0.9375, 0.84375, 0.90625, 0.84375, 0.90625, 1.0, 0.96875, 1.0, 0.9375, 0.96875, 0.875, 1.0, 0.96875, 1.0, 0.875, 0.875, 0.9375, 0.96875, 1.0, 0.84375, 0.9375, 0.875, 0.96875, 1.0, 0.90625, 0.9375, 0.875, 0.96875, 0.96875, 0.96875, 0.96875, 0.96875, 0.90625, 0.90625, 0.90625, 0.96875, 0.9375, 0.8125, 0.9375, 0.9375, 0.96875, 0.90625, 0.96875, 0.90625, 1.0, 0.96875, 1.0, 0.9375, 1.0, 0.9375, 0.9375, 0.9375, 0.875, 0.90625, 0.875, 0.96875, 1.0, 0.90625, 0.84375, 0.9375, 0.9375, 1.0, 1.0, 0.875, 1.0, 1.0, 0.9375, 0.90625, 0.96875, 0.90625, 1.0, 1.0, 0.90625, 0.96875, 0.96875, 1.0, 0.96875, 0.96875, 0.875, 0.90625, 0.96875, 0.90625, 1.0, 0.96875, 0.96875, 1.0, 0.875, 0.9375, 1.0, 0.875, 0.90625, 0.96875, 0.96875, 0.96875, 0.875, 0.96875, 0.9375, 0.875, 0.96875, 0.90625, 0.90625, 0.90625, 0.9375, 1.0, 0.84375, 1.0, 0.9375, 1.0, 0.96875, 0.9375, 0.875, 0.875, 0.9375, 0.9375, 0.96875, 0.90625, 0.96875, 0.9375, 0.96875, 0.96875, 0.9375, 0.96875, 0.96875, 1.0, 0.96875, 0.9375, 0.90625, 0.96875, 0.84375, 1.0, 1.0, 0.96875, 0.90625, 0.96875, 0.90625, 1.0, 0.9375, 1.0, 0.9375, 0.90625, 0.96875, 0.96875, 1.0, 0.90625, 1.0, 0.90625, 1.0, 0.96875, 0.90625, 0.96875, 0.96875, 0.96875, 0.9375, 0.9375, 0.96875, 0.9375, 0.90625, 0.9375, 0.96875, 1.0, 0.96875, 0.875, 0.90625, 0.9375, 0.9375, 0.96875, 0.875, 0.9375, 0.96875, 0.84375, 0.90625, 0.96875, 0.875, 1.0, 1.0]
 our_correctness = np.array(our_correctness)
 solo_correctness = np.array(solo_correctness)
-our_selection = [2, 1, 1, 2, 0, 1, 0, 0, 0, 1, 0, 0, 2, 0, 3, 0, 0, 2, 0, 0, 2, 0, 0, 0, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 2, 1, 0, 2, -1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 2, 0, 0, 1, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 2, 0, 0, 3, 3, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 2, 0, 0, 2, 1, 1, 0, 0, 1, 3, 0, 1, 1, 1, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 3, 1, 1, 0, 0, 1, 1, 2, 0, 3, 1, 1, 0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 1, 1, 0, 0, 1, 1, 0, 1, 3, 1, 2, 1, 1, 1, 1, 0, 2, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3, 1, 0, 0, 0, 1, 3, 2, 0, 0, 2, 2, 2, 2, 3, 0, 1, 0, 3, 1, 0, 3, 3, 0, 1, 0, 1, 1, 1, 2, 1, 1, 2, 2, 0, 1, 1, 0, 0, 1, 1, 0, 2, 1, 0, 1, 2, 1, 1, 1, 0, 2, 1, 1, 0, 1, 1, 1, 3, 1, 1, 1, 2, 1, 2, 0, 0, 1, 1, -1, 1, 0, 1, 0, 1, 3, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-solo_selection = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-dbl_selection = [0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, -1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, -1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+our_selection = [2, 1, 1, 2, 0, 1, 0, 3, 0, 1, 3, 3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 3, 0, 1, 1, 2, 0, 3, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 3, 0, 0, 1, 0, 0, 0, 0, 0, 3, 0, 0, 2, 0, 0, 0, 2, 3, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 3, 1, 2, 0, 1, 0, 0, 0, 0, 2, 0, 1, 1, 3, 0, 1, 1, 0, 1, -1, 1, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 1, 0, 2, 2, 0, 0, 0, 0, 0, 0, 2, 3, 2, 0, 0, 1, 1, 1, 0, 1, 3, 1, 0, 1, 1, 0, 3, 1, 1, 0, 0, 1, 1, 1, 0, 2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 1, 1, 2, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 3, 1, 0, 0, 1, 3, 0, 0, 1, 0, 0, 2, 1, 2, 0, 0, 1, 0, 0, 2, 3, 1, 0, 0, 0, 1, 1, 1, 1, 0, 2, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 3, 1, 1, 0, 0, 2, 1, 2, 0, 1, 3, 0, 0, 1, 0, 1, 3, 3, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 0, 0, 3, 1, 1, 3, 3, 1, 0, 1, 0, 1, 1, 1, 3, 3, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+solo_selection = [0, 0, 0, 0, 0, 0, 0, -1, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, -1, -1, 0, 0, 0, 0, 0, 0, 0, -1, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+dbl_selection = [0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, -1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 our_selection = np.array(our_selection)
 solo_selection = np.array(solo_selection)
 dbl_selection = np.array(dbl_selection)
+node0_liveness = [True, True, True, True, True, True, True, False, True, True, False, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, False, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, False, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, False, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, False, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, False, False, True, True, True, True, True, True, True, False, False, True, True, False, True, True, True, True, True, True, True, True, True, True]
+node1_liveness = [False, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, False, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, False, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, False, True, False, True, True, True, False, True, True, True, True, True, True, True, True, True, False, False, True, True, True, True, True, True, False, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, False, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True]
+node0_liveness = np.array(node0_liveness)
+node1_liveness = np.array(node1_liveness)
 
-
-num_subnet,num_query = our_correctness.shape
+num_subnet,num_query = len(our_correctness),len(our_correctness[0])
 
 solo_correctness_w_loss = np.array(solo_correctness)
-solo_correctness_w_loss[solo_selection==-1] = -1
+solo_correctness_w_loss[solo_selection==-1] = 0
 
 dbl_correctness_w_loss = np.array(solo_correctness)
+dbl_correctness_w_loss[dbl_selection==-1] = 0
+
+our_correctness_w_loss = np.zeros(num_query)
+for i in range(4):
+	our_correctness_w_loss[our_selection==i] = our_correctness[i][our_selection==i]
+our_correctness_w_loss[our_selection==-1] = 0
+
+y = []
+y += [node0_liveness[:50]+4]
+y += [solo_correctness[:50]+2]
+y += [solo_correctness_w_loss[:50]] 
+x = [range(1,51) for _ in range(len(y))]
+line_plot(x, y,['N#0 Liveness','Acc w/o loss(94.12%)','Acc w/ loss'],colors,
+		'/home/bo/Dropbox/Research/SIGCOMM23/images/one_machine_w_loss.eps',
+		'# of Queries','',markersize=4,yticks=[0,1,2,3,4,5],yticklabel=['NR','100%','NR','100%','Dead','Alive'],ncol=3,legloc='upper center',
+		ylim=[0,6])
+
+y = []
+y += [node0_liveness[:50]+4]
+y += [node1_liveness[:50]+2]
+y += [dbl_correctness_w_loss[:50]]
+x = [range(1,51) for _ in range(len(y))]
+line_plot(x, y,['N#0 Liveness','N#1 Liveness','Two-replica Acc'],colors,
+		'/home/bo/Dropbox/Research/SIGCOMM23/images/two_machine_w_loss.eps',
+		'# of Queries','',markersize=4,yticks=[0,1,2,3,4,5],yticklabel=['NR','100%','Dead','Alive','Dead','Alive'],ncol=3,legloc='upper center',
+		ylim=[0,6])
+
+y = []
+y += [our_correctness[0,:50]+13]
+y += [our_correctness[1,:50]+11]
+y += [our_correctness[2,:50]+9]
+y += [our_correctness[3,:50]+7]
+y += [our_selection[:50]+3]
+y += [our_correctness_w_loss[:50]]
+x = [range(1,51) for _ in range(len(y))]
+line_plot(x, y,['SN#0 Acc(94.16%)','SN#1 Acc(94.04%)','SN#2 Acc(93.80%)','SN#3 Acc(93.97%)','Selected SN','Ours'],colors,
+		'/home/bo/Dropbox/Research/SIGCOMM23/images/two_machine_ours_w_loss.eps',
+		'# of Queries','',markersize=4,yticks=range(15),
+		yticklabel=['NR','100%','NR','SN#0','SN#1','SN#2','SN#3','NR','100%','NR','100%','NR','100%','NR','100%'],ncol=3,legloc='upper center',
+		ylim=[0,18])
 
 
 # available service networks

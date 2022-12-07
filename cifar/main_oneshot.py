@@ -1397,7 +1397,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
     if trace_selection == 201:
         print('----------Selected subnets------------')
         print(selection_list)
-        prin('--------------------------------------')
+        print('--------------------------------------')
 
     metrics2 = evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)
 

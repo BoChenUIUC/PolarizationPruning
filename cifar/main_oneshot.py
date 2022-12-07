@@ -1306,6 +1306,7 @@ def analyze_all_recorded_traces():
 
 def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh = 0.016):
     # analyze RMLaaS
+    # DCN should also be lossy because nodes can go down
     RMLaaS_res = []
     RMLaaS_latency = []
     RMLaaS_latency_breakdown = []
@@ -1322,6 +1323,8 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             subnet_idx = node_idx + args.split_num
             for other_node_idx in range(args.split_num):
                 if other_node_idx == node_idx:continue
+                # skip nodes that are lost
+                if wanlatency_list[other_node_idx][query_index] > 1000:continue
                 dcn_conn_idx = node_idx*args.split_num + other_node_idx
                 dcn_latency = dcnlatency_list[dcn_conn_idx][query_index]
                 other_node_latency = [all_map_time[other_node_idx+args.split_num][query_index], dcn_latency]
@@ -1344,7 +1347,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [subnet_sel]
-    if trace_selection in {200,201,202,203,204}:
+    if trace_selection == 201:
         print('----------Selected subnets------------')
         print(selection_list)
 
@@ -1365,7 +1368,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [0]
-    if trace_selection in {200,201,202,203,204}:
+    if trace_selection == 201:
         print('----------Selected subnets------------')
         print(selection_list)
 
@@ -1391,10 +1394,10 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [selected_node]
-    if trace_selection in {200,201,202,203,204}:
+    if trace_selection == 201:
         print('----------Selected subnets------------')
         print(selection_list)
-        print('--------------------------------------')
+        prin('--------------------------------------')
 
     metrics2 = evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)
 

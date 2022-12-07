@@ -1309,6 +1309,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
     RMLaaS_res = []
     RMLaaS_latency = []
     RMLaaS_latency_breakdown = []
+    selection_list = []
     num_query = len(all_correct[0])
     for query_index in range(num_query):
         # for each node, 
@@ -1334,27 +1335,46 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             if query_latency is None or sum(node_latency) < sum(query_latency):
                 query_latency = node_latency
                 query_result = all_correct[subnet_idx][query_index]
+                subnet_sel = subnet_idx
         RMLaaS_res += [query_result]
         RMLaaS_latency += [sum(query_latency)]
         RMLaaS_latency_breakdown += [query_latency]
+        if sum(query_latency)>1000:
+            # no response
+            selection_list += [-1]
+        else:
+            selection_list += [subnet_sel]
+    if trace_selection == 201:
+        print('----------Selected subnets------------')
+        print(selection_list)
 
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection,service_type=0,correct_lst=all_correct)
 
     # analyze no replication
     no_rep_res = []
     no_rep_latency = []
+    selection_list = []
     query_index = 0
     for ift0,c0 in zip(infer_time_lst,correct_lst):
         latency = ift0 + wanlatency_list[0][query_index]
         no_rep_res += [c0]
         no_rep_latency += [latency]
         query_index += 1
+        if latency>1000:
+            # no response
+            selection_list += [-1]
+        else:
+            selection_list += [0]
+    if trace_selection == 201:
+        print('----------Selected subnets------------')
+        print(selection_list)
 
     metrics1 = evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection,service_type=1)
 
     # analyze total replication
     total_rep_res = []
     total_rep_latency = []
+    selection_list = []
     query_index = 0
     for ift0,c0 in zip(infer_time_lst,correct_lst):
         latency = wanlatency_list[0][query_index]
@@ -1366,6 +1386,15 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
         total_rep_res += [c0]
         total_rep_latency += [latency]
         query_index += 1
+        if latency>1000:
+            # no response
+            selection_list += [-1]
+        else:
+            selection_list += [selected_node]
+    if trace_selection == 201:
+        print('----------Selected subnets------------')
+        print(selection_list)
+        print('--------------------------------------')
 
     metrics2 = evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)
 
@@ -1480,10 +1509,10 @@ def simulation(model, arch, prune_mode, num_classes):
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
-    print(all_correct)
-    print('--------------------')
-    print(correct_lst)
-    exit(0)
+    # print(all_correct)
+    # print('--------------------')
+    # print(correct_lst)
+    # exit(0)
 
     num_query = len(all_correct[0])
     # inter-node latency

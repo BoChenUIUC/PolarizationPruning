@@ -1347,10 +1347,10 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [subnet_sel]
-    if trace_selection == 204:
+    if trace_selection == 201:
         print('----------Selected subnets------------')
         print(selection_list)
-        print(RMLaaS_latency)
+        print(wanlatency_list)
 
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection,service_type=0,correct_lst=all_correct)
 
@@ -1442,7 +1442,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         all_accuracy[0] += metrics0[0]
         all_accuracy[1] += metrics1[0]
         all_accuracy[2] += metrics2[0]
-        # accumulate latencu
+        # accumulate latency
         all_latency[0] += metrics0[1]
         all_latency[1] += metrics1[1]
         all_latency[2] += metrics2[1]

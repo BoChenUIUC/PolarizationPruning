@@ -1344,7 +1344,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [subnet_sel]
-    if trace_selection == 201:
+    if trace_selection in {200,201,202,203,204}:
         print('----------Selected subnets------------')
         print(selection_list)
 
@@ -1365,7 +1365,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [0]
-    if trace_selection == 201:
+    if trace_selection in {200,201,202,203,204}:
         print('----------Selected subnets------------')
         print(selection_list)
 
@@ -1391,7 +1391,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [selected_node]
-    if trace_selection == 201:
+    if trace_selection in {200,201,202,203,204}:
         print('----------Selected subnets------------')
         print(selection_list)
         print('--------------------------------------')

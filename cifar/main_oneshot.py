@@ -1347,7 +1347,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [subnet_sel]
-    if trace_selection == 201:
+    if trace_selection == 204:
         print('----------Selected subnets------------')
         print(selection_list)
         print(RMLaaS_latency)

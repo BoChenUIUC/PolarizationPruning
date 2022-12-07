@@ -1347,9 +1347,12 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [subnet_sel]
-        if wanlatency_list[0][query_index] > 1000 and wanlatency_list[1][query_index] > 1000:
-            print('???????',sum(query_latency),selection_list[-1])
     if trace_selection == 201:
+        print('----------node liveness--------------')
+        node0_liveness = np.array(wanlatency_list[0])<1000
+        node1_liveness = np.array(wanlatency_list[1])<1000
+        print(node0_liveness)
+        print(node1_liveness)
         print('----------Selected subnets------------')
         print(selection_list)
 

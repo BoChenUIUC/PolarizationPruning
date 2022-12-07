@@ -1351,8 +1351,8 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
         print('----------node liveness--------------')
         node0_liveness = np.array(wanlatency_list[0])<1000
         node1_liveness = np.array(wanlatency_list[1])<1000
-        print(node0_liveness)
-        print(node1_liveness)
+        print(node0_liveness.tolist())
+        print(node1_liveness.tolist())
         print('----------Selected subnets------------')
         print(selection_list)
 
@@ -1475,6 +1475,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print((np.array(latency_breakdown).std(axis=0)).tolist())
 
 def simulation(model, arch, prune_mode, num_classes):
+    np.random.seed(0)
     # analyze trace
     # analyze_all_recorded_traces()
     print('Simulation with test batch size:',args.test_batch_size)

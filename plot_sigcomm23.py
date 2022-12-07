@@ -195,6 +195,8 @@ dbl_selection = [0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 
 our_selection = np.array(our_selection)
 solo_selection = np.array(solo_selection)
 dbl_selection = np.array(dbl_selection)
+
+
 num_subnet,num_query = our_correctness.shape
 
 solo_correctness_w_loss = np.array(solo_correctness)

@@ -1350,6 +1350,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
     if trace_selection == 201:
         print('----------Selected subnets------------')
         print(selection_list)
+        print(RMLaaS_latency)
 
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection,service_type=0,correct_lst=all_correct)
 

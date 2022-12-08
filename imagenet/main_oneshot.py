@@ -532,20 +532,23 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         args.ps_batch = 1
 
+    if args.split_running_stat:
+        for module_name, bn_module in model.named_modules():
+            if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
+            for nid in range(len(args.alphas)):
+                bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
+                bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
+
     # optionally resume from a checkpoint
     if args.resume:
         if os.path.isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
-            if args.split_running_stat and args.load_running_stat:
-                for module_name, bn_module in model.named_modules():
-                    if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module,nn.BatchNorm1d): continue
-                    # set the right running mean/var
-                    for nid in range(len(args.alphas)):
-                        bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
-                        bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
             if hasattr(checkpoint,'prec_list'):print(checkpoint['prec_list'])
-            model.load_state_dict(checkpoint['state_dict'])
+            if args.evaluate:
+                model.load_state_dict(checkpoint['state_dict'])
+            else:
+                model.load_state_dict(checkpoint['state_dict'], strict=False)
             if not args.load_param_only:
                 args.start_epoch = checkpoint['epoch']
                 best_prec1 = checkpoint['best_prec1']
@@ -561,14 +564,6 @@ def main_worker(gpu, ngpus_per_node, args):
 
     #print("Model loading completed. Model Summary:")
     #print(model)
-
-    if args.split_running_stat:
-        if not args.load_running_stat:
-            for module_name, bn_module in model.named_modules():
-                if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
-                for nid in range(len(args.alphas)):
-                    bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
-                    bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
 
     # create the optimizer
     if args.no_bn_wd:
@@ -1526,8 +1521,8 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
         elif args.loss in {LossType.PARTITION} and i%num_mini_batch==0:
             deepcopy = len(args.alphas)>1
             nonzero = torch.nonzero(torch.tensor(args.alphas))
-            net_id = int(nonzero[batch_idx%len(nonzero)][0])
-            # net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
+            # net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
             dynamic_model = sample_partition_network(args,model,net_id,deepcopy=deepcopy)
         # the adjusting only work when epoch is at decay_epoch
         adjust_learning_rate(optimizer, epoch, lr=args.lr, decay_epoch=args.decay_epoch,

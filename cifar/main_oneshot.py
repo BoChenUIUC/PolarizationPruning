@@ -1658,7 +1658,7 @@ if args.evaluate:
     exit(0)
 
 if args.simulate:
-    assert args.test_batch_size == 32
+    # assert args.test_batch_size == 32
     simulation(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
     exit(0)
 

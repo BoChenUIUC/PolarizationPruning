@@ -1204,7 +1204,7 @@ def create_wan_trace(trace_selection,num_query):
                 if line_count == num_query*args.split_num:break
     elif trace_selection < 20:
         # recorded trace
-        trace_start =0# (trace_selection-10)*800
+        trace_start = (trace_selection-10)*800
         with open(f'WAN/{12*args.test_batch_size:06d}','r') as f:
             line_count = 0
             for l in f.readlines()[trace_start:]:
@@ -1470,9 +1470,14 @@ def simulation(model, arch, prune_mode, num_classes):
         line_count = 0
         for l in f.readlines():
             l = l.strip().split(' ')
-            dcnlatency_list[line_count//num_query] += [float(l[0])/1000.]
+            # dcnlatency_list[line_count//num_query] += [float(l[0])/1000.]
+            dcnlatency_list[0] += [float(l[0])/1000.]
+            dcnlatency_list[1] += [float(l[0])/1000.]
+            dcnlatency_list[2] += [float(l[0])/1000.]
+            dcnlatency_list[3] += [float(l[0])/1000.]
             line_count += 1
-            if line_count == num_query*num_dcn_conns:break
+            # if line_count == num_query*num_dcn_conns:break
+            if line_count == num_query:break
     # comm_size = 352*8*8*4*args.test_batch_size
     rep = 10
     if args.split_num in {2,3,4}:
@@ -1480,8 +1485,8 @@ def simulation(model, arch, prune_mode, num_classes):
         num_ddls = 9
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]+[200+i for i in range(rep*num_loss_rates)]
-        if args.split_num == 2:
-            traces += [10+i for i in range(rep)]
+        # if args.split_num == 2:
+        #     traces += [10+i for i in range(rep)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)

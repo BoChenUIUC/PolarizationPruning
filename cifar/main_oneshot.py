@@ -1402,7 +1402,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown[2] += total_rep_latency_breakdown
     print('Accuracy and latency stats...')
     for stats in [all_accuracy,all_latency]:
-        print(stats)
+        # print(stats)
         stats = np.array(stats)
         print(stats.mean(axis=-1).tolist())
         print(stats.std(axis=-1).tolist())

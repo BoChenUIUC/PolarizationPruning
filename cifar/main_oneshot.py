@@ -1458,8 +1458,8 @@ def simulation(model, arch, prune_mode, num_classes):
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
-    print('correctness:')
-    print(all_correct,correct_lst)
+    # print('correctness:')
+    # print(all_correct,correct_lst)
 
     num_query = len(all_correct[0])
     # inter-node latency

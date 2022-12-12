@@ -1298,7 +1298,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
         no_rep_latency += [sum(latency)]
         no_rep_latency_breakdown += [latency]
         query_index += 1
-        if latency>1000:
+        if sum(latency)>1000:
             # no response
             selection_list += [-1]
         else:
@@ -1327,7 +1327,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
         total_rep_latency += [sum(latency)]
         total_rep_latency_breakdown += [latency]
         query_index += 1
-        if latency>1000:
+        if sum(latency)>1000:
             # no response
             selection_list += [-1]
         else:

@@ -297,6 +297,7 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
         teacher_path = './original/vgg/model_best.pth.tar'
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
+print('r2',torch.cuda.memory_allocated(0)/1024/1024)
 def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     """
     compute the FLOPs for CIFAR models
@@ -463,6 +464,7 @@ if args.VLB_conv:
         for idx,l in enumerate(layer):
             if idx%sampling_interval == sampling_interval-1:
                 model.aggr_sizes += [l.conv2.weight.size(0)]
+print('r4',torch.cuda.memory_allocated(0)/1024/1024)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

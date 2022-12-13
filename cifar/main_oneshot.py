@@ -296,10 +296,6 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     else:
         teacher_path = './original/vgg/model_best.pth.tar'
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
-    teacher_model.cpu()
-    print('t',torch.cuda.memory_allocated(0)/1024/1024)
-    teacher_model.cuda()
-    print('ta',torch.cuda.memory_allocated(0)/1024/1024)
 
 def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     """
@@ -836,7 +832,6 @@ def gen_partition_mask_two_split(net_id,weight_size):
 
 def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
     if deepcopy:
-        print(net_id,torch.cuda.memory_allocated(0)/1024/1024)
         dynamic_model = copy.deepcopy(old_model)
     else:
         dynamic_model = old_model
@@ -904,7 +899,6 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
         with torch.no_grad():
             dynamic_model.aggr[0].weight.data = dynamic_model.aggr[0].weight.data[:,mask==1,:,:].clone()
 
-    print(net_id,torch.cuda.memory_allocated(0)/1024/1024)
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):

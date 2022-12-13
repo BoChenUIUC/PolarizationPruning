@@ -838,8 +838,11 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
     for module_name,bn_module in dynamic_model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:
-            bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
-            bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
+            bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].clone()
+            bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].clone()
+            for nid in range(len(args.alphas)):
+                bn_module._buffers[f"mean{nid}"] = None
+                bn_module._buffers[f"var{nid}"] = None
 
     for bn_module,sub_module in zip(*dynamic_model.get_partitionable_bns_n_convs()):
         with torch.no_grad():
@@ -859,15 +862,15 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                         bn_module.weight.data = bn_module.weight.data[out_chan_mask].clone()
                         bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
-                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
-                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
+                        bn_module.running_mean.data = bn_module.running_mean.data[out_chan_mask].clone()
+                        bn_module.running_var.data = bn_module.running_var.data[out_chan_mask].clone()
                     else:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                         sub_module.weight.data = sub_module.weight.data[:,in_chan_mask].clone()
                         bn_module.weight.data = bn_module.weight.data[out_chan_mask].clone()
                         bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
-                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
-                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
+                        bn_module.running_mean.data = bn_module.running_mean.data[out_chan_mask].clone()
+                        bn_module.running_var.data = bn_module.running_var.data[out_chan_mask].clone()
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
         class LambdaLayer(nn.Module):
             def __init__(self, lambd):
@@ -1420,23 +1423,6 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     for i in range(3):
         print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
 
-def check_model_size(old_model,name_str,use_onn=True):
-    static_model = copy.deepcopy(old_model)
-
-    ch_start = 0
-    bn_modules,convs = static_model.get_sparse_layers_and_convs()
-
-    ckpt = static_model.state_dict()
-    if use_onn:
-        key_of_running_stat = []
-        for k in ckpt.keys():
-            if 'running_mean' in k or 'running_var' in k:
-                key_of_running_stat.append(k)
-        for k in key_of_running_stat:
-            del ckpt[k]
-
-    torch.save({'state_dict':ckpt}, os.path.join(args.save, f'{name_str}.pth.tar'))
-
 def simulation(model, arch, prune_mode, num_classes):
     np.random.seed(0)
     print('Simulation with test batch size:',args.test_batch_size)
@@ -1457,8 +1443,6 @@ def simulation(model, arch, prune_mode, num_classes):
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
             all_correct += [correct_lst]
-            if args.split_num==2 and i in {2,3}:
-                check_model_size(masked_model,f'subnet{i}',True)
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
@@ -1478,7 +1462,6 @@ def simulation(model, arch, prune_mode, num_classes):
     # run originial model
     print('Running original ML service')
     infer_time_lst,correct_lst = test(teacher_model,standalone=True)
-    check_model_size(teacher_model,f'original',False)
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')

@@ -895,6 +895,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
             mask = torch.cat((mask,mask_par))
         with torch.no_grad():
             dynamic_model.aggr[0].weight.data = dynamic_model.aggr[0].weight.data[:,mask==1,:,:].clone()
+
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):
@@ -1419,6 +1420,23 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     for i in range(3):
         print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
 
+def check_model_size(old_model,name_str,use_onn=True):
+    static_model = copy.deepcopy(old_model)
+
+    ch_start = 0
+    bn_modules,convs = static_model.get_sparse_layers_and_convs()
+
+    ckpt = static_model.state_dict()
+    if use_onn:
+        key_of_running_stat = []
+        for k in ckpt.keys():
+            if 'running_mean' in k or 'running_var' in k:
+                key_of_running_stat.append(k)
+        for k in key_of_running_stat:
+            del ckpt[k]
+
+    torch.save({'state_dict':ckpt}, os.path.join(args.save, f'{name_str}.pth.tar'))
+
 def simulation(model, arch, prune_mode, num_classes):
     np.random.seed(0)
     print('Simulation with test batch size:',args.test_batch_size)
@@ -1439,6 +1457,8 @@ def simulation(model, arch, prune_mode, num_classes):
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
             all_correct += [correct_lst]
+            if args.split_num==2 and i in {2,3}:
+                check_model_size(masked_model,f'subnet{i}',True)
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
@@ -1458,6 +1478,7 @@ def simulation(model, arch, prune_mode, num_classes):
     # run originial model
     print('Running original ML service')
     infer_time_lst,correct_lst = test(teacher_model,standalone=True)
+    check_model_size(teacher_model,f'original',False)
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')

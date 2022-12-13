@@ -283,10 +283,10 @@ def compute_flops_weight(cuda=False):
 
 if args.flops_weighted:
     flops_weight_string = compute_flops_weight(cuda=True)
-
+print('r0',torch.cuda.memory_allocated(0)/1024/1024)
 if args.cuda:
     model.cuda()
-
+print('r1',torch.cuda.memory_allocated(0)/1024/1024)
 BASEFLOPS = compute_conv_flops(model, cuda=True)
 
 if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
@@ -431,7 +431,6 @@ if args.VLB_conv:
     from types import MethodType
     # 3->352
     def modified_forward(self,x):
-        print('b',torch.cuda.memory_allocated(0)/1024/1024)
         end = time.time()
         out_list = []
         out = F.relu(self.bn1(self.conv1(x)))
@@ -457,7 +456,6 @@ if args.VLB_conv:
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         reduce_time = time.time() - end
-        print('a',torch.cuda.memory_allocated(0)/1024/1024)
         return out, (map_time,reduce_time)
     model.forward = MethodType(modified_forward, model)
     model.aggr_sizes = [model.conv1.weight.size(0)]

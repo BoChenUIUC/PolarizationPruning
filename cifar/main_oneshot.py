@@ -1613,8 +1613,9 @@ def test(modelx,map_reduce=False,standalone=False):
                 data, target = data.cuda(), target.cuda()
             if standalone:
                 end = time.time()
+            print('-----',torch.cuda.memory_allocated(0)/1024/1024)
             output = modelx(data)
-            print(torch.cuda.memory_allocated(0)/1024/1024)
+            print('=======',torch.cuda.memory_allocated(0)/1024/1024)
             if isinstance(output, tuple):
                 output, output_aux = output
             pred = output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability

@@ -393,9 +393,6 @@ class ResNetExpand(nn.Module):
             if bridge_type == 0:
                 sampling_interval = 3
                 cfg = [3904,512,2048]
-            elif bridge_type == 1:
-                sampling_interval = 3
-                cfg = [3904,768]
             else:
                 exit(0)
             aggr_layers = []
@@ -405,6 +402,7 @@ class ResNetExpand(nn.Module):
                 aggr_layers.append(nn.ReLU())
             self.aggr = nn.Sequential(*aggr_layers)
             self.fc = nn.Linear(int(cfg[-1]), 1000)
+            self.aggr_sizes = [64, 256, 512, 1024, 2048]
 
         if expand_idx:
             # set channel expand index
@@ -499,9 +497,10 @@ class ResNetExpand(nn.Module):
             x = x.view(x.size(0), -1)
             x = self.fc(x)
             reduce_time = time.time() - end
-            return x,None
+            # return x,None
             # need to find out the fault
-            # return x, (map_time,reduce_time)
+            print('OK?')
+            return x, (map_time,reduce_time)
 
     def prune_model(self, **kwargs):
         """
@@ -664,6 +663,15 @@ class ResNetExpand(nn.Module):
                 if module not in par_modules_set:
                     non_par_modules.append(module)
         return non_par_modules
+
+    def get_downsample_modules(self):
+        downsample_modules = []
+        for n,m in self.named_modules():
+            if isinstance(m, Bottleneck):
+                m: Bottleneck
+                if m.downsample is not None:
+                    downsample_modules += [m.downsample]
+        return downsample_modules[0],downsample_modules[1]
 
     def get_output_gate(self) -> List[SparseGate]:
         """

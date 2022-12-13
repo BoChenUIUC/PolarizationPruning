@@ -1215,7 +1215,7 @@ def create_wan_trace(trace_selection,num_query):
     else:
         # read network traces + large latency = loss
         import csv
-        loss_rates = [0.05,0.1,0.15,0.2,0.25]
+        loss_rates = [0.05*i for i in range(1,11)]
         loss_rate = loss_rates[(trace_selection-200)%len(loss_rates)]
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1358,9 +1358,9 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # consistency+availability
     # todo:[0.1*i for i in range(1,21)]
     if trace_selection < 10:
-        deadlines = [0.2*i for i in range(1,10)]
+        deadlines = [0.1*i for i in range(1,21)]
     elif trace_selection < 20:
-        deadlines = [0.2+0.1*i for i in range(1,10)]
+        deadlines = [0.1*i for i in range(1,21)]
     elif trace_selection >=200:
         deadlines = [1000]
     ea_list = []
@@ -1400,20 +1400,23 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown[0] += RMLaaS_latency_breakdown
         latency_breakdown[1] += no_rep_latency_breakdown
         latency_breakdown[2] += total_rep_latency_breakdown
-    print('Accuracy and latency stats...')
-    for stats in [all_accuracy,all_latency]:
-        # print(stats)
-        stats = np.array(stats)
-        print(stats.mean(axis=-1).tolist())
-        print(stats.std(axis=-1).tolist())
+    # print('Accuracy and latency stats...')
+    # for stats in [all_accuracy,all_latency]:
+    #     # print(stats)
+    #     stats = np.array(stats)
+    #     print(stats.mean(axis=-1).tolist())
+    #     print(stats.std(axis=-1).tolist())
     print('Effective accuracy and failure rate...')
     for stats in [all_effective_accuracy,all_failure_rate]:
         stats = np.array(stats).reshape(metrics_shape)
         print((stats.mean(axis=1)).tolist())
+    for stats in [all_effective_accuracy,all_failure_rate]:
+        stats = np.array(stats).reshape(metrics_shape)
         print((stats.std(axis=1)).tolist())
     print('Latency breakdown...')
     for i in range(3):
         print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
+    for i in range(3):
         print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
 
 def simulation(model, arch, prune_mode, num_classes):
@@ -1470,19 +1473,14 @@ def simulation(model, arch, prune_mode, num_classes):
         line_count = 0
         for l in f.readlines():
             l = l.strip().split(' ')
-            # dcnlatency_list[line_count//num_query] += [float(l[0])/1000.]
-            dcnlatency_list[0] += [float(l[0])/1000.]
-            dcnlatency_list[1] += [float(l[0])/1000.]
-            dcnlatency_list[2] += [float(l[0])/1000.]
-            dcnlatency_list[3] += [float(l[0])/1000.]
+            dcnlatency_list[line_count//num_query] += [float(l[0])/1000.]
             line_count += 1
-            # if line_count == num_query*num_dcn_conns:break
-            if line_count == num_query:break
+            if line_count == num_query*num_dcn_conns:break
     # comm_size = 352*8*8*4*args.test_batch_size
     rep = 10
     if args.split_num in {2,3,4}:
-        num_loss_rates = 5
-        num_ddls = 9
+        num_loss_rates = 10
+        num_ddls = 20
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]+[200+i for i in range(rep*num_loss_rates)]
         # if args.split_num == 2:
@@ -1663,7 +1661,7 @@ if args.evaluate:
     exit(0)
 
 if args.simulate:
-    # assert args.test_batch_size == 32
+    assert args.test_batch_size == 32
     simulation(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
     exit(0)
 

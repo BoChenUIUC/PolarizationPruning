@@ -283,10 +283,10 @@ def compute_flops_weight(cuda=False):
 
 if args.flops_weighted:
     flops_weight_string = compute_flops_weight(cuda=True)
-print('r0',torch.cuda.memory_allocated(0)/1024/1024)
+
 if args.cuda:
     model.cuda()
-print('r1',torch.cuda.memory_allocated(0)/1024/1024)
+
 BASEFLOPS = compute_conv_flops(model, cuda=True)
 
 if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
@@ -296,9 +296,7 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     else:
         teacher_path = './original/vgg/model_best.pth.tar'
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
-    teacher_model.cpu()
 
-print('r2',torch.cuda.memory_allocated(0)/1024/1024)
 def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     """
     compute the FLOPs for CIFAR models
@@ -465,7 +463,6 @@ if args.VLB_conv:
         for idx,l in enumerate(layer):
             if idx%sampling_interval == sampling_interval-1:
                 model.aggr_sizes += [l.conv2.weight.size(0)]
-print('r3',torch.cuda.memory_allocated(0)/1024/1024)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
@@ -474,7 +471,6 @@ if args.split_running_stat:
             bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
             bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
 
-print('r4',torch.cuda.memory_allocated(0)/1024/1024)
 if args.resume:
     if os.path.isfile(args.resume):
         print("=> loading checkpoint '{}'".format(args.resume))
@@ -501,7 +497,6 @@ if args.resume:
         raise ValueError("=> no checkpoint found at '{}'".format(args.resume))
 else:
     checkpoint = None
-print('r5',torch.cuda.memory_allocated(0)/1024/1024)
 
 # build optim
 if args.bn_wd:
@@ -1431,9 +1426,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
 def simulation(model, arch, prune_mode, num_classes):
     np.random.seed(0)
     print('Simulation with test batch size:',args.test_batch_size)
-    print('r1',torch.cuda.memory_allocated(0)/1024/1024)
     model.eval()
-    print('r2',torch.cuda.memory_allocated(0)/1024/1024)
     all_map_time = []
     all_reduce_time = []
     all_correct = []
@@ -1443,16 +1436,13 @@ def simulation(model, arch, prune_mode, num_classes):
     print('Running RMLaaS...')
     if arch == "resnet56":
         for i in range(len(args.alphas)):
-            print(i,'be',torch.cuda.memory_allocated(0)/1024/1024)
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
-            print(i,'af',torch.cuda.memory_allocated(0)/1024/1024)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
             all_correct += [correct_lst]
-            masked_model = None
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
@@ -1613,9 +1603,7 @@ def test(modelx,map_reduce=False,standalone=False):
                 data, target = data.cuda(), target.cuda()
             if standalone:
                 end = time.time()
-            print('-----',torch.cuda.memory_allocated(0)/1024/1024)
             output = modelx(data)
-            print('=======',torch.cuda.memory_allocated(0)/1024/1024)
             if isinstance(output, tuple):
                 output, output_aux = output
             pred = output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability

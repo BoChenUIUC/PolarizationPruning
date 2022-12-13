@@ -1446,8 +1446,6 @@ def simulation(model, arch, prune_mode, num_classes):
             print(i,'be',torch.cuda.memory_allocated(0)/1024/1024)
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
             print(i,'af',torch.cuda.memory_allocated(0)/1024/1024)
-            masked_model=None
-            continue
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
@@ -1616,6 +1614,7 @@ def test(modelx,map_reduce=False,standalone=False):
             if standalone:
                 end = time.time()
             output = modelx(data)
+            print(torch.cuda.memory_allocated(0)/1024/1024)
             if isinstance(output, tuple):
                 output, output_aux = output
             pred = output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability

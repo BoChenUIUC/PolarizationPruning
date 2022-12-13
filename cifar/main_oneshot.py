@@ -1434,20 +1434,21 @@ def simulation(model, arch, prune_mode, num_classes):
     # map/reduce time for net[0-1] will not be used, but their preds will be used
     # every thing for net[2-3] will be used
     print('Running RMLaaS...')
-    teacher_model.cpu()
+    print(torch.cuda.memory_allocated(0)/1024/1024)
     if arch == "resnet56":
         for i in range(len(args.alphas)):
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
+            print('before',torch.cuda.memory_allocated(0)/1024/1024)
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
+            print('after',torch.cuda.memory_allocated(0)/1024/1024)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
             all_correct += [correct_lst]
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
-    teacher_model.cuda()
     # evaluate map/reduce time
     print('Break compute latency down...')
     # map

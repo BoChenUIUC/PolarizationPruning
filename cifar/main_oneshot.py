@@ -1483,8 +1483,8 @@ def simulation(model, arch, prune_mode, num_classes):
         num_ddls = 20
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]+[200+i for i in range(rep*num_loss_rates)]
-        # if args.split_num == 2:
-        #     traces += [10+i for i in range(rep)]
+        if args.split_num == 2:
+            traces += [10+i for i in range(rep)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)

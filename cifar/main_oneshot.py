@@ -1434,6 +1434,7 @@ def simulation(model, arch, prune_mode, num_classes):
     # map/reduce time for net[0-1] will not be used, but their preds will be used
     # every thing for net[2-3] will be used
     print('Running RMLaaS...')
+    teacher_model.cpu()
     if arch == "resnet56":
         for i in range(len(args.alphas)):
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
@@ -1446,6 +1447,7 @@ def simulation(model, arch, prune_mode, num_classes):
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
+    teacher_model.cuda()
     # evaluate map/reduce time
     print('Break compute latency down...')
     # map

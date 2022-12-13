@@ -296,6 +296,7 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     else:
         teacher_path = './original/vgg/model_best.pth.tar'
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+    teacher_model.cpu()
 
 print('r2',torch.cuda.memory_allocated(0)/1024/1024)
 def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
@@ -464,7 +465,7 @@ if args.VLB_conv:
         for idx,l in enumerate(layer):
             if idx%sampling_interval == sampling_interval-1:
                 model.aggr_sizes += [l.conv2.weight.size(0)]
-print('r4',torch.cuda.memory_allocated(0)/1024/1024)
+print('r3',torch.cuda.memory_allocated(0)/1024/1024)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
@@ -1438,6 +1439,7 @@ def simulation(model, arch, prune_mode, num_classes):
     print('Running RMLaaS...')
     if arch == "resnet56":
         for i in range(len(args.alphas)):
+            print(i,torch.cuda.memory_allocated(0)/1024/1024)
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]

@@ -296,6 +296,10 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     else:
         teacher_path = './original/vgg/model_best.pth.tar'
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+    teacher_model.cpu()
+    print('t',torch.cuda.memory_allocated(0)/1024/1024)
+    teacher_model.cuda()
+    print('ta',torch.cuda.memory_allocated(0)/1024/1024)
 
 def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     """

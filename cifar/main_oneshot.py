@@ -1173,7 +1173,6 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
             flop = compute_conv_flops_par(masked_model, cuda=True)
             saved_prec1s += [prec1]
             saved_flops += [flop]
-            masked_model = None
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
@@ -1448,6 +1447,7 @@ def simulation(model, arch, prune_mode, num_classes):
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
             all_correct += [correct_lst]
+            masked_model = None
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")

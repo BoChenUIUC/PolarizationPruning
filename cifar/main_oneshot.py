@@ -474,6 +474,7 @@ if args.split_running_stat:
             bn_module.register_buffer(f"mean{nid}",bn_module.running_mean.data.clone().detach())
             bn_module.register_buffer(f"var{nid}",bn_module.running_var.data.clone().detach())
 
+print('r4',torch.cuda.memory_allocated(0)/1024/1024)
 if args.resume:
     if os.path.isfile(args.resume):
         print("=> loading checkpoint '{}'".format(args.resume))
@@ -500,6 +501,7 @@ if args.resume:
         raise ValueError("=> no checkpoint found at '{}'".format(args.resume))
 else:
     checkpoint = None
+print('r5',torch.cuda.memory_allocated(0)/1024/1024)
 
 # build optim
 if args.bn_wd:
@@ -1429,7 +1431,9 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
 def simulation(model, arch, prune_mode, num_classes):
     np.random.seed(0)
     print('Simulation with test batch size:',args.test_batch_size)
+    print('r1',torch.cuda.memory_allocated(0)/1024/1024)
     model.eval()
+    print('r2',torch.cuda.memory_allocated(0)/1024/1024)
     all_map_time = []
     all_reduce_time = []
     all_correct = []

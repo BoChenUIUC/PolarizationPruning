@@ -1447,7 +1447,7 @@ def simulation(model, arch, prune_mode, num_classes):
             masked_model = sample_partition_network(model,net_id=i,inplace=False)
             masked_model.cpu()
             print(i,'af',torch.cuda.memory_allocated(0)/1024/1024)
-            masked_model,cuda()
+            masked_model.cuda()
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)

@@ -834,7 +834,6 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
     if deepcopy:
         print(net_id,torch.cuda.memory_allocated(0)/1024/1024)
         dynamic_model = copy.deepcopy(old_model)
-        print(net_id,torch.cuda.memory_allocated(0)/1024/1024)
     else:
         dynamic_model = old_model
     for module_name,bn_module in dynamic_model.named_modules():
@@ -901,6 +900,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
         with torch.no_grad():
             dynamic_model.aggr[0].weight.data = dynamic_model.aggr[0].weight.data[:,mask==1,:,:].clone()
 
+    print(net_id,torch.cuda.memory_allocated(0)/1024/1024)
     return dynamic_model
 
 def update_partitioned_model(old_model,new_model,net_id,batch_idx):

@@ -832,7 +832,9 @@ def gen_partition_mask_two_split(net_id,weight_size):
 
 def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
     if deepcopy:
+        print(net_id,torch.cuda.memory_allocated(0)/1024/1024)
         dynamic_model = copy.deepcopy(old_model)
+        print(net_id,torch.cuda.memory_allocated(0)/1024/1024)
     else:
         dynamic_model = old_model
     for module_name,bn_module in dynamic_model.named_modules():

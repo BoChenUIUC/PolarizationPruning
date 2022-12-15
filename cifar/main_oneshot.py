@@ -370,19 +370,40 @@ else:
 if args.VLB_conv:
     print('Neural bridge type:',args.VLB_conv_type)
     if args.VLB_conv_type == 0:
-        print('Deprecated. Not quite effective.')
-        exit(0)
-        sampling_interval = 1
-        cfg = [1024,model.in_planes]
-    elif args.VLB_conv_type == 1:
-        print('Deprecated. Too computation heavy.')
-        exit(0)
-        sampling_interval = 1
-        cfg = [1024,512,256,128,model.in_planes]
-    elif args.VLB_conv_type == 2:
-        # best for 0.25 now, but a little expensive
         sampling_interval = 3
-        cfg = [352,128,128,model.in_planes]
+        cfg = [352,64,model.in_planes]
+    elif args.VLB_conv_type == 1:
+        sampling_interval = 3
+        cfg = [352,96,model.in_planes]
+    elif args.VLB_conv_type == 2:
+        sampling_interval = 3
+        cfg = [352,128,model.in_planes]
+    elif args.VLB_conv_type == 3:
+        sampling_interval = 3
+        cfg = [352,196,model.in_planes]
+    elif args.VLB_conv_type == 4:
+        sampling_interval = 3
+        cfg = [352,256,model.in_planes]
+
+
+    elif args.VLB_conv_type == 5:
+        # best for two split
+        sampling_interval = 1
+        cfg = [352,144,model.in_planes]
+    elif args.VLB_conv_type == 6:
+        # best for two split
+        sampling_interval = 2
+        cfg = [352,144,model.in_planes]
+    elif args.VLB_conv_type == 7:
+        # best for two split
+        sampling_interval = 5
+        cfg = [352,144,model.in_planes]
+    elif args.VLB_conv_type == 8:
+        # best for two split
+        sampling_interval = 9
+        cfg = [352,144,model.in_planes]
+
+
     elif args.VLB_conv_type == 10:
         # best for two split
         sampling_interval = 3
@@ -395,30 +416,6 @@ if args.VLB_conv:
         # best for four split
         sampling_interval = 3
         cfg = [352,224,model.in_planes]
-    # elif args.VLB_conv_type == 3:
-    #     sampling_interval = 3
-    #     cfg = [352,96,96,96,model.in_planes]
-    # elif args.VLB_conv_type == 4:
-    #     sampling_interval = 3
-    #     cfg = [352,64,64,model.in_planes]
-    # elif args.VLB_conv_type == 5:
-    #     # not useful
-    #     sampling_interval = 3
-    #     cfg = [352,128,model.in_planes]
-    # elif args.VLB_conv_type == 6:
-    #     sampling_interval = 3
-    #     cfg = [352,128,128,128,model.in_planes]
-    # elif args.VLB_conv_type == 7:
-    #     # to try
-    #     sampling_interval = 3
-    #     cfg = [352,96,96,model.in_planes]
-    # elif args.VLB_conv_type == 8:
-    #     sampling_interval = 3
-    #     cfg = [352,192,192,model.in_planes]
-    # elif args.VLB_conv_type == 9:
-    #     # two sub good, four sub not god
-    #     sampling_interval = 3
-    #     cfg = [352,model.in_planes]
     else:
         exit(0)
     layers = []
@@ -437,15 +434,15 @@ if args.VLB_conv:
         out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer1):
             out = l(out)
-            if idx%sampling_interval == sampling_interval-1:
+            if idx%sampling_interval == sampling_interval-1 or idx == len(self.layer1)-1:
                 out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer2):
             out = l(out)
-            if idx%sampling_interval == sampling_interval-1:
+            if idx%sampling_interval == sampling_interval-1 or idx == len(self.layer2)-1:
                 out_list.append(F.avg_pool2d(out, 2))
         for idx,l in enumerate(self.layer3):
             out = l(out)
-            if idx%sampling_interval == sampling_interval-1:
+            if idx%sampling_interval == sampling_interval-1 or idx == len(self.layer3)-1:
                 out_list.append(out)
         map_time = time.time() - end
         end = time.time()
@@ -851,7 +848,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
                 # realistic prune
-                if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
+                if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10 and args.partition_ratio==0.25:
                     if net_id == 2:
                         in_chan_mask = mask[0,:,0,0]==1
                         out_chan_mask = mask[:,0,0,0]==1
@@ -871,7 +868,7 @@ def sample_partition_network(old_model,net_id=None,deepcopy=True,inplace=True):
                         bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
                         bn_module.running_mean.data = bn_module.running_mean.data[out_chan_mask].clone()
                         bn_module.running_var.data = bn_module.running_var.data[out_chan_mask].clone()
-    if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10:
+    if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==10 and args.partition_ratio==0.25:
         class LambdaLayer(nn.Module):
             def __init__(self, lambd):
                 super(LambdaLayer, self).__init__()
@@ -1486,9 +1483,11 @@ def simulation(model, arch, prune_mode, num_classes):
         num_loss_rates = 10
         num_ddls = 20
         metrics_of_all_traces = []
-        traces = [i for i in range(rep)]+[200+i for i in range(rep*num_loss_rates)]
+        traces = [i for i in range(rep)]
         if args.split_num == 2:
             traces += [10+i for i in range(rep)]
+        if rags.VLB_conv_type >=10:
+            traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)

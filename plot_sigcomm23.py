@@ -210,13 +210,7 @@ def analyze_all_recorded_traces():
     line_plot(x, y,labels,colors,'/home/bo/Dropbox/Research/SIGCOMM23/images/throughput_vs_bs.eps','Query Batch Size','Query Throughput (1/s)',
     	yerr=yerr,yticks=[1,2,3],yticklabel=[10,100,1000])	
 
-def plot_computation_dist():
-	flops = [
-	[100, 0],
-	[100,100],
-	[83.81,83.81],
-	[93.54,93.54]
-	]
+def plot_computation_dist(flops,labels,filename,horizontal,ratio,bbox_to_anchor):
 	flops = np.array(flops).transpose((1,0))
 	node_types = ['Node #1','Node #2']
 	y_pos = np.arange(4)
@@ -224,21 +218,28 @@ def plot_computation_dist():
 	plt.rcdefaults()
 	fig, ax = plt.subplots()
 	left = np.array([0.,0.,0.,0.])
-	# colors = ['#DB1F48','#1C4670']
 	for i in range(2):
-		ax.barh(y_pos, flops[i], width, color=colors[i], left=left, 
-			label=node_types[i], hatch=hatches[i], align='center')
-		left += flops[i]
-
-	ax.set_yticks(y_pos, labels=['Standalone','Optimal','Ours\n(CIFAR-10)','Ours\n(ImageNet)'], fontsize = 14)
-	plt.xlabel('FLOPS (%)', fontsize = 14)
-	fig.legend(bbox_to_anchor=(0.8,0.45),ncol=1,fancybox=True, loc='upper center', fontsize=14)
+		if horizontal:
+			ax.barh(y_pos, flops[i], width, color=colors[i], left=left, 
+				label=node_types[i], hatch=hatches[i], align='center')
+			left += flops[i]
+		else:
+			ax.bar(y_pos, flops[i], width, color=colors[i], bottom=left, 
+				label=node_types[i], hatch=hatches[i], align='center')
+			left += flops[i]
+		
+	if horizontal:
+		ax.set_yticks(y_pos, labels=labels, fontsize = 14)
+		plt.xlabel('FLOPS (%)', fontsize = 14)
+	else:
+		ax.set_xticks(y_pos, labels=labels, fontsize = 14)
+		plt.ylabel('FLOPS (%)', fontsize = 14)
+	fig.legend(bbox_to_anchor=bbox_to_anchor,ncol=1,fancybox=True, loc='upper center', fontsize=14)
 	xleft, xright = ax.get_xlim()
 	ybottom, ytop = ax.get_ylim()
-	ratio = 0.4
 	ax.set_aspect(abs((xright-xleft)/(ybottom-ytop))*ratio)
 	plt.tight_layout()
-	fig.savefig('/home/bo/Dropbox/Research/SIGCOMM23/images/flops_dist.eps',bbox_inches='tight')
+	fig.savefig(filename,bbox_inches='tight')
 
 
 def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
@@ -275,6 +276,7 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	           loc='upper center', ncol=3, fontsize=20)
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
+
 
 # no loss
 y_ea = [[[0.09999999999999999, 0.10053514376996804, 0.10053514376996804, 0.11823482428115017, 0.24571086261980835, 0.41146365814696473, 0.5690694888178914, 0.6616214057507988, 0.7350678913738019, 0.7964237220447286, 0.8319848242811501, 0.8550459265175718, 0.8834305111821086, 0.9000698881789138, 0.9078594249201277, 0.9153314696485623, 0.9194149361022363, 0.9207927316293929, 0.9291972843450479, 0.933458466453674], [0.09999999999999999, 0.10027755591054313, 0.10027755591054313, 0.12076277955271564, 0.19415934504792334, 0.3006170127795528, 0.40749400958466453, 0.4780850638977636, 0.5484285143769967, 0.6171785143769968, 0.6582248402555909, 0.6937619808306709, 0.7460383386581468, 0.7765135782747604, 0.8042711661341853, 0.8347563897763578, 0.8493849840255591, 0.8560543130990415, 0.8766773162939296, 0.8892631789137381], [0.09999999999999999, 0.10056509584664537, 0.10056509584664537, 0.12975039936102234, 0.2656729233226837, 0.4371825079872204, 0.5867951277955271, 0.6761661341853035, 0.7459045527156548, 0.8059704472843452, 0.8377116613418529, 0.8571345846645368, 0.8890954472843451, 0.9002256389776357, 0.908560303514377, 0.9165774760383387, 0.919263178913738, 0.920323482428115, 0.9301637380191693, 0.9328095047923324]],
@@ -347,8 +349,6 @@ line_plot(x, y_fr_loss[0],['Ours','Standalone','Optimal'],colors,
 		'/home/bo/Dropbox/Research/SIGCOMM23/images/FCC_loss_fr.eps',
 		'Loss Rate','Failure Rate',
 		yerr=yerr_fr_loss[0])
-
-plot_computation_dist()
 
 latency_breakdown_mean = [[0.00455909734249115, 0.0005560131160076708, 0.00023642764806747438, 0.04561761306425502],
 [0.004631135659217835, 0.0008592742218635976, 0.00022894992828369142, 0.06668495337616376],
@@ -569,3 +569,30 @@ line_plot(x, y,['Ours','Standalone','Optimal'],colors,
 		'/home/bo/Dropbox/Research/SIGCOMM23/images/WF_fr.eps',
 		'Deadline','Failure Rate',
 		yerr=yerr)
+
+
+# EA, FLOPS of ablations
+
+flops = [
+	[100, 0],
+	[100,100],
+	[83.81,83.81],
+	[93.54,93.54]
+	]
+labels = ['Standalone','Optimal','Ours\n(CIFAR-10)','Ours\n(ImageNet)']
+filename = '/home/bo/Dropbox/Research/SIGCOMM23/images/flops_dist.eps'
+ratio=0.4
+bbox_to_anchor=(0.8,0.45)
+plot_computation_dist(flops,labels,filename,horizontal=True,ratio=ratio,bbox_to_anchor=bbox_to_anchor)
+# plot_computation_dist(flops,labels,filename,horizontal=False,ratio=ratio,bbox_to_anchor=bbox_to_anchor)
+
+flops = [
+	[100, 0],
+	[100,100],
+	[83.81,83.81],
+	[56.32,56.32] # no bridge
+	]
+labels = ['Standalone','Optimal','Default','w/o NB']
+# vary bridge width
+# vary layer stride
+# vary partition ratio

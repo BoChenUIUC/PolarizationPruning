@@ -1882,8 +1882,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
 
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-            print(prec1,prec5,map_time_lst,reduce_time_lst)
-            exit(0)
+            print(correctness,prec1,prec5,map_time_lst,reduce_time_lst)
             losses.update(loss.data.item(), image.size(0))
             top1.update(prec1[0], image.size(0))
             top5.update(prec5[0], image.size(0))

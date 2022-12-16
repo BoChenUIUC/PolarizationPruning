@@ -1180,7 +1180,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
     partitionable_bns_n_convs = zip(*dynamic_model.module.get_partitionable_bns_n_convs()) if isinstance(dynamic_model,nn.DataParallel) else zip(*dynamic_model.get_partitionable_bns_n_convs())
     for bn_module,sub_module in partitionable_bns_n_convs:
         with torch.no_grad():
-            if isinstance(sub_module, nn.Conv2d) or isinstance(sub_module, models.common.SparseGate): 
+            if isinstance(sub_module, nn.Conv2d): 
                 mask,flops_multiplier = gen_partition_mask(args,net_id,sub_module.weight.size())
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
@@ -1197,6 +1197,9 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                     elif sub_module.weight.size(1) == 1:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask].clone()
+                        print(mask.tolist())
+                        print(out_chan_mask)
+                        exit(0)
                     else:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                         sub_module.weight.data = sub_module.weight.data[:,in_chan_mask].clone()
@@ -1205,7 +1208,6 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                         bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
                         bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
                         bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
-                print('',sub_module.weight.size())
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==0:
         # prune downsample modules
         downsample_bns,downsample_convs = dynamic_model.module.get_downsample_modules() if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.get_downsample_modules()

@@ -477,7 +477,7 @@ class ResNetExpand(nn.Module):
             x = self.relu(x)
             x = self.maxpool(x)
             out_list.append(F.avg_pool2d(x, 8))
-
+            print('============',x.size())
             x = self.layer1(x)  # 32x32,256
             out_list.append(F.avg_pool2d(x, 8))
             x = self.layer2(x)  # 16x16,512

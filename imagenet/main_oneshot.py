@@ -1875,7 +1875,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                 infer_time_lst.append(time.time()-end)
             pred = output.data.max(1, keepdim=True)[1]
             if map_reduce or standalone:
-                correctness = pred.eq(target.data.view_as(pred)).cpu().sum()/data.size(0)
+                correctness = pred.eq(target.data.view_as(pred)).cpu().sum()/image.size(0)
                 correct_lst.append(float(correctness))
             # stuff end
             loss = criterion(output, target)

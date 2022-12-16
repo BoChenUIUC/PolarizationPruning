@@ -493,8 +493,7 @@ def main_worker(gpu, ngpus_per_node, args):
             # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
             model.features = torch.nn.DataParallel(model.features)
         else:
-            if not args.simulate:
-                model = torch.nn.DataParallel(model).cuda()
+            model = torch.nn.DataParallel(model).cuda()
     else:
         model.cuda()
         model = torch.nn.parallel.DistributedDataParallel(model)

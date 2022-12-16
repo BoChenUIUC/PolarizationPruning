@@ -1861,16 +1861,19 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
             image = image.cuda(non_blocking=True)
             target = target.cuda(non_blocking=True)
 
-            # compute output
-            output = model(image)
-            if isinstance(output, tuple):
-                output, out_aux = output
-            # evaluation stuff
             if map_reduce:
+                output = model.forwad(image,map_fwd=True)
+                output = model.forwad(output,reduce_fwd=True)
                 map_time_lst.append(0)
                 reduce_time_lst.append(0)
-            elif standalone:
-                infer_time_lst.append(time.time()-end)
+            else:
+                # compute output
+                output = model(image)
+                if isinstance(output, tuple):
+                    output, out_aux = output
+                # evaluation stuff
+                if standalone:
+                    infer_time_lst.append(time.time()-end)
             pred = output.data.max(1, keepdim=True)[1]
             if map_reduce or standalone:
                 correctness = pred.eq(target.data.view_as(pred)).cpu().sum()/image.size(0)

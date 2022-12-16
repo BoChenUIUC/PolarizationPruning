@@ -445,7 +445,7 @@ class ResNetExpand(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x, map_fwd=False, reduce_fwd=False):
         if self.aggr is None:
             x = self.conv1(x)
             x = self.bn1(x)
@@ -470,8 +470,33 @@ class ResNetExpand(nn.Module):
             x = self.fc(x)
 
             return x, x_aux
+        elif True==map_fwd:
+             out_list = []
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            x = self.maxpool(x)
+            out_list.append(F.avg_pool2d(x, 8))
+
+            x = self.layer1(x)  # 32x32,256
+            out_list.append(F.avg_pool2d(x, 8))
+            x = self.layer2(x)  # 16x16,512
+            out_list.append(F.avg_pool2d(x, 4))
+            x = self.layer3(x)  # 8x8,1024
+            out_list.append(F.avg_pool2d(x, 2))
+            x = self.layer4(x)  # 2048
+            out_list.append(x)
+
+            x = torch.cat(out_list,1)
+            return x
+        elif True==reduce_fwd:
+            x = self.aggr(x)
+            x = self.avgpool(x)
+            x = x.view(x.size(0), -1)
+            x = self.fc(x)
+
+            return x
         else:
-            end = time.time()
             out_list = []
             x = self.conv1(x)
             x = self.bn1(x)
@@ -487,18 +512,14 @@ class ResNetExpand(nn.Module):
             out_list.append(F.avg_pool2d(x, 2))
             x = self.layer4(x)  # 2048
             out_list.append(x)
-            map_time = time.time() - end
 
-            end = time.time()
             x = torch.cat(out_list,1)
             # aggregate layer
             x = self.aggr(x)
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)
-            reduce_time = time.time() - end
             return x,None
-            # return x, (map_time,reduce_time)
 
     def prune_model(self, **kwargs):
         """

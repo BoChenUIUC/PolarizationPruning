@@ -1194,18 +1194,16 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                         out_chan_mask = mask[:,-1,0,0]==1
                     if sub_module.weight.size(1) == 3:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
-                        bn_module.weight.data = bn_module.weight.data[out_chan_mask].clone()
-                        bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
-                        bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
-                        bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
+                    elif sub_module.weight.size(1) == 1:
+                        sub_module.weight.data = sub_module.weight.data[out_chan_mask].clone()
                     else:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                         sub_module.weight.data = sub_module.weight.data[:,in_chan_mask].clone()
+                    if bn_module is not None:
                         bn_module.weight.data = bn_module.weight.data[out_chan_mask].clone()
                         bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
                         bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
                         bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
-                    print(sub_module.weight.size(),bn_module.weight.size())
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==0:
         # prune downsample modules
         downsample_bns,downsample_convs = dynamic_model.module.get_downsample_modules() if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.get_downsample_modules()
@@ -1224,7 +1222,6 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
             bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
-            print(sub_module.weight.size(),bn_module.weight.size())
         # modify aggr, only use a portion connections by concat masks
         mask = torch.tensor([]).long().cuda()
         aggr_sizes = dynamic_model.module.aggr_sizes if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.aggr_sizes

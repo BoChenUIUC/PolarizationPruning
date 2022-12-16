@@ -684,13 +684,15 @@ class ResNetExpand(nn.Module):
         return non_par_modules
 
     def get_downsample_modules(self):
-        downsample_modules = []
+        downsample_convs = []
+        downsample_bns = []
         for n,m in self.named_modules():
             if isinstance(m, Bottleneck):
                 m: Bottleneck
                 if m.downsample is not None:
-                    downsample_modules += [m.downsample]
-        return downsample_modules[0],downsample_modules[1]
+                    downsample_convs += [m.downsample[0]]
+                    downsample_bns += [m.downsample[1]]
+        return downsample_bns,downsample_convs
 
     def get_output_gate(self) -> List[SparseGate]:
         """

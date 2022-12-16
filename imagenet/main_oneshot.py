@@ -1134,7 +1134,7 @@ def gen_partition_mask_two_split(args,net_id,weight_size):
     c1,c2 = weight_size[:2]
     r = args.partition_ratio
     if net_id == 0:
-        if 3 != c2:
+        if 3 != c2 and 1 != c2:
             mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
             mask[int(c1*(1-r)):,int(c2*(1-r)):] = 1
             flops_multiplier = (1-r)**2 + r**2
@@ -1142,7 +1142,7 @@ def gen_partition_mask_two_split(args,net_id,weight_size):
             mask[:] = 1
             flops_multiplier = 1
     elif net_id == 1:
-        if 3 != c2:
+        if 3 != c2 and 1 != c2:
             mask[:int(c1*r),:int(c2*r)] = 1
             mask[int(c1*r):,int(c2*r):] = 1
             flops_multiplier = (1-r)**2 + r**2
@@ -1150,14 +1150,14 @@ def gen_partition_mask_two_split(args,net_id,weight_size):
             mask[:] = 1
             flops_multiplier = 1
     elif net_id == 2:
-        if 3 != c2:
+        if 3 != c2 and 1 != c2:
             mask[:int(c1*(1-r)),:int(c2*(1-r))] = 1
             flops_multiplier = (1-r)**2
         else:
             mask[:int(c1*(1-r))] = 1
             flops_multiplier = 1-r
     elif net_id == 3:
-        if 3 != c2:
+        if 3 != c2 and 1 != c2:
             mask[int(c1*r):,int(c2*r):] = 1
             flops_multiplier = (1-r)**2
         else:
@@ -1185,7 +1185,6 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                 sub_module.weight.data *= mask
                 sub_module.flops_multiplier = flops_multiplier
                 # realistic prune
-                print(sub_module.weight.size())
                 if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==0:
                     if net_id == 2:
                         in_chan_mask = mask[0,:,0,0]==1
@@ -1197,9 +1196,6 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                     elif sub_module.weight.size(1) == 1:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask].clone()
-                        print(mask.tolist())
-                        print(out_chan_mask)
-                        exit(0)
                     else:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                         sub_module.weight.data = sub_module.weight.data[:,in_chan_mask].clone()

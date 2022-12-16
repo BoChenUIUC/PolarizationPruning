@@ -491,6 +491,7 @@ class ResNetExpand(nn.Module):
             return x
         elif True==reduce_fwd:
             print(x.size())
+            print(self.aggr[0].weight.size(),self.aggr[2].weight.size())
             x = self.aggr(x)
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)

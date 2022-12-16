@@ -471,7 +471,7 @@ class ResNetExpand(nn.Module):
 
             return x, x_aux
         elif True==map_fwd:
-             out_list = []
+            out_list = []
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)

@@ -1223,6 +1223,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
             bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
+            print(sub_module.weight.size(),bn_module.weight.size())
         # modify aggr, only use a portion connections by concat masks
         mask = torch.tensor([]).long().cuda()
         aggr_sizes = dynamic_model.module.aggr_sizes if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.aggr_sizes

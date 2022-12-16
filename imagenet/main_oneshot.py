@@ -1869,8 +1869,8 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                 output, out_aux = output
             # evaluation stuff
             if map_reduce:
-                map_time_lst.append(model.module.map_time)
-                reduce_time_lst.append(model.module.reduce_time)
+                map_time_lst.append(out_aux[0])
+                reduce_time_lst.append(out_aux[1])
             elif standalone:
                 infer_time_lst.append(time.time()-end)
             pred = output.data.max(1, keepdim=True)[1]

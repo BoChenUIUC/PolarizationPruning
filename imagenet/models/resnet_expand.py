@@ -471,9 +471,7 @@ class ResNetExpand(nn.Module):
 
             return x, x_aux
         else:
-            start = torch.cuda.Event(enable_timing=True)
-            end = torch.cuda.Event(enable_timing=True)
-            start.record()
+            end = time.time()
             out_list = []
             x = self.conv1(x)
             x = self.bn1(x)
@@ -489,23 +487,18 @@ class ResNetExpand(nn.Module):
             out_list.append(F.avg_pool2d(x, 2))
             x = self.layer4(x)  # 2048
             out_list.append(x)
-            end.record()
-            torch.cuda.synchronize()
-            self.map_time = start.elapsed_time(end)
-            print(self.map_time)
+            map_time = time.time() - end
 
-            start.record()
+            end = time.time()
             x = torch.cat(out_list,1)
             # aggregate layer
             x = self.aggr(x)
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)
-            end.record()
-            torch.cuda.synchronize()
-            self.reduce_time = start.elapsed_time(end)
-            print(self.reduce_time)
-            return x, None
+            reduce_time = time.time() - end
+            # return x,None
+            return x, (map_time,reduce_time)
 
     def prune_model(self, **kwargs):
         """

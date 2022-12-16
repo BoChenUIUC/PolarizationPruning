@@ -1171,13 +1171,15 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
         dynamic_model = copy.deepcopy(old_model)
     else:
         dynamic_model = old_model
-    for module_name,bn_module in dynamic_model.module.named_modules():
+    named_modules = dynamic_model.module.named_modules() if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.named_modules()
+    for module_name,bn_module in named_modules:
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
         if args.split_running_stat:
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
-    for bn_module,sub_module in zip(*dynamic_model.module.get_partitionable_bns_n_convs()):
+    partitionable_bns_n_convs = zip(*dynamic_model.module.get_partitionable_bns_n_convs()) if isinstance(dynamic_model,nn.DataParallel) else zip(*dynamic_model.get_partitionable_bns_n_convs())
+    for bn_module,sub_module in partitionable_bns_n_convs:
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
                 mask,flops_multiplier = gen_partition_mask(args,net_id,sub_module.weight.size())
@@ -1206,7 +1208,8 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                         bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==0:
         # prune downsample modules
-        for bn_module,submodule in dynamic_model.module.get_downsample_modules():
+        downsample_modules = dynamic_model.module.get_downsample_modules() if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.get_downsample_modules()
+        for bn_module,submodule in downsample_modules:
             mask,flops_multiplier = gen_partition_mask(args,net_id,sub_module.weight.size())
             sub_module.flops_multiplier = flops_multiplier
             if net_id == 2:
@@ -1223,7 +1226,8 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"].data[out_chan_mask].clone()
         # modify aggr, only use a portion connections by concat masks
         mask = torch.tensor([]).long().cuda()
-        for sz in dynamic_model.module.aggr_sizes:
+        aggr_sizes = dynamic_model.module.aggr_sizes if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.aggr_sizes
+        for sz in aggr_sizes:
             mask_par = torch.zeros(sz).long().cuda()
             r = args.partition_ratio
             if net_id == 2:
@@ -1232,7 +1236,11 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                 mask_par[int(sz*r):] = 1
             mask = torch.cat((mask,mask_par))
         with torch.no_grad():
-            dynamic_model.module.aggr[0].weight.data = dynamic_model.module.aggr[0].weight.data[:,mask==1,:,:].clone()
+            print(dynamic_model.aggr)
+            if isinstance(dynamic_model,nn.DataParallel):
+                dynamic_model.module.aggr[0].weight.data = dynamic_model.module.aggr[0].weight.data[:,mask==1,:,:].clone()
+            else:
+                dynamic_model.aggr[0].weight.data = dynamic_model.aggr[0].weight.data[:,mask==1,:,:].clone()
     return dynamic_model
 
 def update_partitioned_model(args,old_model,new_model,net_id,batch_idx):

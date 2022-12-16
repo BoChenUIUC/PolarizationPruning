@@ -493,11 +493,11 @@ def main_worker(gpu, ngpus_per_node, args):
             # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
             model.features = torch.nn.DataParallel(model.features)
         else:
-            model = torch.nn.DataParallel(model).cuda()
+            if not args.simulate:
+                model = torch.nn.DataParallel(model).cuda()
     else:
         model.cuda()
-        if not args.simulate:
-            model = torch.nn.parallel.DistributedDataParallel(model)
+        model = torch.nn.parallel.DistributedDataParallel(model)
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()
@@ -651,7 +651,6 @@ def main_worker(gpu, ngpus_per_node, args):
 
     if args.simulate:
         print('Batch size:',args.batch_size)
-        print(model)
         simulation(model, args.arch, args.prune_mode, val_loader, criterion, 0, args)
         exit(0)
 

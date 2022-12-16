@@ -1208,7 +1208,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==0:
         # prune downsample modules
         downsample_bns,downsample_convs = dynamic_model.module.get_downsample_modules() if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.get_downsample_modules()
-        for bn_module,submodule in zip(downsample_bns,downsample_convs):
+        for bn_module,sub_module in zip(downsample_bns,downsample_convs):
             mask,flops_multiplier = gen_partition_mask(args,net_id,sub_module.weight.size())
             sub_module.flops_multiplier = flops_multiplier
             if net_id == 2:
@@ -1219,7 +1219,6 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                 out_chan_mask = mask[:,-1,0,0]==1
             sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
             sub_module.weight.data = sub_module.weight.data[:,in_chan_mask].clone()
-            print(bn_module.weight.size(),out_chan_mask.size())
             bn_module.weight.data = bn_module.weight.data[out_chan_mask].clone()
             bn_module.bias.data = bn_module.bias.data[out_chan_mask].clone()
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"].data[out_chan_mask].clone()

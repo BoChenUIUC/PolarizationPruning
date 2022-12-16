@@ -650,7 +650,8 @@ def main_worker(gpu, ngpus_per_node, args):
         return
 
     if args.simulate:
-        simulation(model, args.arch, args.prune_mode, val_loader, criterion, 0, args)
+        partition_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, criterion, 0, args)
+        # simulation(model, args.arch, args.prune_mode, val_loader, criterion, 0, args)
         exit(0)
 
     # restore the learning rate

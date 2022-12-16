@@ -471,7 +471,9 @@ class ResNetExpand(nn.Module):
 
             return x, x_aux
         else:
-            end = time.time()
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+            start.record()
             out_list = []
             x = self.conv1(x)
             x = self.bn1(x)
@@ -487,20 +489,19 @@ class ResNetExpand(nn.Module):
             out_list.append(F.avg_pool2d(x, 2))
             x = self.layer4(x)  # 2048
             out_list.append(x)
-            map_time = time.time() - end
+            end.record()
+            self.map_time = start.elapsed_time(end)
 
-            end = time.time()
+            start.record()
             x = torch.cat(out_list,1)
             # aggregate layer
             x = self.aggr(x)
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)
-            reduce_time = time.time() - end
-            # return x,None
-            # need to find out the fault
-            print('OK?')
-            return x, (map_time,reduce_time)
+            end.record()
+            self.reduce_time = start.elapsed_time(end)
+            return x, None
 
     def prune_model(self, **kwargs):
         """

@@ -1860,8 +1860,8 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                 output, out_aux = output
             # evaluation stuff
             if map_reduce:
-                map_time_lst.append(output_aux[0])
-                reduce_time_lst.append(output_aux[1])
+                map_time_lst.append(model.module.map_time)
+                reduce_time_lst.append(model.module.reduce_time)
             elif standalone:
                 infer_time_lst.append(time.time()-end)
             pred = output.data.max(1, keepdim=True)[1]
@@ -1873,7 +1873,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
 
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-            print(prec1,prec5)
+            print(prec1,prec5,model.module.map_time,model.module.reduce_time)
             exit(0)
             losses.update(loss.data.item(), image.size(0))
             top1.update(prec1[0], image.size(0))

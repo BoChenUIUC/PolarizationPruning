@@ -660,7 +660,7 @@ class ResNetExpand(nn.Module):
         for n,m in self.named_modules():
             if isinstance(m, Bottleneck):
                 m: Bottleneck
-                par_convs.append(input_gate)
+                par_convs.append(m.input_gate)
                 par_convs.append(m.conv1)
                 par_convs.append(m.conv2)
                 par_convs.append(m.conv3)

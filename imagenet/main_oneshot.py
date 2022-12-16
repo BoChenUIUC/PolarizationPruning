@@ -650,6 +650,7 @@ def main_worker(gpu, ngpus_per_node, args):
         return
 
     if args.simulate:
+        print('Batch size:',args.batch_size)
         simulation(model, args.arch, args.prune_mode, val_loader, criterion, 0, args)
         exit(0)
 
@@ -1235,7 +1236,6 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                 mask_par[int(sz*r):] = 1
             mask = torch.cat((mask,mask_par))
         with torch.no_grad():
-            print(dynamic_model.aggr)
             if isinstance(dynamic_model,nn.DataParallel):
                 dynamic_model.module.aggr[0].weight.data = dynamic_model.module.aggr[0].weight.data[:,mask==1,:,:].clone()
             else:
@@ -1555,6 +1555,7 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
 
 def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     np.random.seed(0)
+    assert args.batch_size == 4
     print('Simulation with test batch size:',args.batch_size)
     model.eval()
     all_map_time = []
@@ -1867,13 +1868,13 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                 output, out_aux = output
             # evaluation stuff
             if map_reduce:
-                map_time_lst.append(out_aux[0])
-                reduce_time_lst.append(out_aux[1])
+                map_time_lst.append(0)
+                reduce_time_lst.append(0)
             elif standalone:
                 infer_time_lst.append(time.time()-end)
             pred = output.data.max(1, keepdim=True)[1]
             if map_reduce or standalone:
-                correctness = pred.eq(target.data.view_as(pred)).cpu().sum()/image.size(0)
+                correctness = pred.eq(target.data.view_as(pred)).cpu().sum()/data.size(0)
                 correct_lst.append(float(correctness))
             # stuff end
             loss = criterion(output, target)

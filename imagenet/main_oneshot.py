@@ -650,7 +650,6 @@ def main_worker(gpu, ngpus_per_node, args):
         return
 
     if args.simulate:
-        print('Batch size:',args.batch_size)
         simulation(model, args.arch, args.prune_mode, val_loader, criterion, 0, args)
         exit(0)
 
@@ -1556,7 +1555,6 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
 
 def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     np.random.seed(0)
-    assert args.batch_size == 4
     print('Simulation with test batch size:',args.batch_size)
     model.eval()
     all_map_time = []

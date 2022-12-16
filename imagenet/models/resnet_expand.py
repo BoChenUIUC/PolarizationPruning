@@ -490,14 +490,10 @@ class ResNetExpand(nn.Module):
             x = torch.cat(out_list,1)
             return x
         elif True==reduce_fwd:
-            print(x.size())
-            print(self.aggr[0].weight.size(),self.aggr[1].weight.size(),self.aggr[3].weight.size(),self.aggr[4].weight.size())
             x = self.aggr(x)
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)
-            print(self.aggr)
-            exit(0)
 
             return x
         else:

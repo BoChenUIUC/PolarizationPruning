@@ -1196,8 +1196,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                     elif sub_module.weight.size(1) == 1:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
-                        print(sub_module.weight.size())
-                        print(mask)
+                        print(sub_module.groups)
                     else:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                         sub_module.weight.data = sub_module.weight.data[:,in_chan_mask].clone()

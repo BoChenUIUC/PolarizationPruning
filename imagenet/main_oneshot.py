@@ -1562,8 +1562,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     print('Running RMLaaS...')
     if arch == "resnet50":
         for i in range(len(args.alphas)):
-            i=2
-            masked_model = sample_partition_network(args,model,net_id=i,inplace=True)
+            masked_model = sample_partition_network(args,model,net_id=i,inplace=False)
             map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]

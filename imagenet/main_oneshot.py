@@ -496,7 +496,8 @@ def main_worker(gpu, ngpus_per_node, args):
             model = torch.nn.DataParallel(model).cuda()
     else:
         model.cuda()
-        model = torch.nn.parallel.DistributedDataParallel(model)
+        if not args.simulate:
+            model = torch.nn.parallel.DistributedDataParallel(model)
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda()

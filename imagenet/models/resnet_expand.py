@@ -492,6 +492,7 @@ class ResNetExpand(nn.Module):
             end.record()
             torch.cuda.synchronize()
             self.map_time = start.elapsed_time(end)
+            print(self.map_time)
 
             start.record()
             x = torch.cat(out_list,1)
@@ -503,6 +504,7 @@ class ResNetExpand(nn.Module):
             end.record()
             torch.cuda.synchronize()
             self.reduce_time = start.elapsed_time(end)
+            print(self.reduce_time)
             return x, None
 
     def prune_model(self, **kwargs):

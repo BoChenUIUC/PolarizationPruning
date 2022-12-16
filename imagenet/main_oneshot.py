@@ -1176,7 +1176,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
             bn_module.running_mean.data = bn_module._buffers[f"mean{net_id}"]
             bn_module.running_var.data = bn_module._buffers[f"var{net_id}"]
 
-    for bn_module,sub_module in zip(*dynamic_model.get_partitionable_bns_n_convs()):
+    for bn_module,sub_module in zip(*dynamic_model.module.get_partitionable_bns_n_convs()):
         with torch.no_grad():
             if isinstance(sub_module, nn.Conv2d): 
                 mask,flops_multiplier = gen_partition_mask(args,net_id,sub_module.weight.size())
@@ -1873,6 +1873,8 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
 
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+            print(prec1,prec5)
+            exit(0)
             losses.update(loss.data.item(), image.size(0))
             top1.update(prec1[0], image.size(0))
             top5.update(prec5[0], image.size(0))

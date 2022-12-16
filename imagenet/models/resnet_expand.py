@@ -490,6 +490,7 @@ class ResNetExpand(nn.Module):
             x = self.layer4(x)  # 2048
             out_list.append(x)
             end.record()
+            torch.cuda.synchronize()
             self.map_time = start.elapsed_time(end)
 
             start.record()
@@ -500,6 +501,7 @@ class ResNetExpand(nn.Module):
             x = x.view(x.size(0), -1)
             x = self.fc(x)
             end.record()
+            torch.cuda.synchronize()
             self.reduce_time = start.elapsed_time(end)
             return x, None
 

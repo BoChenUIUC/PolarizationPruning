@@ -493,7 +493,7 @@ def main_worker(gpu, ngpus_per_node, args):
             # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
             model.features = torch.nn.DataParallel(model.features)
         else:
-            if not args.simulate:
+            if False:# not args.simulate:
                 model = torch.nn.DataParallel(model).cuda()
     else:
         model.cuda()
@@ -650,8 +650,7 @@ def main_worker(gpu, ngpus_per_node, args):
         return
 
     if args.simulate:
-        partition_while_training(model, args.arch, args.prune_mode, args.width_multiplier, val_loader, criterion, 0, args)
-        # simulation(model, args.arch, args.prune_mode, val_loader, criterion, 0, args)
+        simulation(model, args.arch, args.prune_mode, val_loader, criterion, 0, args)
         exit(0)
 
     # restore the learning rate

@@ -1554,7 +1554,6 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
 
 def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     np.random.seed(0)
-    assert args.batch_size == 4
     print('Simulation with test batch size:',args.batch_size)
     model.eval()
     all_map_time = []
@@ -1855,25 +1854,27 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
     correct_lst = []
     model.eval()
     with torch.no_grad():
-        end = time.time()
         val_iter = tqdm(val_loader)
         for i, (image, target) in enumerate(val_iter):
             image = image.cuda(non_blocking=True)
             target = target.cuda(non_blocking=True)
 
             if map_reduce:
+                end = time.time()
                 output = model(image,map_fwd=True)
+                map_time_lst.append(time.time()-end)
+                end = time.time()
                 output = model(output,reduce_fwd=True)
-                map_time_lst.append(0)
-                reduce_time_lst.append(0)
+                reduce_time_lst.append(time.time()-end)
             else:
+                end = time.time()
                 # compute output
                 output = model(image)
                 if isinstance(output, tuple):
                     output, out_aux = output
                 # evaluation stuff
-                if standalone:
-                    infer_time_lst.append(time.time()-end)
+                infer_time_lst.append(time.time()-end)
+                batch_time.update(time.time() - end)
             pred = output.data.max(1, keepdim=True)[1]
             if map_reduce or standalone:
                 correctness = pred.eq(target.data.view_as(pred)).cpu().sum()/image.size(0)
@@ -1886,10 +1887,6 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
             losses.update(loss.data.item(), image.size(0))
             top1.update(prec1[0], image.size(0))
             top5.update(prec5[0], image.size(0))
-
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
 
             val_iter.set_description(
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f}). '

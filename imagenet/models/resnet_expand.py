@@ -490,12 +490,13 @@ class ResNetExpand(nn.Module):
             x = torch.cat(out_list,1)
             return x
         elif True==reduce_fwd:
-            print(self.aggr)
-            exit(0)
+            print(x.size())
             x = self.aggr(x)
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)
+            print(self.aggr)
+            exit(0)
 
             return x
         else:

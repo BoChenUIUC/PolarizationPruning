@@ -488,6 +488,7 @@ class ResNetExpand(nn.Module):
             out_list.append(x)
 
             x = torch.cat(out_list,1)
+            print(x.size())
             return x
         elif True==reduce_fwd:
             x = self.aggr(x)

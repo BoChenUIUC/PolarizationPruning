@@ -1862,8 +1862,8 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
             target = target.cuda(non_blocking=True)
 
             if map_reduce:
-                output = model.forwad(image,map_fwd=True)
-                output = model.forwad(output,reduce_fwd=True)
+                output = model(image,map_fwd=True)
+                output = model(output,reduce_fwd=True)
                 map_time_lst.append(0)
                 reduce_time_lst.append(0)
             else:

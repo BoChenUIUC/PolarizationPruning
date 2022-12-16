@@ -1208,7 +1208,7 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
     if not inplace and args.split_num == 2 and net_id >=2 and args.VLB_conv_type==0:
         # prune downsample modules
         downsample_modules = dynamic_model.module.get_downsample_modules() if isinstance(dynamic_model,nn.DataParallel) else dynamic_model.get_downsample_modules()
-        for bn_module,submodule in downsample_modules:
+        for bn_module,submodule in zip(downsample_modules):
             mask,flops_multiplier = gen_partition_mask(args,net_id,sub_module.weight.size())
             sub_module.flops_multiplier = flops_multiplier
             if net_id == 2:

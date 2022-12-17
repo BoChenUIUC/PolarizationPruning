@@ -522,12 +522,11 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model.cuda()
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
-        args.teacher_model = None
-        # if args.arch == 'resnet50':
-        #     teacher_path = './original64/resnet/model_best.pth.tar'
-        # else:
-        #     teacher_path = './original/mobilenetv2/model_best.pth.tar'
-        # args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+        if args.arch == 'resnet50':
+            teacher_path = './original/resnet/model_best.pth.tar'
+        else:
+            teacher_path = './original/mobilenetv2/model_best.pth.tar'
+        args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
     if len(args.alphas)>1:
         args.ps_batch = len(args.alphas)*4

@@ -1776,7 +1776,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     print('Running RMLaaS...')
     if arch == "resnet50":
         for i in range(len(args.alphas)):
-            masked_model = sample_partition_network(args,model,net_id=i,inplace=True)
+            masked_model = sample_partition_network(args,model,net_id=i,inplace=False)
             map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
@@ -1824,7 +1824,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         traces = [i for i in range(rep)]
         if args.split_num == 2:
             traces += [10+i for i in range(rep)]
-        if args.VLB_conv_type >=10:
+        if args.VLB_conv_type ==0:
             traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query,args)

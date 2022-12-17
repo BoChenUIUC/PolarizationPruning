@@ -1824,7 +1824,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         traces = [i for i in range(rep)]
         if args.split_num == 2:
             traces += [10+i for i in range(rep)]
-        if rags.VLB_conv_type >=10:
+        if args.VLB_conv_type >=10:
             traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query)

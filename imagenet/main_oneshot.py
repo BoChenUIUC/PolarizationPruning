@@ -1575,7 +1575,6 @@ def create_wan_trace(trace_selection,num_query,args):
         # recorded trace
         trace_start = (trace_selection-10)*800
         with open(f'WAN/{768*args.batch_size:06d}','r') as f:
-            line_count = 0
             record_latency_list = []
             for l in f.readlines()[trace_start:]:
                 l = l.strip().split(' ')
@@ -1776,6 +1775,21 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
 def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     np.random.seed(0)
     print('Simulation with test batch size:',args.batch_size)
+
+    num_query = 6250
+    # inter-node latency
+    num_dcn_conns = args.split_num**2
+    dcnlatency_list = [[] for _ in range(num_dcn_conns)]
+    # actually need only 1/4
+    with open(f'DCN/{244*args.batch_size:06d}','r') as f:
+        record_latency_list = []
+        for l in f.readlines():
+            l = l.strip().split(' ')
+            record_latency_list += [float(l[0])/1000.]
+        for i in range(4):
+            dcnlatency_list[i] += np.random.permutation(record_latency_list).tolist()[:num_query]
+    print('Traces loaded ok.')
+    
     all_map_time = []
     all_reduce_time = []
     all_correct = []
@@ -1807,20 +1821,6 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
-
-    num_query = len(all_correct[0])
-    # inter-node latency
-    num_dcn_conns = args.split_num**2
-    dcnlatency_list = [[] for _ in range(num_dcn_conns)]
-    # actually need only 1/4
-    with open(f'DCN/{244*args.batch_size:06d}','r') as f:
-        line_count = 0
-        for l in f.readlines():
-            l = l.strip().split(' ')
-            dcnlatency_list[line_count//num_query] += [float(l[0])/1000.]
-            line_count += 1
-            if line_count == num_query*num_dcn_conns:break
-    print('Traces loaded ok.')
 
     rep = 10
     if args.split_num in {2}:

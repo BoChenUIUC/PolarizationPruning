@@ -1551,7 +1551,7 @@ def partition_while_training(model, arch, prune_mode, width_multiplier, val_load
         f.write(log_str+'\n')
     return saved_prec1s[0],prune_str,saved_prec1s
 
-def create_wan_trace(trace_selection,num_query):
+def create_wan_trace(trace_selection,num_query,args):
     # query size
     query_size = 3*256*256*4*args.batch_size # bytes
     wanlatency_list = [[] for _ in range(args.split_num)]
@@ -1827,7 +1827,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         if args.VLB_conv_type >=10:
             traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:
-            wanlatency_list = create_wan_trace(trace_selection,num_query)
+            wanlatency_list = create_wan_trace(trace_selection,num_query,args)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)
             metrics_of_all_traces += [metrics_of_one_trace]
             # end of each trace group
@@ -2133,7 +2133,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f}). '
                   'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                 batch_time=batch_time, top1=top1, top5=top5))
-            break
+            if i>0:break
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

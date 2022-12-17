@@ -1716,7 +1716,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     for ddl in deadlines:
         avail_mask = np.array(latency_list)<ddl
         effective_result = np.array(result_list).copy()
-        effective_result[avail_mask==0] = 0.1
+        effective_result[avail_mask==0] = 5./1000
         ea_list += [effective_result.mean()]
         fr_list += [1-avail_mask.mean()]
     return [mean_acc],[mean_latency],ea_list,fr_list,latency_list
@@ -2088,7 +2088,6 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
 
 def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=False, standalone=False):
     batch_time = AverageMeter()
-    losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
 
@@ -2120,13 +2119,10 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                 # evaluation stuff
                 infer_time_lst.append(time.time()-end)
                 batch_time.update(time.time() - end)
-            pred = output.data.max(1, keepdim=True)[1]
             # stuff end
-            loss = criterion(output, target)
 
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-            losses.update(loss.data.item(), image.size(0))
             top1.update(prec1[0], image.size(0))
             top5.update(prec5[0], image.size(0))
             if map_reduce or standalone:
@@ -2134,10 +2130,9 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
 
             val_iter.set_description(
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f}). '
-                  'Loss {loss.val:.4f} ({loss.avg:.4f}). '
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f}). '
                   'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                batch_time=batch_time, loss=losses, top1=top1, top5=top5))
+                batch_time=batch_time, top1=top1, top5=top5))
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

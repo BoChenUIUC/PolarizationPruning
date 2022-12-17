@@ -1709,10 +1709,11 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     mean_latency = np.array(latency_list).mean()
 
     # consistency+availability
+    # 5-25;1.2-1.5
     if trace_selection < 10:
         deadlines = [i for i in range(5,25)]
     elif trace_selection < 20:
-        deadlines = [0.1*i for i in range(1,21)]
+        deadlines = [1.2+0.015*i for i in range(20)]
     elif trace_selection >=200:
         deadlines = [1000]
     ea_list = []

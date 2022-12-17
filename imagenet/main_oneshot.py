@@ -1603,7 +1603,7 @@ def create_wan_trace(trace_selection,num_query):
     assert len(wanlatency_list)==args.split_num and len(wanlatency_list[0]) == len(wanlatency_list[-1])
     return wanlatency_list
 
-def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh = 0.016):
+def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh = 0.066):
     # analyze RMLaaS
     # DCN should also be lossy because nodes can go down
     RMLaaS_res = []
@@ -2131,6 +2131,8 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
 
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
+            print(prec1,prec5)
+            exit(0)
             losses.update(loss.data.item(), image.size(0))
             top1.update(prec1[0], image.size(0))
             top5.update(prec5[0], image.size(0))

@@ -1195,7 +1195,6 @@ def sample_partition_network(args,old_model,net_id=None,deepcopy=True,inplace=Tr
                     if sub_module.weight.size(1) == 3:
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                     elif sub_module.weight.size(1) == 1:
-                        print(sub_module.weight.size())
                         sub_module.weight.data = sub_module.weight.data[out_chan_mask,:].clone()
                         sub_module.groups = int((out_chan_mask).sum())
                     else:
@@ -1779,8 +1778,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     print('Running RMLaaS...')
     if arch == "resnet50":
         for i in range(len(args.alphas)):
-            i=2
-            masked_model = sample_partition_network(args,model,net_id=i,inplace=False)
+            masked_model = sample_partition_network(args,model,net_id=i,inplace=True)
             map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]

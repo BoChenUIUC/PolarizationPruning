@@ -1602,7 +1602,7 @@ def create_wan_trace(trace_selection,num_query,args):
     assert len(wanlatency_list)==args.split_num and len(wanlatency_list[0]) == len(wanlatency_list[-1])
     return wanlatency_list
 
-def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh = 0.066):
+def evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst,latency_thresh = 0.066):
     # analyze RMLaaS
     # DCN should also be lossy because nodes can go down
     RMLaaS_res = []
@@ -1828,7 +1828,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
             traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query,args)
-            metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)
+            metrics_of_one_trace = evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)
             metrics_of_all_traces += [metrics_of_one_trace]
             # end of each trace group
             if trace_selection in [rep-1,rep+9,rep*num_loss_rates+199]:

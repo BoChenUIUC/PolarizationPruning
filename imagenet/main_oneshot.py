@@ -1770,30 +1770,30 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
 def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     np.random.seed(0)
     print('Simulation with test batch size:',args.batch_size)
-    # all_map_time = []
-    # all_reduce_time = []
-    # all_correct = []
-    # print('Running RMLaaS...')
-    # if arch == "resnet50":
-    #     for i in range(len(args.alphas)):
-    #         masked_model = sample_partition_network(args,model,net_id=i,inplace=True)
-    #         map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
-    #         all_map_time += [map_time_lst]
-    #         all_reduce_time += [reduce_time_lst]
-    #         all_correct += [correct_lst]
-    # else:
-    #     # not available
-    #     raise NotImplementedError(f"do not support arch {arch}")
-    # # evaluate map/reduce time
-    # print('Break compute latency down...')
-    # # map
-    # for sn_idx in range(args.split_num,args.split_num*2):
-    #     map_mean,map_std = np.array(all_map_time[sn_idx]).mean(),np.array(all_map_time[sn_idx]).std()
-    #     print(f'Map time {sn_idx}: {map_mean:.6f}({map_std:.6f})')
-    # # reduce
-    # for sn_idx in range(args.split_num*2):
-    #     reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
-    #     print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
+    all_map_time = []
+    all_reduce_time = []
+    all_correct = []
+    print('Running RMLaaS...')
+    if arch == "resnet50":
+        for i in range(len(args.alphas)):
+            masked_model = sample_partition_network(args,model,net_id=i,inplace=True)
+            map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
+            all_map_time += [map_time_lst]
+            all_reduce_time += [reduce_time_lst]
+            all_correct += [correct_lst]
+    else:
+        # not available
+        raise NotImplementedError(f"do not support arch {arch}")
+    # evaluate map/reduce time
+    print('Break compute latency down...')
+    # map
+    for sn_idx in range(args.split_num,args.split_num*2):
+        map_mean,map_std = np.array(all_map_time[sn_idx]).mean(),np.array(all_map_time[sn_idx]).std()
+        print(f'Map time {sn_idx}: {map_mean:.6f}({map_std:.6f})')
+    # reduce
+    for sn_idx in range(args.split_num*2):
+        reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
+        print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
 
     # run originial model
     print('Running original ML service')
@@ -2133,6 +2133,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f}). '
                   'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                 batch_time=batch_time, top1=top1, top5=top5))
+            break
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

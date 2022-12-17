@@ -1576,7 +1576,7 @@ def create_wan_trace(trace_selection,num_query,args):
         trace_start = (trace_selection-10)*800
         with open(f'WAN/{768*args.batch_size:06d}','r') as f:
             record_latency_list = []
-            for l in f.readlines()[trace_start:]:
+            for l in f.readlines():
                 l = l.strip().split(' ')
                 record_latency_list += [float(l[0])/1000.]
             wanlatency_list[0] += np.random.permutation(record_latency_list).tolist()[:num_query]
@@ -1692,12 +1692,12 @@ def evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_
             selection_list += [selected_node]
 
     metrics2 = evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)
-    if trace_selection in {0,10}:
-        print(f'Trace #{trace_selection} latency list:')
-        print(metrics0[-1])
-        print(metrics1[-1])
-        print(metrics2[-1])
-        print('---------------------------------------')
+    # if trace_selection in {0,10}:
+    #     print(f'Trace #{trace_selection} latency list:')
+    #     print(metrics0[-1])
+    #     print(metrics1[-1])
+    #     print(metrics2[-1])
+    #     print('---------------------------------------')
 
     return metrics0,metrics1,metrics2,RMLaaS_latency_breakdown,no_rep_latency_breakdown,total_rep_latency_breakdown
 
@@ -1709,9 +1709,8 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     mean_latency = np.array(latency_list).mean()
 
     # consistency+availability
-    # todo:[0.1*i for i in range(1,21)]
     if trace_selection < 10:
-        deadlines = [0.1*i for i in range(1,21)]
+        deadlines = [i for i in range(5,25)]
     elif trace_selection < 20:
         deadlines = [0.1*i for i in range(1,21)]
     elif trace_selection >=200:
@@ -1789,7 +1788,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         for i in range(4):
             dcnlatency_list[i] += np.random.permutation(record_latency_list).tolist()[:num_query]
     print('Traces loaded ok.')
-    
+
     all_map_time = []
     all_reduce_time = []
     all_correct = []

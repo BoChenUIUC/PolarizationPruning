@@ -1574,7 +1574,7 @@ def create_wan_trace(trace_selection,num_query,args):
     elif trace_selection < 20:
         # recorded trace
         trace_start = (trace_selection-10)*800
-        with open(f'WAN/{12*args.batch_size:06d}','r') as f:
+        with open(f'WAN/{768*args.batch_size:06d}','r') as f:
             line_count = 0
             record_latency_list = []
             for l in f.readlines()[trace_start:]:

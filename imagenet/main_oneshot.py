@@ -1693,6 +1693,12 @@ def evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_
             selection_list += [selected_node]
 
     metrics2 = evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)
+    if trace_selection in {0,10}:
+        print(f'Trace #{trace_selection} latency list:')
+        print(metrics0[-1])
+        print(metrics1[-1])
+        print(metrics2[-1])
+        print('---------------------------------------')
 
     return metrics0,metrics1,metrics2,RMLaaS_latency_breakdown,no_rep_latency_breakdown,total_rep_latency_breakdown
 

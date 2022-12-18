@@ -389,19 +389,19 @@ if args.VLB_conv:
     elif args.VLB_conv_type == 5:
         # best for two split
         sampling_interval = 1
-        cfg = [352,144,model.in_planes]
+        cfg = [0,144,model.in_planes]
     elif args.VLB_conv_type == 6:
         # best for two split
         sampling_interval = 2
-        cfg = [352,144,model.in_planes]
+        cfg = [0,144,model.in_planes]
     elif args.VLB_conv_type == 7:
         # best for two split
         sampling_interval = 5
-        cfg = [352,144,model.in_planes]
+        cfg = [0,144,model.in_planes]
     elif args.VLB_conv_type == 8:
         # best for two split
         sampling_interval = 9
-        cfg = [352,144,model.in_planes]
+        cfg = [0,144,model.in_planes]
 
 
     elif args.VLB_conv_type == 10:
@@ -423,10 +423,7 @@ if args.VLB_conv:
         for idx,l in enumerate(layer):
             if idx%sampling_interval == sampling_interval-1 or idx == len(layer)-1:
                 model.aggr_sizes += [l.conv2.weight.size(0)]
-    print(model.aggr_sizes)
-    print(sum(model.aggr_sizes))
     cfg[0] = sum(model.aggr_sizes)
-    exit(0)
     layers = []
     for i in range(1,len(cfg)):
         layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))

@@ -418,6 +418,15 @@ if args.VLB_conv:
         cfg = [352,224,model.in_planes]
     else:
         exit(0)
+    model.aggr_sizes = [model.conv1.weight.size(0)]
+    for layer in [model.layer1,model.layer2,model.layer3]:
+        for idx,l in enumerate(layer):
+            if idx%sampling_interval == sampling_interval-1 or idx == len(layer)-1:
+                model.aggr_sizes += [l.conv2.weight.size(0)]
+    print(model.aggr_sizes)
+    print(sum(model.aggr_sizes))
+    cfg[0] = sum(model.aggr_sizes)
+    exit(0)
     layers = []
     for i in range(1,len(cfg)):
         layers.append(nn.Conv2d(cfg[i-1], cfg[i], kernel_size=3, stride=1, padding=1, bias=False))
@@ -455,11 +464,6 @@ if args.VLB_conv:
         reduce_time = time.time() - end
         return out, (map_time,reduce_time)
     model.forward = MethodType(modified_forward, model)
-    model.aggr_sizes = [model.conv1.weight.size(0)]
-    for layer in [model.layer1,model.layer2,model.layer3]:
-        for idx,l in enumerate(layer):
-            if idx%sampling_interval == sampling_interval-1:
-                model.aggr_sizes += [l.conv2.weight.size(0)]
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

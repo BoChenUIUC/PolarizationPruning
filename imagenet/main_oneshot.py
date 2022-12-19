@@ -1288,7 +1288,8 @@ def update_partitioned_model(args,old_model,new_model,net_id,batch_idx):
             subnet_mask,_ = gen_partition_mask(args,net_id,conv1.weight.size())
             copy_module_grad(conv1,conv2,subnet_mask)
         for bn1,bn2 in zip(bns1,bns2):
-            copy_module_grad(bn1,bn2)
+            if bn1 is not None:
+                copy_module_grad(bn1,bn2)
 
     with torch.no_grad():
         old_non_par_modules = old_model.get_non_partitionable_modules()

@@ -528,7 +528,7 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
         args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
-    if len(args.alphas)>1:
+    if len(torch.nonzero(torch.tensor(args.alphas)))>1:
         args.ps_batch = len(args.alphas)*4
     else:
         args.ps_batch = 1
@@ -1886,10 +1886,10 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
             else:
                 freeze_mask,net_id,dynamic_model,ch_indices = sample_network(args,model)
         elif args.loss in {LossType.PARTITION} and i%num_mini_batch==0:
-            deepcopy = len(args.alphas)>1
             nonzero = torch.nonzero(torch.tensor(args.alphas))
-            # net_id = int(nonzero[batch_idx%len(nonzero)][0])
-            net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
+            deepcopy = len(nonzero)>1
+            net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            # net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
             dynamic_model = sample_partition_network(args,model,net_id,deepcopy=deepcopy)
         # the adjusting only work when epoch is at decay_epoch
         adjust_learning_rate(optimizer, epoch, lr=args.lr, decay_epoch=args.decay_epoch,

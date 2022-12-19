@@ -603,8 +603,8 @@ line_plot(x, y,['SN#0 (94.16%)','SN#1 (94.04%)','SN#2 (93.80%)','SN#3 (93.97%)',
 flops = [
 	[100, 0],
 	[100,100],
-	[83.81,83.81],
-	[93.54,93.54]
+	[60.03,60.03],
+	[77.09,77.09]
 	]
 labels = ['Standalone','Optimal','Ours\n(CIFAR-10)','Ours\n(ImageNet)']
 filename = '/home/bo/Dropbox/Research/SIGCOMM23/images/flops_dist.eps'

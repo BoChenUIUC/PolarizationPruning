@@ -121,6 +121,8 @@ parser.add_argument('--split_num', default=2, type=int,
                     help="Number of splits on the ring")
 parser.add_argument('--simulate', action='store_true',
                     help='simulate model on validation set')
+parser.add_argument('--sampling_interval', default=3, type=int,
+                    help="SI:1,2,3,5,9")
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -370,58 +372,34 @@ else:
 if args.VLB_conv:
     print('Neural bridge type:',args.VLB_conv_type)
     if args.VLB_conv_type == 0:
-        sampling_interval = 3
         cfg = [352,64,model.in_planes]
     elif args.VLB_conv_type == 1:
-        sampling_interval = 3
         cfg = [352,96,model.in_planes]
     elif args.VLB_conv_type == 2:
-        sampling_interval = 3
         cfg = [352,128,model.in_planes]
     elif args.VLB_conv_type == 3:
-        sampling_interval = 3
-        cfg = [352,196,model.in_planes]
+        cfg = [352,144,model.in_planes]
     elif args.VLB_conv_type == 4:
-        sampling_interval = 3
-        cfg = [352,256,model.in_planes]
-
-
+        cfg = [352,192,model.in_planes]
     elif args.VLB_conv_type == 5:
-        # best for two split
-        sampling_interval = 1
-        cfg = [0,144,model.in_planes]
-    elif args.VLB_conv_type == 6:
-        # best for two split
-        sampling_interval = 2
-        cfg = [0,144,model.in_planes]
-    elif args.VLB_conv_type == 7:
-        # best for two split
-        sampling_interval = 5
-        cfg = [0,144,model.in_planes]
-    elif args.VLB_conv_type == 8:
-        # best for two split
-        sampling_interval = 9
-        cfg = [0,144,model.in_planes]
+        cfg = [352,256,model.in_planes]
 
 
     elif args.VLB_conv_type == 10:
         # best for two split
-        sampling_interval = 3
         cfg = [352,144,model.in_planes]
     elif args.VLB_conv_type == 11:
         # best for three split
-        sampling_interval = 3
         cfg = [352,192,model.in_planes]
     elif args.VLB_conv_type == 12:
         # best for four split
-        sampling_interval = 3
         cfg = [352,224,model.in_planes]
     else:
         exit(0)
     model.aggr_sizes = [model.conv1.weight.size(0)]
     for layer in [model.layer1,model.layer2,model.layer3]:
         for idx,l in enumerate(layer):
-            if idx%sampling_interval == sampling_interval-1 or idx == len(layer)-1:
+            if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
                 model.aggr_sizes += [l.conv2.weight.size(0)]
     cfg[0] = sum(model.aggr_sizes)
     layers = []
@@ -440,15 +418,15 @@ if args.VLB_conv:
         out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer1):
             out = l(out)
-            if idx%sampling_interval == sampling_interval-1 or idx == len(self.layer1)-1:
+            if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(self.layer1)-1:
                 out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer2):
             out = l(out)
-            if idx%sampling_interval == sampling_interval-1 or idx == len(self.layer2)-1:
+            if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(self.layer2)-1:
                 out_list.append(F.avg_pool2d(out, 2))
         for idx,l in enumerate(self.layer3):
             out = l(out)
-            if idx%sampling_interval == sampling_interval-1 or idx == len(self.layer3)-1:
+            if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(self.layer3)-1:
                 out_list.append(out)
         map_time = time.time() - end
         end = time.time()
@@ -1485,7 +1463,7 @@ def simulation(model, arch, prune_mode, num_classes):
         num_ddls = 20
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]
-        if args.split_num == 2:
+        if args.split_num == 2 and args.partition_ratio == 0.25:
             traces += [10+i for i in range(rep)]
         if args.VLB_conv_type >=10:
             traces += [200+i for i in range(rep*num_loss_rates)]
@@ -1534,8 +1512,8 @@ def train(epoch):
         elif args.loss in {LossType.PARTITION}:
             deepcopy = len(args.alphas)>1
             nonzero = torch.nonzero(torch.tensor(args.alphas))
-            # net_id = int(nonzero[batch_idx%len(nonzero)][0])
-            net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
+            net_id = int(nonzero[batch_idx%len(nonzero)][0])
+            # net_id = int(nonzero[torch.tensor(0).random_(0,len(nonzero))][0])
             dynamic_model = sample_partition_network(model,net_id,deepcopy=deepcopy)
 
         if args.cuda:

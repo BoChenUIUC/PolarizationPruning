@@ -1586,7 +1586,7 @@ def create_wan_trace(trace_selection,num_query,args):
     else:
         # read network traces + large latency = loss
         import csv
-        loss_rates = [0.05*i for i in range(1,11)]
+        loss_rates = [0.05*i for i in range(1,21)]
         loss_rate = loss_rates[(trace_selection-200)%len(loss_rates)]
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1761,12 +1761,10 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     #     stats = np.array(stats)
     #     print(stats.mean(axis=-1).tolist())
     #     print(stats.std(axis=-1).tolist())
-    print('Effective accuracy and failure rate...')
-    for stats in [all_effective_accuracy,all_failure_rate]:
+    print('Effective accuracy...')
+    for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
         print((stats.mean(axis=1)).tolist())
-    for stats in [all_effective_accuracy,all_failure_rate]:
-        stats = np.array(stats).reshape(metrics_shape)
         print((stats.std(axis=1)).tolist())
     print('Latency breakdown...')
     for i in range(3):
@@ -1826,7 +1824,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
 
     rep = 10
     if args.split_num in {2}:
-        num_loss_rates = 10
+        num_loss_rates = 20
         num_ddls = 20
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]

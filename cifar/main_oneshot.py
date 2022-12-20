@@ -1195,7 +1195,7 @@ def create_wan_trace(trace_selection,num_query):
     else:
         # read network traces + large latency = loss
         import csv
-        loss_rates = [0.05*i for i in range(1,11)]
+        loss_rates = [0.05*i for i in range(1,21)]
         loss_rate = loss_rates[(trace_selection-200)%len(loss_rates)]
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1386,12 +1386,12 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     #     stats = np.array(stats)
     #     print(stats.mean(axis=-1).tolist())
     #     print(stats.std(axis=-1).tolist())
-    print('Effective accuracy and failure rate...')
-    for stats in [all_effective_accuracy,all_failure_rate]:
+    print('Effective accuracy...')
+    for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        print((stats.mean(axis=1)).tolist())
-    for stats in [all_effective_accuracy,all_failure_rate]:
-        stats = np.array(stats).reshape(metrics_shape)
+        da = stats.mean(axis=1)
+        print(max(da[0]-da[2]),max(da[0]-da[2]))
+        print(da.tolist())
         print((stats.std(axis=1)).tolist())
     print('Latency breakdown...')
     for i in range(3):
@@ -1412,7 +1412,7 @@ def simulation(model, arch, prune_mode, num_classes):
     print('Running RMLaaS...')
     if arch == "resnet56":
         for i in range(len(args.alphas)):
-            masked_model = sample_partition_network(model,net_id=i,inplace=False)
+            masked_model = sample_partition_network(model,net_id=i,inplace=True)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
             map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
@@ -1459,14 +1459,13 @@ def simulation(model, arch, prune_mode, num_classes):
     # comm_size = 352*8*8*4*args.test_batch_size
     rep = 10
     if args.split_num in {2,3,4}:
-        num_loss_rates = 10
+        num_loss_rates = 20
         num_ddls = 20
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]
-        if args.split_num == 2 and args.partition_ratio == 0.25:
-            traces += [10+i for i in range(rep)]
-        if args.VLB_conv_type >=10:
-            traces += [200+i for i in range(rep*num_loss_rates)]
+        # if args.split_num == 2 and args.partition_ratio == 0.25:
+        #     traces += [10+i for i in range(rep)]
+        traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)

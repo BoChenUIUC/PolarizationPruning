@@ -402,6 +402,7 @@ if args.VLB_conv:
             if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
                 model.aggr_sizes += [l.conv2.weight.size(0)]
     cfg[0] = sum(model.aggr_sizes)
+    print(model.aggr_sizes)
     print(cfg)
     exit(0)
     layers = []

@@ -1170,7 +1170,7 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
 def create_wan_trace(trace_selection,num_query):
     # query size
     query_size = 3*32*32*4*args.test_batch_size # bytes
-    wanlatency_list = [[] for _ in range(args.split_num)]
+    wanlatency_list = [[] for _ in range(4)]
     # print(f'Simulating network trace {trace_selection}...')
     if trace_selection < 10:
         import csv

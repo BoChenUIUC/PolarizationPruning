@@ -1518,8 +1518,6 @@ def train(epoch):
 
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-            print(data.size())
-            exit(0)
         if args.loss in {LossType.PROGRESSIVE_SHRINKING} or (args.loss in {LossType.PARTITION} and deepcopy):
             output = dynamic_model(data)
         else:

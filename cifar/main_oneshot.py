@@ -1482,10 +1482,10 @@ def simulation(model, arch, prune_mode, num_classes):
                         print('Finished: FCC broadband traces (10 reps)...')
                     else:
                         print('Finished recorded Wi-Fi traces (10 reps)...')
-                    metrics_shape = (3,rep,num_ddls)
+                    metrics_shape = (5,rep,num_ddls)
                 elif trace_selection == rep*num_loss_rates+199:
                     print('Finished varied loss traces (10 reps*num of losses)...')
-                    metrics_shape = (3,rep,num_loss_rates)
+                    metrics_shape = (5,rep,num_loss_rates)
                 analyze_trace_metrics(metrics_of_all_traces,metrics_shape)
                 metrics_of_all_traces = []
     else:

@@ -1457,7 +1457,7 @@ def simulation(model, arch, prune_mode, num_classes):
             dcnlatency_list[line_count//num_query] += [float(l[0])/1000.]
             line_count += 1
             if line_count == num_query*num_dcn_conns:break
-    # comm_size = 352*8*8*4*args.test_batch_size
+    # comm_size = 128*8*8*4*args.test_batch_size
     rep = 10
     if args.split_num in {2,3,4}:
         num_loss_rates = 20
@@ -1518,6 +1518,8 @@ def train(epoch):
 
         if args.cuda:
             data, target = data.cuda(), target.cuda()
+            print(data.size())
+            exit(0)
         if args.loss in {LossType.PROGRESSIVE_SHRINKING} or (args.loss in {LossType.PARTITION} and deepcopy):
             output = dynamic_model(data)
         else:

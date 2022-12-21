@@ -1326,6 +1326,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
         #     print(selection_list)
         #     print('--------------------------------------')
         metrics234 += [evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)]
+    metrics2,metrics3,metrics4 = metrics234
 
     # if trace_selection in {0,10}:
     #     print(f'Trace #{trace_selection} latency list:')
@@ -1334,7 +1335,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
     #     print(metrics2[-1])
     #     print('---------------------------------------')
 
-    return metrics0,metrics1,*metrics234,RMLaaS_latency_breakdown,no_rep_latency_breakdown,total_rep_latency_breakdown
+    return metrics0,metrics1,metrics2,metrics3,metrics4,RMLaaS_latency_breakdown,no_rep_latency_breakdown,total_rep_latency_breakdown
 
 def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_type=0,correct_lst=None):
     # consistency

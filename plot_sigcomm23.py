@@ -263,7 +263,7 @@ def plot_computation_dist(flops,labels,filename,horizontal,bbox_to_anchor=None,r
 
 def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 				methods=['Ours','Standalone','Optimal','Ours*','Standalone*','Optimal*'],use_barlabel=False,
-				ncol=3,bbox_to_anchor=(0.46, 1.28),sep=1.25):
+				ncol=3,bbox_to_anchor=(0.46, 1.28),sep=1.25,width=0.15):
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
 	num_methods = data_mean.shape[1]
@@ -283,8 +283,8 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 		plt.yticks(yticks,fontsize=14)
 
 	for i in range(num_methods):
-	    x_index = center_index + (i - (num_methods - 1) / 2) * 0.16
-	    hbar=plt.bar(x_index, data_mean[:, i], width=0.15, linewidth=2,
+	    x_index = center_index + (i - (num_methods - 1) / 2) * width
+	    hbar=plt.bar(x_index, data_mean[:, i], width=width, linewidth=2,
 	            color=colors[i], label=methods[i], hatch=hatches[i], edgecolor='k')
 	    if data_std is not None:
 		    plt.errorbar(x=x_index, y=data_mean[:, i],
@@ -292,13 +292,41 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	    if use_barlabel:
 	    	ax.bar_label(hbar, fmt='%.2f', fontsize = labelsize_b-16, rotation='vertical')
 
-	plt.legend(bbox_to_anchor=bbox_to_anchor, fancybox=True,
-	           loc='upper center', ncol=ncol, fontsize=20)
+	if ncol>0:
+		plt.legend(bbox_to_anchor=bbox_to_anchor, fancybox=True,
+		           loc='upper center', ncol=ncol, fontsize=20)
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
-analyze_all_recorded_traces()
+# different partition ratios
+x = [[0.0625*i for i in range(1,9)] for _ in range(2)]
+diff_ratio_data = [[0.024602635782747597, 0.0032256586563781837, 0.0012679712460063886, 0.000493275532229851, 1.006022295959533],
+[0.025521166134185314, 0.005169700668889842, 0.0026956869009584607, 0.0010112985033626746, 0.8929206401341552],
+[0.02851837060702876, 0.004094578275247764, 0.004193290734824262, 0.00039936102236420574, 0.7876039034759786],
+[0.028266773162939324, 0.004484570005793152, 0.006479632587859441, 0.0005795036685675726, 0.6900720859850035],
+[0.03020966453674122, 0.004018100328720223, 0.007298322683706055, 0.0008104298671557811,0.6003],
+[0.03133186900958468, 0.0049207975386710585, 0.01312899361022366, 0.001909143059629507,0.518363208504657],
+[0.033354632587859416, 0.003390998404352612, 0.019019568690095846, 0.0015800331621862362,0.44418614851528576],
+[0.03094648562300318, 0.001526395234460363, 0.026158146964856244, 0.0017567346204411332,0.3777940076931159]]
+diff_ratio_data = np.array(diff_ratio_data)
+y = diff_ratio_data[:,[0,2]]
+yerr = diff_ratio_data[:,[1,3]]
+groupedbar(y,yerr,'$R^(2)$', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_ratio.eps',methods=['Soft','Hard'],envs=[0.0625*i for i in range(1,9)],
+	ncol=2,sep=1,bbox_to_anchor=(0.5, 1.2),width=0.4)
+y = diff_ratio_data[:,[4]]
+groupedbar(y,None,'$R^(2)$', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/flops_vs_ratio.eps',methods=['FLOPS'],envs=[0.0625*i for i in range(1,9)],
+	ncol=0,sep=1,bbox_to_anchor=(0.5, 1.2),width=0.4)
+# y = diff_ratio_data[:,[4]].transpose((1,0))
+# x = [[0.0625*i for i in range(1,9)] ]
+# line_plot(x, y*100,['FLOPS'],colors,
+# 		'/home/bo/Dropbox/Research/SIGCOMM23/images/flops_vs_ratio.eps',
+# 		'Partition Ratio','FLOPS (%)',yticks=[25,50,75,100],lbsize=16,linewidth=4)
 exit(0)
+
+
+analyze_all_recorded_traces()
 
 
 methods4 = ['1X','Ours','1X*','Ours*']

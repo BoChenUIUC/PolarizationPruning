@@ -1397,8 +1397,9 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         stats = np.array(stats).reshape(metrics_shape)
         for i in range(3):
             print(i,'==============')
-            print(stats[i][0])
-            print(stats[i][0]-stats[2][0])
+            st = stats.mean(axis=1)
+            print(st[i])
+            print(st[2] - st[i])
         r2 = (stats[2]-stats[0]).max(axis=1)
         r3 = (stats[3]-stats[0]).max(axis=1)
         r4 = (stats[4]-stats[0]).max(axis=1)
@@ -1407,11 +1408,11 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         r4_base = (stats[4]-stats[1]).max(axis=1)
         print('Ours reliability:',r2.mean(),r2.std(),r3.mean(),r3.std(),r4.mean(),r4.std())
         print('Base reliability:',r2_base.mean(),r2_base.std(),r3_base.mean(),r3_base.std(),r4_base.mean(),r4_base.std())
-    print('Latency breakdown...')
-    for i in range(3):
-        print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
-    for i in range(3):
-        print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
+    # print('Latency breakdown...')
+    # for i in range(3):
+    #     print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
+    # for i in range(3):
+    #     print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
 
 def simulation(model, arch, prune_mode, num_classes):
     np.random.seed(0)

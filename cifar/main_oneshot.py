@@ -478,7 +478,6 @@ if args.resume:
 
         args.start_epoch = checkpoint['epoch']
         best_prec1 = checkpoint['best_prec1']
-        print(checkpoint['state_dict'].keys())
         if args.evaluate:
             model.load_state_dict(checkpoint['state_dict'])
         else:
@@ -1424,9 +1423,11 @@ def simulation(model, arch, prune_mode, num_classes):
     # every thing for net[2-3] will be used
     print('Running RMLaaS...')
     if arch == "resnet56":
-        num_sn = len(torch.nonzero(torch.tensor(args.alphas)))
-        for i in torch.nonzero(torch.tensor(args.alphas)):
-            masked_model = sample_partition_network(model,net_id=i,inplace=True)
+        nonzero = torch.nonzero(torch.tensor(args.alphas))
+        num_sn = len(nonzero)
+        for t in nonzero:
+            net_id = int(t[0])
+            masked_model = sample_partition_network(model,net_id=net_id,inplace=True)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
             if num_sn > 1:

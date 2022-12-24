@@ -123,8 +123,6 @@ parser.add_argument('--simulate', action='store_true',
                     help='simulate model on validation set')
 parser.add_argument('--sampling_interval', default=3, type=int,
                     help="SI:1,2,3,5,9")
-parser.add_argument('--teacher_path', default=None, type=str,
-                    help='path to teacher model')
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -295,13 +293,10 @@ BASEFLOPS = compute_conv_flops(model, cuda=True)
 
 if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     teacher_model = copy.deepcopy(model)
-    if args.teacher_path is None:
-        if args.arch == 'resnet56':
-            teacher_path = './original/resnet/model_best.pth.tar'
-        else:
-            teacher_path = './original/vgg/model_best.pth.tar'
+    if args.arch == 'resnet56':
+        teacher_path = './original/resnet/model_best.pth.tar'
     else:
-        teacher_path = args.teacher_path
+        teacher_path = './original/vgg/model_best.pth.tar'
     teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
 def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
@@ -1241,51 +1236,62 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
     RMLaaS_latency_breakdown = []
     selection_list = []
     num_query = len(all_correct[0])
-    for query_index in range(num_query):
-        # for each node, 
-        query_latency = None
-        query_result = None
-        for node_idx in range(args.split_num):
-            # decide one or none of the rest nodes to cooperate
-            # derive latency and compare with best
-            node_latency = [all_map_time[node_idx+args.split_num][query_index], latency_thresh]
-            subnet_idx = node_idx + args.split_num
-            for other_node_idx in range(args.split_num):
-                if other_node_idx == node_idx:continue
-                # skip nodes that are lost
-                if wanlatency_list[other_node_idx][query_index] > 1000:continue
-                dcn_conn_idx = node_idx*args.split_num + other_node_idx
-                dcn_latency = dcnlatency_list[dcn_conn_idx][query_index]
-                other_node_latency = [all_map_time[other_node_idx+args.split_num][query_index], dcn_latency]
-                if sum(other_node_latency) < sum(node_latency):
-                    node_latency = other_node_latency
-                    subnet_idx = node_idx
-            # add reduce time for whole sub network
-            node_latency += [all_reduce_time[subnet_idx][query_index]]
-            # add WAN communication latency to node
-            node_latency += [wanlatency_list[node_idx][query_index]]
-            if query_latency is None or sum(node_latency) < sum(query_latency):
-                query_latency = node_latency
-                query_result = all_correct[subnet_idx][query_index]
-                subnet_sel = subnet_idx
-        RMLaaS_res += [query_result]
-        RMLaaS_latency += [sum(query_latency)]
-        RMLaaS_latency_breakdown += [query_latency]
-        if sum(query_latency)>1000:
-            # no response
-            selection_list += [-1]
-        else:
-            selection_list += [subnet_sel]
-    # if trace_selection == 201:
-    #     print('----------node liveness--------------')
-    #     node0_liveness = np.array(wanlatency_list[0])<1000
-    #     node1_liveness = np.array(wanlatency_list[1])<1000
-    #     print(node0_liveness.tolist())
-    #     print(node1_liveness.tolist())
-    #     print('----------Selected subnets------------')
-    #     print(selection_list)
+    if len(all_map_time) >1 :
+        for query_index in range(num_query):
+            # for each node, 
+            query_latency = None
+            query_result = None
+            for node_idx in range(args.split_num):
+                # decide one or none of the rest nodes to cooperate
+                # derive latency and compare with best
+                node_latency = [all_map_time[node_idx+args.split_num][query_index], latency_thresh]
+                subnet_idx = node_idx + args.split_num
+                for other_node_idx in range(args.split_num):
+                    if other_node_idx == node_idx:continue
+                    # skip nodes that are lost
+                    if wanlatency_list[other_node_idx][query_index] > 1000:continue
+                    dcn_conn_idx = node_idx*args.split_num + other_node_idx
+                    dcn_latency = dcnlatency_list[dcn_conn_idx][query_index]
+                    other_node_latency = [all_map_time[other_node_idx+args.split_num][query_index], dcn_latency]
+                    if sum(other_node_latency) < sum(node_latency):
+                        node_latency = other_node_latency
+                        subnet_idx = node_idx
+                # add reduce time for whole sub network
+                node_latency += [all_reduce_time[subnet_idx][query_index]]
+                # add WAN communication latency to node
+                node_latency += [wanlatency_list[node_idx][query_index]]
+                if query_latency is None or sum(node_latency) < sum(query_latency):
+                    query_latency = node_latency
+                    query_result = all_correct[subnet_idx][query_index]
+                    subnet_sel = subnet_idx
+            RMLaaS_res += [query_result]
+            RMLaaS_latency += [sum(query_latency)]
+            RMLaaS_latency_breakdown += [query_latency]
+            if sum(query_latency)>1000:
+                # no response
+                selection_list += [-1]
+            else:
+                selection_list += [subnet_sel]
+    else:
+        query_index = 0
+        for ift0,c0 in zip(all_map_time[0],all_correct[0]):
+            latency = [ift0,wanlatency_list[0][query_index]]
+            selected_node = 0
+            other_node_latency = [ift0,wanlatency_list[1][query_index]]
+            if sum(other_node_latency) < sum(latency):
+                latency = other_node_latency
+                selected_node = 1
+            RMLaaS_res += [c0]
+            RMLaaS_latency += [sum(latency)]
+            RMLaaS_latency_breakdown += [latency]
+            query_index += 1
+            if sum(latency)>1000:
+                # no response
+                selection_list += [-1]
+            else:
+                selection_list += [selected_node]
 
-    metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection,service_type=0,correct_lst=all_correct)
+    metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection)
 
     # analyze no replication
     no_rep_res = []
@@ -1304,11 +1310,8 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             selection_list += [-1]
         else:
             selection_list += [0]
-    # if trace_selection == 201:
-    #     print('----------Selected subnets------------')
-    #     print(selection_list)
 
-    metrics1 = evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection,service_type=1)
+    metrics1 = evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection)
 
     # analyze total replication
     metrics234 = []
@@ -1337,23 +1340,12 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             else:
                 selection_list += [selected_node]
 
-        # if trace_selection == 201:
-        #     print('----------Selected subnets------------')
-        #     print(selection_list)
-        #     print('--------------------------------------')
-        metrics234 += [evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)]
+        metrics234 += [evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection)]
     metrics2,metrics3,metrics4 = metrics234
-
-    # if trace_selection in {0,10}:
-    #     print(f'Trace #{trace_selection} latency list:')
-    #     print(metrics0[-1])
-    #     print(metrics1[-1])
-    #     print(metrics2[-1])
-    #     print('---------------------------------------')
 
     return metrics0,metrics1,metrics2,metrics3,metrics4,RMLaaS_latency_breakdown,no_rep_latency_breakdown,total_rep_latency_breakdown
 
-def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_type=0,correct_lst=None):
+def evaluate_service_metrics(result_list,latency_list,trace_selection=0):
     # consistency
     mean_acc = np.array(result_list).mean()
 
@@ -1361,7 +1353,6 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     mean_latency = np.array(latency_list).mean()
 
     # consistency+availability
-    # todo:[0.1*i for i in range(1,21)]
     if trace_selection < 10:
         deadlines = [0.1*i for i in range(1,21)]
     elif trace_selection < 20:
@@ -1414,11 +1405,11 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         print('Base reliability:',r2_base.mean(),r2_base.std(),r3_base.mean(),r3_base.std(),r4_base.mean(),r4_base.std())
         # print(stats.mean(axis=1).tolist())
         # print((stats.std(axis=1)).tolist())
-    print('Latency breakdown...')
-    for i in range(3):
-        print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
-    for i in range(3):
-        print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
+    # print('Latency breakdown...')
+    # for i in range(3):
+    #     print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
+    # for i in range(3):
+    #     print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
 
 def simulation(model, arch, prune_mode, num_classes):
     np.random.seed(0)
@@ -1432,13 +1423,17 @@ def simulation(model, arch, prune_mode, num_classes):
     # every thing for net[2-3] will be used
     print('Running RMLaaS...')
     if arch == "resnet56":
-        for i in range(len(args.alphas)):
+        num_sn = len(torch.nonzero(torch.tensor(args.alphas)))
+        for i in range(num_sn):
             masked_model = sample_partition_network(model,net_id=i,inplace=True)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
-            map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
+            if num_sn > 1:
+                map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
+                all_reduce_time += [reduce_time_lst]
+            else:
+                map_time_lst,correct_lst = test(teacher_model,standalone=True)
             all_map_time += [map_time_lst]
-            all_reduce_time += [reduce_time_lst]
             all_correct += [correct_lst]
     else:
         # not available

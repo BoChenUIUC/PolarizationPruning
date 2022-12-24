@@ -478,6 +478,7 @@ if args.resume:
 
         args.start_epoch = checkpoint['epoch']
         best_prec1 = checkpoint['best_prec1']
+        print(checkpoint['state_dict'].keys())
         if args.evaluate:
             model.load_state_dict(checkpoint['state_dict'])
         else:

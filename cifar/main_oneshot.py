@@ -1292,8 +1292,6 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
                 selection_list += [selected_node]
 
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection)
-    print(metrics0)
-    exit(0)
 
     # analyze no replication
     no_rep_res = []
@@ -1426,7 +1424,7 @@ def simulation(model, arch, prune_mode, num_classes):
     print('Running RMLaaS...')
     if arch == "resnet56":
         num_sn = len(torch.nonzero(torch.tensor(args.alphas)))
-        for i in range(num_sn):
+        for i in torch.nonzero(torch.tensor(args.alphas)):
             masked_model = sample_partition_network(model,net_id=i,inplace=True)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
@@ -1437,6 +1435,7 @@ def simulation(model, arch, prune_mode, num_classes):
                 map_time_lst,correct_lst = test(teacher_model,standalone=True)
             all_map_time += [map_time_lst]
             all_correct += [correct_lst]
+            print(np.array(correct_lst).mean())
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")

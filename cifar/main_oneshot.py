@@ -1422,13 +1422,14 @@ def simulation(model, arch, prune_mode, num_classes):
     # map/reduce time for net[0-1] will not be used, but their preds will be used
     # every thing for net[2-3] will be used
     print('Running RMLaaS...')
+    num_sn = len(torch.nonzero(torch.tensor(args.alphas)))
     if arch == "resnet56":
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
             masked_model = sample_partition_network(model,net_id=i)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
-            if len(torch.nonzero(torch.tensor(args.alphas))) > 1:
+            if num_sn > 1:
                 map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
                 all_reduce_time += [reduce_time_lst]
             else:

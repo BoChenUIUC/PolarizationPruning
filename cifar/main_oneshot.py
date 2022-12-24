@@ -1357,7 +1357,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0):
 
     # consistency+availability
     if trace_selection < 10:
-        deadlines = [0.1*i+0.5 for i in range(args.num_loss_rates)]
+        deadlines = [0.1*i+0.5 for i in range(args.num_ddls)]
     elif trace_selection < 20:
         exit(0)
         deadlines = [0.1*i for i in range(1,21)]

@@ -1423,22 +1423,18 @@ def simulation(model, arch, prune_mode, num_classes):
     # every thing for net[2-3] will be used
     print('Running RMLaaS...')
     if arch == "resnet56":
-        nonzero = torch.nonzero(torch.tensor(args.alphas))
-        num_sn = len(nonzero)
-        for t in nonzero:
-            net_id = int(t[0])
-            print(net_id,'-----------------')
-            masked_model = sample_partition_network(model,net_id=net_id,inplace=True)
+        for i in range(len(args.alphas)):
+            if args.alphas[i]==0:continue
+            masked_model = sample_partition_network(model,net_id=i)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
             if num_sn > 1:
                 map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
                 all_reduce_time += [reduce_time_lst]
             else:
-                map_time_lst,correct_lst = test(teacher_model,standalone=True)
+                map_time_lst,correct_lst = test(masked_model,standalone=True)
             all_map_time += [map_time_lst]
             all_correct += [correct_lst]
-            print(np.array(correct_lst).mean())
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")

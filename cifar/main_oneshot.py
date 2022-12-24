@@ -368,6 +368,9 @@ if len(args.alphas)>1:
     args.ps_batch = len(args.alphas)*4
 else:
     args.ps_batch = 1
+        
+args.num_loss_rates = 5
+args.num_ddls = 11
 
 if args.VLB_conv:
     print('Neural bridge type:',args.VLB_conv_type)
@@ -1211,7 +1214,7 @@ def create_wan_trace(trace_selection,num_query):
     else:
         # read network traces + large latency = loss
         import csv
-        loss_rates = [0.05*i for i in range(1,21)]
+        loss_rates = [0.05*i for i in range(1,1+args.num_loss_rates)]
         loss_rate = loss_rates[(trace_selection-200)%len(loss_rates)]
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1354,9 +1357,10 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0):
 
     # consistency+availability
     if trace_selection < 10:
-        deadlines = [0.2*i for i in range(1,21)]
+        deadlines = [0.1*i+0.5 for i in range(args.num_loss_rates)]
     elif trace_selection < 20:
-        deadlines = [0.2*i for i in range(1,21)]
+        exit(0)
+        deadlines = [0.1*i for i in range(1,21)]
     elif trace_selection >=200:
         deadlines = [1000]
     ea_list = []
@@ -1401,14 +1405,6 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         r2_base = (stats[2]-stats[1]).max(axis=1)
         r3_base = (stats[3]-stats[1]).max(axis=1)
         r4_base = (stats[4]-stats[1]).max(axis=1)
-        print(stats[0])
-        print(stats[2])
-        print(stats[1])
-        print('-----------------')
-        print(stats[2]-stats[0])
-        print(stats[2]-stats[1])
-        print(r2)
-        print(r2_base)
         print('Ours reliability:',[r2.mean(),r2.std(),r3.mean(),r3.std(),r4.mean(),r4.std()])
         print('Base reliability:',[r2_base.mean(),r2_base.std(),r3_base.mean(),r3_base.std(),r4_base.mean(),r4_base.std()])
     # print('Latency breakdown...')
@@ -1483,28 +1479,26 @@ def simulation(model, arch, prune_mode, num_classes):
     # comm_size = 128*8*8*4*args.test_batch_size
     rep = 10
     if args.split_num in {2,3,4}:
-        num_loss_rates = 20
-        num_ddls = 20
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]
         # if args.split_num == 2 and args.partition_ratio == 0.25:
         #     traces += [10+i for i in range(rep)]
-        traces += [200+i for i in range(rep*num_loss_rates)]
+        traces += [200+i for i in range(rep*args.num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query)
             metrics_of_one_trace = evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)
             metrics_of_all_traces += [metrics_of_one_trace]
             # end of each trace group
-            if trace_selection in [rep-1,rep+9,rep*num_loss_rates+199]:
+            if trace_selection in [rep-1,rep+9,rep*args.num_loss_rates+199]:
                 if trace_selection in [rep-1,rep+9]:
                     if trace_selection == rep-1:
                         print('Finished: FCC broadband traces (10 reps)...')
                     else:
                         print('Finished recorded Wi-Fi traces (10 reps)...')
-                    metrics_shape = (5,rep,num_ddls)
-                elif trace_selection == rep*num_loss_rates+199:
+                    metrics_shape = (5,rep,args.num_ddls)
+                elif trace_selection == rep*args.num_loss_rates+199:
                     print('Finished varied loss traces (10 reps*num of losses)...')
-                    metrics_shape = (5,rep,num_loss_rates)
+                    metrics_shape = (5,rep,args.num_loss_rates)
                 analyze_trace_metrics(metrics_of_all_traces,metrics_shape)
                 metrics_of_all_traces = []
     else:

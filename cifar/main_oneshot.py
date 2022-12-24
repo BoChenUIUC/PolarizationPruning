@@ -1414,11 +1414,11 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         print('Base reliability:',r2_base.mean(),r2_base.std(),r3_base.mean(),r3_base.std(),r4_base.mean(),r4_base.std())
         # print(stats.mean(axis=1).tolist())
         # print((stats.std(axis=1)).tolist())
-    # print('Latency breakdown...')
-    # for i in range(3):
-    #     print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
-    # for i in range(3):
-    #     print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
+    print('Latency breakdown...')
+    for i in range(3):
+        print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
+    for i in range(3):
+        print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
 
 def simulation(model, arch, prune_mode, num_classes):
     np.random.seed(0)

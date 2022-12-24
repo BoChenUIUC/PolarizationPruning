@@ -370,7 +370,7 @@ else:
     args.ps_batch = 1
         
 args.num_loss_rates = 5
-args.num_ddls = 11
+args.num_ddls = 6
 
 if args.VLB_conv:
     print('Neural bridge type:',args.VLB_conv_type)
@@ -1357,7 +1357,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0):
 
     # consistency+availability
     if trace_selection < 10:
-        deadlines = [0.05*i+1.5 for i in range(args.num_ddls)]
+        deadlines = [0.1*i+1.5 for i in range(args.num_ddls)]
     elif trace_selection < 20:
         exit(0)
         deadlines = [0.1*i for i in range(1,21)]

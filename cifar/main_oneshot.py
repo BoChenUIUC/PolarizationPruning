@@ -1428,7 +1428,7 @@ def simulation(model, arch, prune_mode, num_classes):
             masked_model = sample_partition_network(model,net_id=i)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]
-            if num_sn > 1:
+            if lem(torch.nonzero(torch.tensor(args.alphas))) > 1:
                 map_time_lst,reduce_time_lst,correct_lst = test(masked_model,map_reduce=True)
                 all_reduce_time += [reduce_time_lst]
             else:

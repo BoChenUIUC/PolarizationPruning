@@ -445,6 +445,7 @@ if args.VLB_conv:
         return out, (map_time,reduce_time)
     model.forward = MethodType(modified_forward, model)
 elif args.simulate:
+    from types import MethodType
     def modified_forward(self,x):
         end = time.time()
         out = F.relu(self.bn1(self.conv1(x)))

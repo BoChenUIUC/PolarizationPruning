@@ -1395,8 +1395,8 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Effective accuracy...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        for i in range(2):
-            print(stats[i])
+        for i in range(3):
+            print(stats[i][0])
         r2 = (stats[2]-stats[0]).max(axis=1)
         r3 = (stats[3]-stats[0]).max(axis=1)
         r4 = (stats[4]-stats[0]).max(axis=1)

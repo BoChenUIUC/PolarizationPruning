@@ -444,6 +444,21 @@ if args.VLB_conv:
         reduce_time = time.time() - end
         return out, (map_time,reduce_time)
     model.forward = MethodType(modified_forward, model)
+elif args.simulate:
+    def modified_forward(self,x):
+        end = time.time()
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        map_time = time.time() - end
+        end = time.time()
+        out = F.avg_pool2d(out, out.size()[3])
+        out = out.view(out.size(0), -1)
+        out = self.linear(out)
+        reduce_time = time.time() - end
+        return out, (map_time,reduce_time)
+    model.forward = MethodType(modified_forward, model)
 
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():

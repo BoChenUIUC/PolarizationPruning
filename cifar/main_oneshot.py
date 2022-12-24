@@ -1427,6 +1427,7 @@ def simulation(model, arch, prune_mode, num_classes):
         num_sn = len(nonzero)
         for t in nonzero:
             net_id = int(t[0])
+            print(net_id,'-----------------')
             masked_model = sample_partition_network(model,net_id=net_id,inplace=True)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             all_flop_ratios += [flop/BASEFLOPS]

@@ -1354,9 +1354,9 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0):
 
     # consistency+availability
     if trace_selection < 10:
-        deadlines = [0.1*i for i in range(1,21)]
+        deadlines = [0.2*i for i in range(1,21)]
     elif trace_selection < 20:
-        deadlines = [0.1*i for i in range(1,21)]
+        deadlines = [0.2*i for i in range(1,21)]
     elif trace_selection >=200:
         deadlines = [1000]
     ea_list = []
@@ -1401,12 +1401,12 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         r2_base = (stats[2]-stats[1]).max(axis=1)
         r3_base = (stats[3]-stats[1]).max(axis=1)
         r4_base = (stats[4]-stats[1]).max(axis=1)
-        print(stats[0])
-        print(stats[1])
-        print(stats[2])
-        print('-----------------')
-        print(stats[2]-stats[0])
-        print(stats[2]-stats[1])
+        # print(stats[0])
+        # print(stats[1])
+        # print(stats[2])
+        # print('-----------------')
+        # print(stats[2]-stats[0])
+        # print(stats[2]-stats[1])
         print(r2)
         print(r2_base)
         print('Ours reliability:',[r2.mean(),r2.std(),r3.mean(),r3.std(),r4.mean(),r4.std()])

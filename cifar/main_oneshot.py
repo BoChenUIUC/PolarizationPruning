@@ -1445,9 +1445,10 @@ def simulation(model, arch, prune_mode, num_classes):
         map_mean,map_std = np.array(all_map_time[sn_idx]).mean(),np.array(all_map_time[sn_idx]).std()
         print(f'Map time {sn_idx}: {map_mean:.6f}({map_std:.6f})')
     # reduce
-    for sn_idx in range(args.split_num*2):
-        reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
-        print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
+    if num_sn > 1:
+        for sn_idx in range(args.split_num*2):
+            reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
+            print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
     # flop ratios
     print('FLOPS ratios:',all_flop_ratios)
 

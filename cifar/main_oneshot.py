@@ -1292,6 +1292,8 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
                 selection_list += [selected_node]
 
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection)
+    print(metrics0)
+    exit(0)
 
     # analyze no replication
     no_rep_res = []

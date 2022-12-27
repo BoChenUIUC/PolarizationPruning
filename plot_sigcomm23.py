@@ -296,13 +296,18 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 		    plt.errorbar(x=x_index, y=data_mean[:, i],
 		                 yerr=data_std[:, i], fmt='k.', elinewidth=3)
 	    if use_barlabel:
-	    	ax.bar_label(hbar, fmt='%.2f', fontsize = labelsize_b-16, rotation='vertical')
+	    	# ax.bar_label(hbar, fmt='%.4f', fontsize = 14, rotation='vertical',padding=8)
+	    	ax.text(x_index[1]-0.03,data_mean[1,i]+.01,f'{data_mean[1,i]:.4f}',fontsize = 14, rotation='vertical',fontweight='bold')
 
 	if ncol>0:
 		plt.legend(bbox_to_anchor=bbox_to_anchor, fancybox=True,
 		           loc='upper center', ncol=ncol, fontsize=14)
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
+
+
+	
+
 
 flops_base = [1.006022295959533,0.8929206401341552,0.7876039034759786,0.6900720859850035,0.6003251876612296,0.518363208504657,0.44418614851528576,0.3777940076931159]
 re_base = [[0.0014696485623003186, 0.0035459480845307745,-0.00022963258785941855, 0.0011557776386726054],
@@ -369,25 +374,6 @@ re_vs_sr = [[0.0260523162939297, 0.004480565935155543,0.008596246006389797, 0.00
 
 flops_vs_sr = [0.6003,0.6743553623832951,0.7483855371053606,0.8964458865494916,1.1925665854377538]
 
-	
-
-methods = ['$R_s^{(2)}$','$R_s^{(3)}$','$R_s^{(4)}$','$R_h^{(2)}$','$R_h^{(3)}$','$R_h^{(4)}$']
-re_vs_nodes = [[0.007140575079872202, 0.004132095691370403, 0.03211261980830667, 0.015404273539343313, 0.03582867412140574, 0.01845927485690765,],
-[0.10407947284345051, 0.03738313137189115, 0.1317492012779553, 0.03571484752205825, 0.13577276357827478, 0.03598051353576017],
-[0.006259984025559107, 0.0013025614474167567, 0.04480431309904152, 0.008881616749654403, 0.05219249201277957, 0.008320702953971854],
-[0.16654752396166136, 0.0137959207372693, 0.20654552715654956, 0.01022833202885187, 0.21356230031948886, 0.008679869968650581],
-]
-re_vs_nodes = np.array(re_vs_nodes)
-y = re_vs_nodes[:,0::2]
-yerr = re_vs_nodes[:,1::2]
-groupedbar(y,yerr,'$R$', 
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_nodes.eps',methods=methods,envs=[1,2,3,4],bbox_to_anchor=(0.5, 1.25))
-
-flops_nodes = [[100,60.09,64.26,67.08]]
-flops_nodes = np.array(flops_nodes).transpose((1,0))
-groupedbar(flops_nodes,None,'FLOPS (%)', 
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/flops_vs_nodes.eps',methods=['FLOPS'],envs=[1,2,3,4],
-	ncol=0,sep=1,bbox_to_anchor=(0.5, 1.2),width=0.4)
 
 # different partition ratios
 x = [[0.0625*i for i in range(1,9)] for _ in range(2)]
@@ -447,6 +433,28 @@ yerr = np.concatenate((y_ea100.transpose((1,0,2)).std(axis=-1),y_ea100_loss.tran
 groupedbar(y.transpose((1,0)),yerr.transpose((1,0)),'Delivered Acc. (%)', 
 	'/home/bo/Dropbox/Research/SIGCOMM23/images/FCC_ea_comp.eps',methods=methods6)
 
+
+# vary node number
+methods = ['$R_s^{(2)}$','$R_s^{(3)}$','$R_s^{(4)}$','$R_h^{(2)}$','$R_h^{(3)}$','$R_h^{(4)}$']
+
+re_vs_nodes = [[0.10407947284345051, 0.03738313137189115, 0.1317492012779553, 0.03571484752205825, 0.13577276357827478, 0.03598051353576017,
+0.16654752396166136, 0.0137959207372693, 0.20654552715654956, 0.01022833202885187, 0.21356230031948886, 0.008679869968650581],
+[0.007140575079872202, 0.004132095691370403, 0.0020946485623003054, 0.003389731212981527, 0.006569488817891345, 0.002178623274278881,
+0.006259984025559107, 0.0013025614474167567, 0.0027156549520766736, 0.0006374157228239655,0.005820686900958461, 0.0008257821278654765],
+]
+re_vs_nodes = np.array(re_vs_nodes)
+y = re_vs_nodes[:,0::2]
+yerr = re_vs_nodes[:,1::2]
+groupedbar(y,yerr,'$R$', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_nodes.eps',methods=methods,envs=['Baseline','Ours'],bbox_to_anchor=(0.5, 1.25),use_barlabel=True)
+
+flops_nodes = [[100,60.09,64.26,67.08]]
+flops_nodes = np.array(flops_nodes).transpose((1,0))
+groupedbar(flops_nodes,None,'FLOPS (%)', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/flops_vs_nodes.eps',methods=['FLOPS'],envs=[1,2,3,4],
+	ncol=0,sep=1,bbox_to_anchor=(0.5, 1.2),width=0.4)
+
+# baseline
 # flop distribution
 flops = [
 	[100, 0],

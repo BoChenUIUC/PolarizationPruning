@@ -1586,7 +1586,7 @@ def create_wan_trace(trace_selection,num_query,args):
     else:
         # read network traces + large latency = loss
         import csv
-        loss_rates = [0.05*i for i in range(1,21)]
+        loss_rates = [0.05*i for i in range(1,6)]
         loss_rate = loss_rates[(trace_selection-200)%len(loss_rates)]
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1713,9 +1713,9 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # consistency+availability
     # 5-25;1.2-1.5
     if trace_selection < 10:
-        deadlines = [i for i in range(5,25)]
-    elif trace_selection < 20:
-        deadlines = [1.2+0.015*i for i in range(20)]
+        deadlines = [0.1*i+1.5 for i in range(6)]
+    # elif trace_selection < 20:
+    #     deadlines = [1.2+0.015*i for i in range(20)]
     elif trace_selection >=200:
         deadlines = [1000]
     ea_list = []
@@ -1761,16 +1761,18 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     #     stats = np.array(stats)
     #     print(stats.mean(axis=-1).tolist())
     #     print(stats.std(axis=-1).tolist())
-    print('Effective accuracy...')
+    print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        print((stats.mean(axis=1)).tolist())
-        print((stats.std(axis=1)).tolist())
-    print('Latency breakdown...')
-    for i in range(3):
-        print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
-    for i in range(3):
-        print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
+        r2 = (stats[2]-stats[0]).max(axis=1)
+        r2_base = (stats[2]-stats[1]).max(axis=1)
+        print([r2.mean(),r2.std()])
+        print([r2_base.mean(),r2_base.std()])
+    # print('Latency breakdown...')
+    # for i in range(3):
+    #     print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
+    # for i in range(3):
+    #     print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
 
 def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     np.random.seed(0)
@@ -1824,12 +1826,12 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
 
     rep = 10
     if args.split_num in {2}:
-        num_loss_rates = 20
-        num_ddls = 20
+        num_loss_rates = 5
+        num_ddls = 6
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]
-        if args.split_num == 2:
-            traces += [10+i for i in range(rep)]
+        # if args.split_num == 2:
+        #     traces += [10+i for i in range(rep)]
         if args.VLB_conv_type ==0:
             traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:

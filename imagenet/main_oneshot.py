@@ -1713,7 +1713,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # consistency+availability
     # 5-25;1.2-1.5
     if trace_selection < 10:
-        deadlines = [0.1*i+1.5 for i in range(6)]
+        deadlines = [i+15 for i in range(6)]
     # elif trace_selection < 20:
     #     deadlines = [1.2+0.015*i for i in range(20)]
     elif trace_selection >=200:

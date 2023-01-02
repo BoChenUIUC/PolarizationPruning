@@ -225,11 +225,7 @@ num_classes = 10 if args.dataset == 'cifar10' else 100
 
 if not args.retrain:
     if re.match("resnet[0-9]+", args.arch):
-        model = models.__dict__[args.arch](num_classes=num_classes,
-                                           gate=args.gate,
-                                           bn_init_value=args.bn_init_value, aux_fc=False,
-                                           width_multiplier=args.width_multiplier,
-                                           use_input_mask=args.input_mask)
+        model = models.__dict__[args.arch](num_classes=num_classes)
     elif re.match("vgg[0-9]+", args.arch):
         model = models.__dict__[args.arch](num_classes=num_classes,
                                            gate=args.gate,

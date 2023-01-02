@@ -1153,7 +1153,7 @@ def partition_while_training(model, arch, prune_mode, num_classes, avg_loss=None
     model.eval()
     saved_prec1s = []
     saved_flops = []
-    if arch == "resnet56":
+    if "resnet" in arch:
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
             masked_model = sample_partition_network(model,net_id=i)

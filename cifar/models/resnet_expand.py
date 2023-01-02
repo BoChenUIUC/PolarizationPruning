@@ -38,7 +38,7 @@ import torch.nn.init as init
 import numpy as np
 from torch.autograd import Variable
 
-__all__ = ['ResNetExpand', 'BasicBlock', 'resnet56']
+__all__ = ['ResNetExpand', 'BasicBlock', 'resnet20', 'resnet32', 'resnet44', 'resnet56', 'resnet110']
 
 from models.common import SparseGate, prune_conv_layer, compute_conv_flops_weight, BuildingBlock, Identity
 

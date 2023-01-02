@@ -111,17 +111,17 @@ parser.add_argument('--load_enhance', action='store_true',
                     help='load enhancement for different subnets')
 parser.add_argument('--OFA', action='store_true',
                     help='OFA training')
-parser.add_argument('--partition_ratio', default=0.25, type=float,
+parser.add_argument('--partition_ratio', default=0.3125, type=float,
                     help="The partition ratio")
 parser.add_argument('--VLB_conv', action='store_true',
                     help='enable VLB')
-parser.add_argument('--VLB_conv_type', default=0, type=int,
+parser.add_argument('--VLB_conv_type', default=3, type=int,
                     help="Type of vlb conv")
 parser.add_argument('--split_num', default=2, type=int,
                     help="Number of splits on the ring")
 parser.add_argument('--simulate', action='store_true',
                     help='simulate model on validation set')
-parser.add_argument('--sampling_interval', default=3, type=int,
+parser.add_argument('--sampling_interval', default=9, type=int,
                     help="SI:1,2,3,5,9")
 
 args = parser.parse_args()

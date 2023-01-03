@@ -427,18 +427,18 @@ if args.VLB_conv:
             out = l(out)
             if args.sampling_interval == 9:
                 if idx == len(self.layer2)-1: 
-                    out_list.append(F.avg_pool2d(out, 4))
+                    out_list.append(F.avg_pool2d(out, 2))
             else:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(self.layer2)-1:
-                    out_list.append(F.avg_pool2d(out, 4))
+                    out_list.append(F.avg_pool2d(out, 2))
         for idx,l in enumerate(self.layer3):
             out = l(out)
             if args.sampling_interval == 9:
                 if idx == len(self.layer3)-1: 
-                    out_list.append(F.avg_pool2d(out, 4))
+                    out_list.append(out)
             else:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(self.layer3)-1:
-                    out_list.append(F.avg_pool2d(out, 4))
+                    out_list.append(out)
         map_time = time.time() - end
         end = time.time()
         out = torch.cat(out_list,1)

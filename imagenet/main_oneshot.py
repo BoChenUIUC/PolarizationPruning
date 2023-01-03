@@ -487,7 +487,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     if not args.distributed:
         # DataParallel
-        model.cuda()
+        # model.cuda()
         if args.arch.startswith('alexnet') or args.arch.startswith('vgg'):
             # see discussion
             # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844

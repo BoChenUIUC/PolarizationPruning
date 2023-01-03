@@ -1904,7 +1904,7 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
         target = target.cuda(non_blocking=True)
 
         # compute output
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:# or (args.loss in {LossType.PARTITION} and deepcopy):
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:# or (args.loss in {LossType.PARTITION} and deepcopy):
             soft_logits = args.teacher_model(image)
             if isinstance(soft_logits, tuple):
                 soft_logits, _ = soft_logits

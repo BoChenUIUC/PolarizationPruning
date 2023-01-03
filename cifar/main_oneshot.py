@@ -287,7 +287,7 @@ if args.cuda:
 
 BASEFLOPS = compute_conv_flops(model, cuda=True)
 
-if args.loss in {LossType.PROGRESSIVE_SHRINKING} or args.simulate:
+if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
     teacher_model = copy.deepcopy(model)
     if args.arch == 'resnet56':
         teacher_path = './original/resnet/model_best.pth.tar'
@@ -1536,7 +1536,7 @@ def train(epoch):
             output = model(data)
         if isinstance(output, tuple):
             output, output_aux = output
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
             soft_logits = teacher_model(data)
             if isinstance(soft_logits, tuple):
                 soft_logits, _ = soft_logits

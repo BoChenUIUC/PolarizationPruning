@@ -398,8 +398,12 @@ if args.VLB_conv:
     model.aggr_sizes = [model.conv1.weight.size(0)]
     for layer in [model.layer1,model.layer2,model.layer3]:
         for idx,l in enumerate(layer):
-            if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
-                model.aggr_sizes += [l.conv2.weight.size(0)]
+            if args.sampling_interval == 9:
+                if idx == len(layer)-1:
+                    model.aggr_sizes += [l.conv2.weight.size(0)]
+            else:
+                if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
+                    model.aggr_sizes += [l.conv2.weight.size(0)]
     cfg[0] = sum(model.aggr_sizes)
     layers = []
     for i in range(1,len(cfg)):

@@ -293,7 +293,9 @@ if args.loss in {LossType.PROGRESSIVE_SHRINKING,LossType.PARTITION}:
         teacher_path = f'./original/{args.arch}/model_best.pth.tar'
     else:
         teacher_path = './original/vgg/model_best.pth.tar'
-    teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+    ckpt = torch.load(teacher_path)
+    print('Load teacher model:',ckpt['best_prec1'])
+    teacher_model.load_state_dict(ckpt['state_dict'])
 
 def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     """
@@ -1410,6 +1412,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
+        print(stats)
         r2 = (stats[2]-stats[0]).max(axis=1)
         r3 = (stats[3]-stats[0]).max(axis=1)
         r4 = (stats[4]-stats[0]).max(axis=1)

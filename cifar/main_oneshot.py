@@ -1434,6 +1434,7 @@ def simulation(model, arch, prune_mode, num_classes):
     all_reduce_time = []
     all_correct = []
     all_flop_ratios = []
+    all_acc = []
     # map/reduce time for net[0-1] will not be used, but their preds will be used
     # every thing for net[2-3] will be used
     print('Running RMLaaS...')
@@ -1451,7 +1452,7 @@ def simulation(model, arch, prune_mode, num_classes):
                 map_time_lst,correct_lst = test(masked_model,standalone=True)
             all_map_time += [map_time_lst]
             all_correct += [correct_lst]
-            print(np.array(correct_lst).mean())
+            all_acc += [np.array(correct_lst).mean()]
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
@@ -1468,6 +1469,7 @@ def simulation(model, arch, prune_mode, num_classes):
             print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
     # flop ratios
     print('FLOPS ratios:',all_flop_ratios)
+    print('Accuracy:',all_acc)
 
     # run originial model
     print('Running original ML service')

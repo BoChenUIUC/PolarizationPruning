@@ -1451,7 +1451,7 @@ def simulation(model, arch, prune_mode, num_classes):
                 map_time_lst,correct_lst = test(masked_model,standalone=True)
             all_map_time += [map_time_lst]
             all_correct += [correct_lst]
-            print(mean(correct_lst))
+            print(np.array(correct_lst).mean())
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")

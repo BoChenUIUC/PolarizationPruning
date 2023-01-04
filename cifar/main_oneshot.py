@@ -1436,7 +1436,7 @@ def simulation(model, arch, prune_mode, num_classes):
     # every thing for net[2-3] will be used
     print('Running RMLaaS...')
     num_sn = len(torch.nonzero(torch.tensor(args.alphas)))
-    if arch == "resnet56":
+    if "resnet" in arch:
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
             masked_model = sample_partition_network(model,net_id=i)

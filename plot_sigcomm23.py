@@ -331,10 +331,19 @@ y = [[(0.1*i)**2*100 for i in range(11)],
 [(1-.1*i)**2*100 for i in range(11)]
 ]
 line_plot(x, y,['No server alive','One server alive','Two servers alive'],colors,
-		'/home/bo/Dropbox/Research/SIGCOMM23/images/test.eps',
+		'/home/bo/Dropbox/Research/SIGCOMM23/images/test3.eps',
 		'Loss Rate (%)','Probability (%)',)
 # 4. via partitioning It is possible to maintain two-server performance while trading one-server performance for less computation overhead
 # with loss, the performance is close 
+x = []
+
+methods_tmp = ['Standalone','Ours']
+y = [[93.031949,60.03], [86.287141,100], [93.467252,200]] 
+yerr = [[0.57833,0], [1.330113,0], [0.563777,0]]
+y,yerr = np.array(y),np.array(yerr)
+groupedbar(y,yerr,'%', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/test4.eps',methods=methods_tmp,
+	envs=['Partition (Ours)','Standalone','Replication'],ncol=1,legloc='best')
 exit(0)
 
 # two capacity, different accuracy cdf
@@ -417,7 +426,6 @@ line_plot(x, y,['SN#0 (94.16%)','SN#1 (94.04%)','SN#2 (93.80%)','SN#3 (93.97%)',
 		'# of Queries','',markersize=4,yticks=range(15),
 		yticklabel=['NR (0%)','100%','None','SN#0','SN#1','SN#2','SN#3','75%','100%','75%','100%','75%','100%','75%','100%'],ncol=3,legloc='upper center',
 		ylim=[0,15],bbox_to_anchor=(.5,1.25))
-exit(0)
 
 # baseline
 methods_tmp = ['Standalone','Ours']
@@ -673,7 +681,7 @@ y = np.array(y)*100
 yerr = np.array(yerr)*100
 colors_tmp = ['k','#FD0707','#0D0DDF','grey','#129114','#DDDB03']
 linestyles_tmp = ['solid','dashed','dotted','solid','dashdot',(0, (3, 5, 1, 5)),]
-methods_tmp = ['Replication (Optimal)','Partition (Ours)','Standalone','Replication (Optimal)*','Partition (Ours)*','Standalone*']
+methods_tmp = ['Replication','Partition (Ours)','Standalone','Replication*','Partition (Ours)*','Standalone*']
 line_plot(x,y,methods_tmp,colors_tmp,
 		'/home/bo/Dropbox/Research/SIGCOMM23/images/FCC_ea.eps',
 		'Deadline (s)','Delivered Acc. (%)',yticks=[0,25,50,75,100],lbsize=16,linewidth=4,markersize=0,linestyles=linestyles_tmp,

@@ -272,7 +272,7 @@ def plot_computation_dist(flops,labels,filename,horizontal,bbox_to_anchor=None,r
 
 def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 				methods=['Ours','Standalone','Optimal','Ours*','Standalone*','Optimal*'],use_barlabe_x=False,use_barlabe_y=False,
-				ncol=3,bbox_to_anchor=(0.46, 1.28),sep=1.25,width=0.15,xlabel=None,legloc=None,labelsize=labelsize_b,ylim=None):
+				ncol=3,bbox_to_anchor=(0.46, 1.28),sep=1.25,width=0.15,xlabel=None,legloc=None,labelsize=labelsize_b,ylim=None,use_downarrow=False):
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
 	num_methods = data_mean.shape[1]
@@ -307,6 +307,9 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	    if use_barlabe_y and i==1:
 	    	for k,xdx in enumerate(x_index):
 	    		ax.text(xdx-0.02,data_mean[k,i]+.02,f'{data_mean[k,i]:.4f}',fontsize = 18, rotation='vertical',fontweight='bold')
+	    if use_downarrow and i==1:
+	    	for j in range(2,data_mean.shape[0]):
+	    		ax.text(j-0.6,data_mean[j]+5,'$\downarrow$'+f'{200-data_mean[j]:.0f}%',fontsize = 14, fontweight='bold')
 
 	if ncol>0:
 		if legloc is None:
@@ -319,12 +322,17 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	plt.close()
 
 # 1. loss brings down accuracy
-x = [[0.05*i for i in range(6)]]
-y = [[94.12,89.984824,85.529952, 81,327276,75.978435,72.654353],
-[94.12,]] 
-yerr = [[0,0.779019, 1.106963, 1.908686, 2.466583, 0.698803]]
-line_plot(x, y,['No server alive','One server alive','Two servers alive'],colors,
-		'/home/bo/Dropbox/Research/SIGCOMM23/images/mot2.eps',
+x = [[0.05*i for i in range(6)]for _ in range(4)]
+y = [[94.12,89.984824,85.529952, 81.327276,75.978435,72.654353],
+[94.12,93.84984,93.394968,92.176917,91.282947,89.128594],
+[91.53,87.02364624000002, 82.06531632, 77.92634296000001, 73.15500176000002, 68.793842],
+[91.53,91.33101080000003, 90.60644991999999, 89.49291112, 87.95659496, 85.86170872]] 
+yerr = [[0,0.779019, 1.106963, 1.908686, 2.466583, 0.698803],
+[0,0.212719,0.429682, 0.626182, 0.943877, 1.152293],
+[0,0.22001012256037583, 0.31734498384907517, 0.36730227485946276, 0.42945146053601585],
+[0,0.05626240955778068, 0.09197665318038978, 0.17145129561051317, 0.24627422058304022]]
+line_plot(x, y,['CIFAR-10 (S)','CIFAR-10 (R)','ImageNet (S)','ImageNet (R)'],colors,
+		'/home/bo/Dropbox/Research/SIGCOMM23/images/mot1.eps',
 		'Loss Rate (%)','Accuracy (%)',yerr=yerr)
 # 2. replication helps but hurts flops
 # replication makes sure consistent performance with one or two servers
@@ -347,16 +355,16 @@ solo_correctness = [0.75, 0.875, 0.9375, 0.9375, 0.9375, 0.9375, 0.9375, 0.9375,
 labels = ['Optimal','Ours (Two Alive)','Ours (One Alive)']
 acc_list = [solo_correctness] + [our_correctness[0]+our_correctness[1]] + [our_correctness[2]+our_correctness[3]]
 colors_tmp = ['k','#FD0707','#0D0DDF']
-measurements_to_cdf(acc_list,'/home/bo/Dropbox/Research/SIGCOMM23/images/mot3.eps',labels,colors=colors_tmp,linestyles=linestyles,xlabel='Accuracy (%)')
+measurements_to_cdf(acc_list,'/home/bo/Dropbox/Research/SIGCOMM23/images/mot3.eps',labels,colors=colors_tmp,linestyles=linestyles,xlabel='Accuracy (%)',ratio=1)
 # 4. via partitioning It is possible to maintain two-server performance while trading one-server performance for less computation overhead
 # with loss, the performance is close 
-methods_tmp = ['Accuracy','FLOPS']
-y = [[93.031949,60.03], [86.287141,100], [93.467252,200]] 
-yerr = [[0.57833,0], [1.330113,0], [0.563777,0]]
+methods_tmp = ['Accuracy (%)','FLOPS (%)']
+y = [[86.287141,100], [93.467252,200],[93.031949,60.03*2]] 
+yerr = [[1.330113,0], [0.563777,0],[0.57833,0]]
 y,yerr = np.array(y),np.array(yerr)
-groupedbar(y,yerr,'%', 
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/test4.eps',methods=methods_tmp,
-	envs=['Partition (Ours)','Standalone','Replication'],ncol=1,legloc='mot4')
+groupedbar(y,yerr,'', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/mot4.eps',methods=methods_tmp,
+	envs=['Standalone','Replication','Partition (Ours)'],ncol=1,sep=.3,width=0.1,legloc='best',use_downarrow=True)
 exit(0)
 
 
@@ -731,7 +739,6 @@ yerr_ea_loss2 = \
 [0.05532915478522786, 0.10402358606713132, 0.1756619652358583, 0.24289069550681458, 0.30163692611433485, 0.24904375295567502, 0.3149205898218357, 0.3826702392367903, 0.4426030997104579, 0.3638727618177673], 
 [0.22001012256037583, 0.31734498384907517, 0.36730227485946276, 0.42945146053601585, 0.326857638718318, 0.34949152028904357, 0.30815160200411656, 0.4359560304021927, 0.3180484905611396, 0.438570039518222], 
 ]
-
 x = [[0.05*i for i in range(1,11)] for _ in range(6)]
 y = np.concatenate((np.array(y_ea_loss1)[:,:10]*100,np.array(y_ea_loss2)),axis=0)
 yerr = np.concatenate((np.array(yerr_ea_loss1)[:,:10]*100,np.array(yerr_ea_loss2)),axis=0)

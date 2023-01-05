@@ -1412,7 +1412,6 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        print(stats[2].mean(axis=0),stats[2].std(axis=0))
         r2 = (stats[2]-stats[0]).max(axis=1)
         r3 = (stats[3]-stats[0]).max(axis=1)
         r4 = (stats[4]-stats[0]).max(axis=1)
@@ -1454,6 +1453,7 @@ def simulation(model, arch, prune_mode, num_classes):
             all_map_time += [map_time_lst]
             all_correct += [correct_lst]
             all_acc += [np.array(correct_lst).mean()]
+            print(correct_lst)
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
@@ -1479,7 +1479,7 @@ def simulation(model, arch, prune_mode, num_classes):
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
     # print('correctness:')
-    # print(all_correct,correct_lst)
+    print(correct_lst)
 
     num_query = len(all_correct[0])
     # inter-node latency

@@ -367,8 +367,8 @@ if len(args.alphas)>1:
 else:
     args.ps_batch = 1
         
-args.num_loss_rates = 5
-args.num_ddls = 6
+args.num_loss_rates = 10
+args.num_ddls = 20
 
 if args.VLB_conv:
     print('Neural bridge type:',args.VLB_conv_type)
@@ -1371,7 +1371,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0):
 
     # consistency+availability
     if trace_selection < 10:
-        deadlines = [0.1*i+1.5 for i in range(args.num_ddls)]
+        deadlines = [0.1*i for i in range(1,1+args.num_ddls)]
     elif trace_selection < 20:
         exit(0)
         deadlines = [0.1*i for i in range(1,21)]
@@ -1412,8 +1412,8 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        print('-',stats[[0,1,args.split_num]].mean(axis=1).tolist())
-        print('-',stats[[0,1,args.split_num]].std(axis=1).tolist())
+        print(stats[[args.split_num,0]].mean(axis=1).tolist())
+        print(stats[[args.split_num,0]].std(axis=1).tolist())
         r2 = (stats[2]-stats[0]).max(axis=1)
         r3 = (stats[3]-stats[0]).max(axis=1)
         r4 = (stats[4]-stats[0]).max(axis=1)

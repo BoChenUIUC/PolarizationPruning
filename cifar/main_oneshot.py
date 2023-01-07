@@ -1455,7 +1455,7 @@ def simulation(model, arch, prune_mode, num_classes):
             all_map_time += [map_time_lst]
             all_correct += [correct_lst]
             all_acc += [np.array(correct_lst).mean()]
-            print(correct_lst)
+            # print(correct_lst)
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")
@@ -1481,7 +1481,7 @@ def simulation(model, arch, prune_mode, num_classes):
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
     # print('correctness:')
-    print(correct_lst)
+    # print(correct_lst)
 
     num_query = len(all_correct[0])
     # inter-node latency

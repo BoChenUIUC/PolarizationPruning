@@ -123,6 +123,8 @@ parser.add_argument('--simulate', action='store_true',
                     help='simulate model on validation set')
 parser.add_argument('--sampling_interval', default=9, type=int,
                     help="SI:1,2,3,5,9")
+parser.add_argument('--ablation', type=int, nargs='+', default=[],
+                    help='Ablation options')
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -361,11 +363,6 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     for h in handles:
         h.remove()
     return total_flops
-
-if len(args.alphas)>1:
-    args.ps_batch = len(args.alphas)*4
-else:
-    args.ps_batch = 1
         
 args.num_loss_rates = 10
 args.num_ddls = 20
@@ -473,6 +470,24 @@ elif args.simulate:
         return out, (map_time,reduce_time)
     model.forward = MethodType(modified_forward, model)
 
+if 0 in args.ablation:
+    args.split_running_stat = False
+if 1 in args.ablation:
+    args.alphas = [1,1,1,1]
+if 3 in args.ablation:
+    args.resume = ''
+if len(args.alphas)>1 and 4 not in args.ablation:
+    args.ps_batch = len(args.alphas)*4
+else:
+    args.ps_batch = 1
+if args.ablation: 
+    args.save = './ablation/'
+    for n in args.ablation:
+        args.save += str(n)
+    args.save += '/'
+    if not os.path.exists(args.save):
+        os.makedirs(args.save)
+        
 if args.split_running_stat:
     for module_name, bn_module in model.named_modules():
         if not isinstance(bn_module, nn.BatchNorm2d) and not isinstance(bn_module, nn.BatchNorm1d): continue
@@ -493,7 +508,7 @@ if args.resume:
             if args.cuda:
                 model.cuda()
 
-        args.start_epoch = checkpoint['epoch']
+        args.start_epoch = 0#checkpoint['epoch']
         best_prec1 = checkpoint['best_prec1']
         if args.evaluate:
             model.load_state_dict(checkpoint['state_dict'])
@@ -1560,7 +1575,7 @@ def train(epoch):
             output = model(data)
         if isinstance(output, tuple):
             output, output_aux = output
-        if args.loss in {LossType.PROGRESSIVE_SHRINKING}:
+        if args.loss in {LossType.PROGRESSIVE_SHRINKING} and 2 not in args.ablation:
             soft_logits = teacher_model(data)
             if isinstance(soft_logits, tuple):
                 soft_logits, _ = soft_logits

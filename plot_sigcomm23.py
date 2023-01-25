@@ -385,6 +385,9 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
+x = [[5*i for i in range(6)]for _ in range(3)]
+exit(0)
+
 # 1. loss brings down accuracy
 x = [[5*i for i in range(6)]for _ in range(4)]
 y = [[94.12,89.984824,85.529952, 81.327276,75.978435,72.654353],

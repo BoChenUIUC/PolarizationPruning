@@ -404,10 +404,11 @@ if args.VLB_conv:
             if args.sampling_interval == 9:
                 if idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
+                    actual_cost += 8*8*l.conv2.weight.size(0)*4 # bytes
             else:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
-            actual_cost += 8*8*l.conv2.weight.size(0)*4 # bytes
+                    actual_cost += 8*8*l.conv2.weight.size(0)*4 # bytes
     print(comm_cost/1024/1024,actual_cost/1024/1024)
     exit(0)
     cfg[0] = sum(model.aggr_sizes)

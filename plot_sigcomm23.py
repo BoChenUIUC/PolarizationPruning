@@ -402,7 +402,7 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	plt.close()
 
 envs = ['ResNet-20','ResNet-32','ResNet-44','ResNet-56','ResNet-110']
-methods_tmp = ['Standalone','Ours']
+methods_tmp = ['Standalone','Split','Ours']
 flops_res = [0.8677293603320655,0.7053025247728113,0.6375213554749708,0.6003251876612296,0.5360070051652971]
 acc_par = [[0.9265175718849841, 0.922923322683706, 0.9158346645367412, 0.9186301916932907],
 [0.9321086261980831, 0.9285143769968051, 0.9230231629392971, 0.9238218849840255],
@@ -415,35 +415,37 @@ acc_par = np.array(acc_par)
 acc_base = np.array(acc_base)
 acc_par_mean = acc_par.mean(axis=1)
 acc_par_std = acc_par.std(axis=1)
-acc_sp = [0.9243,0.9336,0.9379,0.9008,0.9446]
-y = np.concatenate((acc_base.reshape(5,1),acc_par_mean.reshape(5,1)),axis=1)*100
-yerr = np.concatenate((np.zeros((5,1)),acc_par_std.reshape(5,1)),axis=1)*100
-groupedbar(y,yerr,'Lossless Accuracy (%)', 
+acc_sp = [0.8869808306709265,0.90435303514377,0.908047124600639,0.9008,0.9195287539936102]
+acc_sp = np.array(acc_sp)
+flops_sp = [0.2527390666182668,0.2516129511941694,0.25114302010213746,0.25088513674100354,0.250439214753364]
+y = np.concatenate((acc_base.reshape(5,1),acc_sp.reshape(5,1),acc_par_mean.reshape(5,1)),axis=1)*100
+yerr = np.concatenate((np.zeros((5,1)),np.zeros((5,1)),acc_par_std.reshape(5,1)),axis=1)*100
+groupedbar(y,yerr,'FFA (%)', 
 	'/home/bo/Dropbox/Research/SIGCOMM23/images/acc_res.eps',methods=methods_tmp,
-	envs=envs,ncol=1,sep=.4,legloc='best',ylim=(90,95),rotation=30)
+	envs=envs,ncol=1,width=.3,sep=1,legloc='best',ylim=(85,95),rotation=30)
 
-soft = [[0.002106629392971249,0.10148961661341853],
-[0.006741214057507961, 0.10220646964856232, ],
-[0.011801118210862604, 0.10365015974440901, ],
+soft = [[0.002106629392971249,0.12374700479233228,0.026222044728434514],
+[0.006741214057507961, 0.12570587060702873, 0.019972044728434522],
+[0.011801118210862604, 0.12668630191693292, 0.02085463258785944],
 [0.010894568690095847, 0.12740115814696484, 0.026772164536741177],
-[0.011465654952076687, 0.10562699680511187, ]
+[0.011465654952076687, 0.12879093450479234, 0.01743610223642173]
 ]
 
 y = np.array(soft)
 groupedbar(y,None,'$R$', 
 	'/home/bo/Dropbox/Research/SIGCOMM23/images/soft_re_res.eps',methods=methods_tmp,
-	envs=envs,ncol=1,sep=.4,legloc='best',use_barlabe_y=True,rotation=30)
+	envs=envs,ncol=1,width=.3,sep=1,legloc='best',use_barlabe_y=True,rotation=30)
 
-hard = [[0.003025159744408923,  0.157468051118211,],
-[0.007108626198083057, 0.16112420127795526,],
-[0.011501597444089495, 0.16940495207667744, ],
+hard = [[0.003025159744408923,  0.1316902479841777,0.02511220143009282],
+[0.007108626198083057, 0.13636752624372434,0.01973033622394643],
+[0.011501597444089495, 0.13509242355089, 0.01987771945839038],
 [0.004692492012779541, 0.13641316750342308, 0.027132778031340316],
-[0.009834265175718882, 0.1666693290734825, ]]
+[0.009834265175718882, 0.14010250266240679, 0.016777917237182412]]
 
 y = np.array(hard)
 groupedbar(y,None,'$R$', 
 	'/home/bo/Dropbox/Research/SIGCOMM23/images/hard_re_res.eps',methods=methods_tmp,
-	envs=envs,ncol=1,sep=.4,legloc='best',use_barlabe_y=True,rotation=30)
+	envs=envs,ncol=1,width=.3,sep=1,legloc='best',use_barlabe_y=True,rotation=30)
 
 
 # multi-node analysis

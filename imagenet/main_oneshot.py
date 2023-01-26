@@ -1828,7 +1828,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     rep = 10
     if args.split_num in {2}:
         num_loss_rates = 21
-        num_ddls = 6
+        num_ddls = 20
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]
         # if args.split_num == 2:

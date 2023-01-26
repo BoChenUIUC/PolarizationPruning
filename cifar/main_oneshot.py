@@ -394,16 +394,19 @@ if args.VLB_conv:
         cfg = [352,224,model.in_planes]
     else:
         exit(0)
+    comm_cost = 0
+    shapes = [32,16,8]
     model.aggr_sizes = [model.conv1.weight.size(0)]
-    for layer in [model.layer1,model.layer2,model.layer3]:
+    for i,layer in enumerate([model.layer1,model.layer2,model.layer3]):
         for idx,l in enumerate(layer):
-            print(l.conv1.weight.size(0),l.conv2.weight.size(0))
+            comm_cost += shapes[i]*shapes[i]*l.conv1.weight.size(0)*2*4 # bytes
             if args.sampling_interval == 9:
                 if idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
             else:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
+    print(comm_cost/1024/1024)
     exit(0)
     cfg[0] = sum(model.aggr_sizes)
     layers = []

@@ -365,7 +365,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     return total_flops
         
 args.num_loss_rates = 21
-args.num_ddls = 21
+args.num_ddls = 25
 
 if args.VLB_conv:
     print('Neural bridge type:',args.VLB_conv_type)

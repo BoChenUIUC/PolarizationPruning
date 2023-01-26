@@ -364,8 +364,8 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
         h.remove()
     return total_flops
         
-args.num_loss_rates = 20
-args.num_ddls = 20
+args.num_loss_rates = 21
+args.num_ddls = 21
 
 if args.VLB_conv:
     print('Neural bridge type:',args.VLB_conv_type)
@@ -1243,7 +1243,7 @@ def create_wan_trace(trace_selection,num_query):
     else:
         # read network traces + large latency = loss
         import csv
-        loss_rates = [0.05*i for i in range(1,1+args.num_loss_rates)]
+        loss_rates = [0.05*i for i in range(args.num_loss_rates)]
         loss_rate = loss_rates[(trace_selection-200)%len(loss_rates)]
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1419,11 +1419,11 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown[0] += RMLaaS_latency_breakdown
         latency_breakdown[1] += no_rep_latency_breakdown
         latency_breakdown[2] += total_rep_latency_breakdown
-    print('Accuracy and latency stats...')
-    for stats in [all_accuracy,all_latency]:
-        stats = np.array(stats)
-        print(stats.mean(axis=-1).tolist())
-        print(stats.std(axis=-1).tolist())
+    # print('Accuracy and latency stats...')
+    # for stats in [all_accuracy,all_latency]:
+    #     stats = np.array(stats)
+    #     print(stats.mean(axis=-1).tolist())
+    #     print(stats.std(axis=-1).tolist())
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
@@ -1526,9 +1526,9 @@ def simulation(model, arch, prune_mode, num_classes):
             if trace_selection in [rep-1,rep+9,rep*args.num_loss_rates+199]:
                 if trace_selection in [rep-1,rep+9]:
                     if trace_selection == rep-1:
-                        print('Finished: FCC broadband traces (10 reps)...')
+                        print(f'Finished: FCC broadband traces ({args.num_loss_rates}) reps)...')
                     else:
-                        print('Finished recorded Wi-Fi traces (10 reps)...')
+                        print(f'Finished recorded Wi-Fi traces ({args.num_ddls} reps)...')
                     metrics_shape = (5,rep,args.num_ddls)
                 elif trace_selection == rep*args.num_loss_rates+199:
                     print('Finished varied loss traces (10 reps*num of losses)...')
@@ -1694,7 +1694,7 @@ if args.evaluate:
     exit(0)
 
 if args.simulate:
-    # assert args.test_batch_size == 32
+    assert args.test_batch_size == 32
     simulation(model, arch=args.arch,prune_mode="default",num_classes=num_classes)
     exit(0)
 

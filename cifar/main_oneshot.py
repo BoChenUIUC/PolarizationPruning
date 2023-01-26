@@ -365,7 +365,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     return total_flops
         
 args.num_loss_rates = 20
-args.num_ddls = 10
+args.num_ddls = 20
 
 if args.VLB_conv:
     print('Neural bridge type:',args.VLB_conv_type)
@@ -1386,7 +1386,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0):
 
     # consistency+availability
     if trace_selection < 10:
-        deadlines = [0.1*i+1 for i in range(1,1+args.num_ddls)]
+        deadlines = [0.1*i for i in range(1,1+args.num_ddls)]
     elif trace_selection < 20:
         exit(0)
         deadlines = [0.1*i for i in range(1,21)]

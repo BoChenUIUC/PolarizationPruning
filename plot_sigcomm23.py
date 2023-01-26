@@ -478,7 +478,6 @@ yerr = [[0.006997876375020307, 0.016734437743554532, 0.012127500296505958, 0.017
 y = [[0.9412]+l for l in y]
 yerr = [[0]+l for l in yerr]
 y = np.array(y)[[0,4,1,2,3]]*100;yerr = np.array(yerr)[[0,4,1,2,3]]*100
-
 line_plot(x, y,['Se.','St.',r'Rn.($\times$2)',r'Rn.($\times$3)',r'Rn.($\times$4)'],colors,
 		'/home/bo/Dropbox/Research/SIGCOMM23/images/mot0.eps',
 		'Failure Rate (%)','Effective Accuracy (%)',lbsize=20,use_re_label=True,markersize=8,ylim=(0,100))

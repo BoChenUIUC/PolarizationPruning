@@ -364,7 +364,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
         h.remove()
     return total_flops
         
-args.num_loss_rates = 10
+args.num_loss_rates = 20
 args.num_ddls = 20
 
 if args.VLB_conv:
@@ -1427,8 +1427,8 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        # print(stats[[1,2,3,4,0]].mean(axis=1).tolist())
-        # print(stats[[1,2,3,4,0]].std(axis=1).tolist())
+        print(stats[[0,1,args.split_num]].mean(axis=1).tolist())
+        print(stats[[0,1,args.split_num]].std(axis=1).tolist())
         r2 = (stats[2]-stats[0]).max(axis=1)
         r3 = (stats[3]-stats[0]).max(axis=1)
         r4 = (stats[4]-stats[0]).max(axis=1)

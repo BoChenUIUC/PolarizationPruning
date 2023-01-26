@@ -1587,7 +1587,7 @@ def create_wan_trace(trace_selection,num_query,args):
     else:
         # read network traces + large latency = loss
         import csv
-        loss_rates = [0.05*i for i in range(1,6)]
+        loss_rates = [0.05*i for i in range(21)]
         loss_rate = loss_rates[(trace_selection-200)%len(loss_rates)]
         with open('../curr_videostream.csv', mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
@@ -1714,7 +1714,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # consistency+availability
     # 5-25;1.2-1.5
     if trace_selection < 10:
-        deadlines = [i+15 for i in range(6)]
+        deadlines = [i+5 for i in range(20)]
     # elif trace_selection < 20:
     #     deadlines = [1.2+0.015*i for i in range(20)]
     elif trace_selection >=200:
@@ -1827,7 +1827,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
 
     rep = 10
     if args.split_num in {2}:
-        num_loss_rates = 5
+        num_loss_rates = 21
         num_ddls = 6
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]

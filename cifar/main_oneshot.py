@@ -398,6 +398,8 @@ if args.VLB_conv:
     actual_cost = 0
     shapes = [32,16,8]
     model.aggr_sizes = [model.conv1.weight.size(0)]
+    comm_cost += shapes[0]*shapes[0]*model.conv1.weight.size(0)*4
+    actual_cost += 8*8*model.conv1.weight.size(0)*4
     for i,layer in enumerate([model.layer1,model.layer2,model.layer3]):
         for idx,l in enumerate(layer):
             comm_cost += shapes[i]*shapes[i]*l.conv1.weight.size(0)*2*4 # bytes

@@ -476,7 +476,7 @@ if 1 in args.ablation:
     args.alphas = [1,1,1,1]
 if 3 in args.ablation:
     args.resume = ''
-if len(args.alphas)>1 and 4 not in args.ablation:
+if len(torch.nonzero(torch.tensor(args.alphas)))>1 and 4 not in args.ablation:
     args.ps_batch = len(args.alphas)*4
 else:
     args.ps_batch = 1
@@ -508,7 +508,7 @@ if args.resume:
             if args.cuda:
                 model.cuda()
 
-        args.start_epoch = 0#checkpoint['epoch']
+        args.start_epoch = checkpoint['epoch']
         best_prec1 = checkpoint['best_prec1']
         if args.evaluate:
             model.load_state_dict(checkpoint['state_dict'])
@@ -1427,8 +1427,8 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        print(stats[[1,2,3,4,0]].mean(axis=1).tolist())
-        print(stats[[1,2,3,4,0]].std(axis=1).tolist())
+        # print(stats[[1,2,3,4,0]].mean(axis=1).tolist())
+        # print(stats[[1,2,3,4,0]].std(axis=1).tolist())
         r2 = (stats[2]-stats[0]).max(axis=1)
         r3 = (stats[3]-stats[0]).max(axis=1)
         r4 = (stats[4]-stats[0]).max(axis=1)

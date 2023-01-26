@@ -364,7 +364,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
         h.remove()
     return total_flops
         
-args.num_loss_rates = 20
+args.num_loss_rates = 10
 args.num_ddls = 20
 
 if args.VLB_conv:

@@ -851,23 +851,23 @@ line_plot(x, y,methods_tmp,colors_tmp,
 
 envs = ['ResNet-20','ResNet-32','ResNet-44','ResNet-56','ResNet-110']
 methods_tmp = ['Standalone','Ours']
-# flops_res = [0.8677293603320655,0.7053025247728113,0.6375213554749708,0.6003251876612296,0.5360070051652971]
-# acc_par = [[0.9265175718849841, 0.922923322683706, 0.9158346645367412, 0.9186301916932907],
-# [0.9321086261980831, 0.9285143769968051, 0.9230231629392971, 0.9238218849840255],
-# [0.9306110223642172, 0.9298123003194888, 0.9238218849840255, 0.9258186900958466],
-# [0.9385982428115016, 0.9366014376996805, 0.9339057507987221, 0.9327076677316294],
-# [0.9389976038338658, 0.9381988817891374, 0.9377995207667732, 0.9354033546325878]
-# ]
-# acc_base = [0.9243,0.9336,0.9379,0.9411,0.9446]
-# acc_par = np.array(acc_par)
-# acc_base = np.array(acc_base)
-# acc_par_mean = acc_par.mean(axis=1)
-# acc_par_std = acc_par.std(axis=1)
-# y = np.concatenate((acc_base.reshape(5,1),acc_par_mean.reshape(5,1)),axis=1)*100
-# yerr = np.concatenate((np.zeros((5,1)),acc_par_std.reshape(5,1)),axis=1)*100
-# groupedbar(y,yerr,'Lossless Accuracy (%)', 
-# 	'/home/bo/Dropbox/Research/SIGCOMM23/images/acc_res.eps',methods=methods_tmp,
-# 	envs=envs,ncol=1,sep=.4,legloc='best',ylim=(90,95),rotation=30)
+flops_res = [0.8677293603320655,0.7053025247728113,0.6375213554749708,0.6003251876612296,0.5360070051652971]
+acc_par = [[0.9265175718849841, 0.922923322683706, 0.9158346645367412, 0.9186301916932907],
+[0.9321086261980831, 0.9285143769968051, 0.9230231629392971, 0.9238218849840255],
+[0.9306110223642172, 0.9298123003194888, 0.9238218849840255, 0.9258186900958466],
+[0.9385982428115016, 0.9366014376996805, 0.9339057507987221, 0.9327076677316294],
+[0.9389976038338658, 0.9381988817891374, 0.9377995207667732, 0.9354033546325878]
+]
+acc_base = [0.9243,0.9336,0.9379,0.9411,0.9446]
+acc_par = np.array(acc_par)
+acc_base = np.array(acc_base)
+acc_par_mean = acc_par.mean(axis=1)
+acc_par_std = acc_par.std(axis=1)
+y = np.concatenate((acc_base.reshape(5,1),acc_par_mean.reshape(5,1)),axis=1)*100
+yerr = np.concatenate((np.zeros((5,1)),acc_par_std.reshape(5,1)),axis=1)*100
+groupedbar(y,yerr,'Lossless Accuracy (%)', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/acc_res.eps',methods=methods_tmp,
+	envs=envs,ncol=1,sep=.4,legloc='best',ylim=(90,95),rotation=30)
 
 soft = [[0.002106629392971249, 0.003906847560424466,0.10148961661341853, 0.03568281929651537],
 [0.006741214057507961, 0.003244131780051274,0.10220646964856232, 0.03583679685776256],

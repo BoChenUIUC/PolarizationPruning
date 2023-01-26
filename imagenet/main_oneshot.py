@@ -1765,10 +1765,11 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        r2 = (stats[2]-stats[0]).max(axis=1)
-        r2_base = (stats[2]-stats[1]).max(axis=1)
-        print([r2.mean(),r2.std()])
-        print([r2_base.mean(),r2_base.std()])
+        print(stats.mean(axis=1).tolist())
+        print(stats.std(axis=1).tolist())
+        r2 = (stats[2]-stats[0]).mean(axis=1)
+        r2_base = (stats[2]-stats[1]).mean(axis=1)
+        print([r2.max(),r2_base.max()])
     # print('Latency breakdown...')
     # for i in range(3):
     #     print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())

@@ -408,7 +408,20 @@ class ResNetExpand(nn.Module):
             before_save = 0
             for n,m in self.named_modules():
                 if isinstance(m, nn.Conv2d):
-                    print(n,m.weight.size())
+                    if 'input_gate' in n:continue
+                    if 'layer1' in n or 'layer2.0.conv1' in n or n=='conv1': 
+                        feat_size = 56 * 56
+                    elif 'layer2' in n or 'layer3.0.conv1' in n:
+                        feat_size = 28 * 28
+                    elif 'layer3' in n or 'layer4.0.conv1' in n:
+                        feat_size = 14 * 14
+                    elif 'layer4' in n:
+                        feat_size = 7 * 7
+                    else:
+                        print(n,'not counted')
+                        continue
+                    before_save += feat_size * m.weight.size(0) * 4 / 1024 / 1024
+            print(image_size,before_save,after_save)
             exit(0)
 
 
@@ -509,16 +522,16 @@ class ResNetExpand(nn.Module):
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)
-            x = self.maxpool(x)
+            x = self.maxpool(x) # 56x56
             out_list.append(F.avg_pool2d(x, 8))
 
-            x = self.layer1(x)  # 32x32,256
+            x = self.layer1(x)  # 56x56,256
             out_list.append(F.avg_pool2d(x, 8))
-            x = self.layer2(x)  # 16x16,512
+            x = self.layer2(x)  # 28x28,512
             out_list.append(F.avg_pool2d(x, 4))
-            x = self.layer3(x)  # 8x8,1024
+            x = self.layer3(x)  # 14x14,1024
             out_list.append(F.avg_pool2d(x, 2))
-            x = self.layer4(x)  # 2048
+            x = self.layer4(x)  # 7x7,2048
             out_list.append(x)
 
             x = torch.cat(out_list,1)

@@ -404,7 +404,7 @@ class ResNetExpand(nn.Module):
             self.fc = nn.Linear(int(cfg[-1]), 1000)
             self.aggr_sizes = [64, 256, 512, 1024, 2048]
             image_size = 256*256*3*4/1024/1024
-            after_save = sum(self.aggr_sizes) * 8 * 8 * 4 / 1024 / 1024
+            after_save = sum(self.aggr_sizes) * 7 * 7 * 4 / 1024 / 1024
 
 
         if expand_idx:
@@ -500,6 +500,7 @@ class ResNetExpand(nn.Module):
 
             return x
         else:
+            print(x.size())
             out_list = []
             x = self.conv1(x)
             x = self.bn1(x)

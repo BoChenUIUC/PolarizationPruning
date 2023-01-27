@@ -403,8 +403,13 @@ class ResNetExpand(nn.Module):
             self.aggr = nn.Sequential(*aggr_layers)
             self.fc = nn.Linear(int(cfg[-1]), 1000)
             self.aggr_sizes = [64, 256, 512, 1024, 2048]
-            image_size = 256*256*3*4/1024/1024
+            image_size = 224*224*3*4/1024/1024
             after_save = sum(self.aggr_sizes) * 7 * 7 * 4 / 1024 / 1024
+            before_save = 0
+            for n,m in self.named_modules():
+                if isinstance(m, nn.Conv2d):
+                    print(n,m.weight.size())
+            exit(0)
 
 
         if expand_idx:
@@ -500,7 +505,6 @@ class ResNetExpand(nn.Module):
 
             return x
         else:
-            print(x.size())
             out_list = []
             x = self.conv1(x)
             x = self.bn1(x)
@@ -516,9 +520,6 @@ class ResNetExpand(nn.Module):
             out_list.append(F.avg_pool2d(x, 2))
             x = self.layer4(x)  # 2048
             out_list.append(x)
-            for xx in out_list:
-                print(xx.size())
-            exit(0)
 
             x = torch.cat(out_list,1)
             # aggregate layer

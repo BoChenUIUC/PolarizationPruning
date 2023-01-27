@@ -403,6 +403,9 @@ class ResNetExpand(nn.Module):
             self.aggr = nn.Sequential(*aggr_layers)
             self.fc = nn.Linear(int(cfg[-1]), 1000)
             self.aggr_sizes = [64, 256, 512, 1024, 2048]
+            image_size = 256*256*3*4/1024/1024
+            after_save = sum(self.aggr_sizes) * 8 * 8 * 4 / 1024 / 1024
+
 
         if expand_idx:
             # set channel expand index
@@ -511,6 +514,8 @@ class ResNetExpand(nn.Module):
             x = self.layer3(x)  # 8x8,1024
             out_list.append(F.avg_pool2d(x, 2))
             x = self.layer4(x)  # 2048
+            print(x.size())
+            exit(0)
             out_list.append(x)
 
             x = torch.cat(out_list,1)

@@ -401,6 +401,17 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
+x0 = np.array([[0.0625*i for i in range(1,9)] for _ in range(5)])
+x = x0*100
+# Model Transform; Collaborative Training
+methods_tmp = [f'ResNet{v}' for v in [20,32,44,56,110]]
+y = np.array([23.,37.,51.,65.,128.]).reshape(5,1)
+y = np.repeat(y,8,axis=1)
+y = y / (x0 * 2)
+line_plot(x,y,methods_tmp,colors,
+		'/home/bo/Dropbox/Research/SIGCOMM23/images/comm_cost.eps',
+		'FLOPS (%)','Comm. Cost Reduction',lbsize=16,linewidth=2,markersize=4,linestyles=linestyles,)
+exit(0)
 envs = ['ResNet20','ResNet32','ResNet44','ResNet56','ResNet110']
 methods_tmp = ['Standalone','Split','Ours']
 flops_res = [0.8677293603320655,0.7053025247728113,0.6375213554749708,0.6003251876612296,0.5360070051652971]

@@ -1859,8 +1859,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         traces = [i for i in range(rep)]
         # if args.split_num == 2:
         #     traces += [10+i for i in range(rep)]
-        if args.VLB_conv_type ==0:
-            traces += [200+i for i in range(rep*num_loss_rates)]
+        traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query,args)
             metrics_of_one_trace = evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)

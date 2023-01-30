@@ -22,8 +22,9 @@ methods6 = ['Ours','Baseline','Optimal$^{(2)}$','Ours*','Baseline*','Optimal$^{(
 
 def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='best',linestyles=linestyles,
 				xticks=None,yticks=None,ncol=None, yerr=None, xticklabel=None,yticklabel=None,xlim=None,ylim=None,ratio=None,
-				use_arrow=False,arrow_coord=(0.4,30),markersize=8,bbox_to_anchor=None,get_ax=0,linewidth=2,logx=False,use_doublearrow=False,
-				rotation=None,use_resnet56_2arrow=False,use_resnet56_3arrow=False,use_resnet56_4arrow=False,use_resnet50arrow=False,use_re_label=False):
+				use_arrow=False,arrow_coord=(0.4,30),markersize=8,bbox_to_anchor=None,get_ax=0,linewidth=2,logx=False,use_probarrow=False,
+				rotation=None,use_resnet56_2arrow=False,use_resnet56_3arrow=False,use_resnet56_4arrow=False,use_resnet50arrow=False,use_re_label=False,
+				use_comm_annot=False,use_connarrow=False):
 	if get_ax==1:
 		ax = plt.subplot(211)
 	elif get_ax==2:
@@ -71,10 +72,17 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 		ax.text(
 		    arrow_coord[0], arrow_coord[1], "Better", ha="center", va="center", rotation=-45, size=lbsize-8,
 		    bbox=dict(boxstyle="larrow,pad=0.3", fc="white", ec="black", lw=2))
-	if use_doublearrow:
-		ax.annotate(text='', xy=(10,81), xytext=(10,18), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		ax.text(
-		    7, 48, "4.5X more likely", ha="center", va="center", rotation='vertical', size=lbsize,fontweight='bold')
+	if use_connarrow:
+		ax.annotate(text='', xy=(XX[0][5],YY[0][5]), xytext=(XX[0][5],0), arrowprops=dict(arrowstyle='|-|',lw=4))
+		ax.text(XX[0][5]+7, YY[0][5]/2, "50% loss", ha="center", va="center", rotation='vertical', size=lbsize,fontweight='bold')
+	if use_probarrow:
+		ax.annotate(text='', xy=(XX[0][1],YY[0][1]), xytext=(XX[1][1],YY[1][1]), arrowprops=dict(arrowstyle='<->',lw=4))
+		if YY[0][1]/YY[1][1]>10:
+			ax.text(
+			    XX[0][1]+0.1, (YY[0][1]+YY[1][1])/2, f"{YY[0][1]/YY[1][1]:.1f}"+r"$\times$", ha="center", va="center", rotation='vertical', size=44,fontweight='bold')
+		else:
+			ax.text(
+			    XX[0][1]-0.08, (YY[0][1]+YY[1][1])/2, f"{YY[0][1]/YY[1][1]:.1f}"+r"$\times$", ha="center", va="center", rotation='vertical', size=44,fontweight='bold')
 	if use_re_label:
 		baselocs = [];parlocs = []
 		for i in range(2,5):
@@ -91,6 +99,28 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 					ax.text(w, h, '3rd', ha="center", va="center", rotation='horizontal', size=16,fontweight='bold',color=color[k])
 				elif i==2:
 					ax.text(w, h, '4th', ha="center", va="center", rotation='horizontal', size=16,fontweight='bold',color=color[k])
+	if use_comm_annot:
+		for i in range(len(XX)):
+			xx,yy = XX[i],YY[i]
+			for a,b in zip(xx,yy):
+				if i==0:
+					if a<60:
+						ax.annotate(f'{2.03125*1024/b:.1f}K', (a-1, b+10), fontsize=lbsize)
+					elif a<70:
+						ax.annotate(f'{2.03125*1024/b:.1f}K', (a-5, b+10), fontsize=lbsize)
+					elif a<80:
+						ax.annotate(f'{2.03125*1024/b:.1f}K', (a-7, b+5), fontsize=lbsize)
+					else:
+						ax.annotate(f'{2.03125*1024/b:.1f}K', (a-7, b-5), fontsize=lbsize)
+				else:
+					if a<60:
+						ax.annotate(f'{40.099609375/b:.2f}M', (a+3, b-10), fontsize=lbsize)
+					elif a<70:
+						ax.annotate(f'{40.099609375/b:.2f}M', (a-2, b-20), fontsize=lbsize)
+					elif a<80:
+						ax.annotate(f'{40.099609375/b:.2f}M', (a-2, b-25), fontsize=lbsize)
+					else:
+						ax.annotate(f'{40.099609375/b:.2f}M', (a-5, b-60), fontsize=lbsize)
 	if use_resnet56_2arrow:
 		ax.annotate(text='', xy=(10,78), xytext=(60,78), arrowprops=dict(arrowstyle='<->',lw=linewidth))
 		ax.text(
@@ -167,7 +197,7 @@ def plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_
 		left = np.array([0.0]*len(labels))
 		for i in range(len(latency_types)):
 			ax.barh(y_pos, latency_breakdown_mean[i], width, color=colors[i], xerr=latency_breakdown_std[i], left=left, 
-				label=latency_types[i], hatch=hatches[i], align='center')
+				label=latency_types[i], align='center')
 			left += latency_breakdown_mean[i]
 	ax1.set_xlim(0,lim1)
 	ax2.set_xlim(lim1,lim2)
@@ -233,8 +263,8 @@ def analyze_all_recorded_traces():
     trace_filenames = []
     trace_filenames += [f'../DCN/{22*i:06d}' for i in [1,2,4,8,16,32,64]]
     trace_filenames += [f'../DCN-244/{244*i:06d}' for i in [1,2,4,8,16,32,64]]
-    trace_filenames += [f'../WAN/{12*i:06d}' for i in [1,2,4,8,16,32,64]]
-    trace_filenames += [f'../WAN-768/{768*i:06d}' for i in [1,2,4,8,16,32,64]]
+    # trace_filenames += [f'../WAN/{12*i:06d}' for i in [1,2,4,8,16,32,64]]
+    # trace_filenames += [f'../WAN-768/{768*i:06d}' for i in [1,2,4,8,16,32,64]]
     latency_mean_list = []
     latency_std_list = []
     trpt_mean_list = []
@@ -266,38 +296,30 @@ def analyze_all_recorded_traces():
             for bs in [2**i for i in range(7)]:
                 query_size = 3*32*32*4*bs # bytes
                 latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
-                query_size = 3*256*256*4*bs
+                query_size = 3*224*224*4*bs
                 latency224_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
             num_of_line += 1
             if num_of_line==10000:break
         all_latency_list += np.array(latency_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
         all_latency_list += np.array(latency224_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
     all_latency_list = np.array(all_latency_list)
-    relative_latency = all_latency_list[14:,:].copy()
-    for b in range(7):
-    	for start in [0,14]:
-    		relative_latency[start+b] /= all_latency_list[b]
-    	for start in [7,21]:
-    		relative_latency[start+b] /= all_latency_list[7+b]
-    relative_latency = np.log10(relative_latency)
-    relative_latency = relative_latency.reshape((4,7,10000))
-    relative_latency = relative_latency[2:]
-    labels = ['CIFAR-10','ImageNet']
+    all_latency_list = all_latency_list.mean(axis=-1).reshape(4,7)
+    print(all_latency_list*1000)
+    ratio = all_latency_list[2:,]/all_latency_list[:2]
+    print(ratio)
+    # relative_latency = all_latency_list[14:,:].copy() #28x10000
+    # for b in range(7):
+    # 	for start in [0,14]:
+    # 		relative_latency[start+b] /= all_latency_list[b]
+    # 	for start in [7,21]:
+    # 		relative_latency[start+b] /= all_latency_list[7+b]
+    # relative_latency = np.log10(relative_latency)
+    # relative_latency = relative_latency.reshape((4,7,10000))
+    # relative_latency = relative_latency[2:]
+    labels = ['ResNet56','ResNet50']
     x = [[2**(i) for i in range(7)] for _ in range(len(labels))]
-    y = relative_latency.mean(axis=-1)
-    yerr = relative_latency.std(axis=-1)
-    line_plot(x, y,labels,colors,'/home/bo/Dropbox/Research/SIGCOMM23/images/wdlr_vs_bs.eps','Query Batch Size','WDLR',
-    	yerr=yerr,yticks=[1,2,3],yticklabel=[10,100,1000])	
-
-    # throughput = all_latency_list[14:,:].copy()
-    # throughput = 1/throughput 
-    # throughput = throughput.reshape((4,7,100,100)).mean(axis=-1)
-    # throughput *= np.array([2**i for i in range(7)]).reshape((1,7,1))
-    # throughput = np.log10(throughput)
-    # y = throughput.mean(axis=-1)
-    # yerr = throughput.std(axis=-1)
-    # line_plot(x, y,labels,colors,'/home/bo/Dropbox/Research/SIGCOMM23/images/throughput_vs_bs.eps','Query Batch Size','Query Throughput (1/s)',
-    # 	yerr=yerr,yticks=[1,2,3],yticklabel=[10,100,1000])	
+    line_plot(x, ratio,labels,colors,'/home/bo/Dropbox/Research/SIGCOMM23/images/latency_cost.eps','Batch Size','WAN to DCN Latency Ratio',
+    	lbsize=24,linewidth=4,markersize=8,)	
 
 def plot_computation_dist(flops,labels,filename,horizontal,bbox_to_anchor=None,ratio=None):
 	flops = np.array(flops).transpose((1,0))
@@ -401,17 +423,151 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
-x0 = np.array([[0.0625*i for i in range(1,9)] for _ in range(5)])
-x = x0*100
-# Model Transform; Collaborative Training
-methods_tmp = [f'ResNet{v}' for v in [20,32,44,56,110]]
-y = np.array([23.,37.,51.,65.,128.]).reshape(5,1)
-y = np.repeat(y,8,axis=1)
+x0 = np.array([0.1*i for i in range(11)])
+x = [(1-x0)*100]
+y = [(1-x0**2-(1-x0)**2)*100]
+line_plot(x,y,[''],colors,
+				f'/home/bo/Dropbox/Research/SIGCOMM23/images/conn_loss.eps',
+				'Partition Ratio (%)','Connection Loss (%)',lbsize=36,linewidth=8,markersize=16,ncol=0,use_connarrow=True)
+exit(0)
+
+x0 = np.array([0.1*i for i in range(11)])
+x = [[0.1*i for i in range(11)] for _ in range(2)]
+for sn in [2,3,4]:
+	methods_tmp = ['Two+','One']
+	one = sn*(1-x0)*x0**(sn-1)
+	twoormore = 1-x0**sn-one
+	y = np.stack((twoormore,one),axis=0)
+	if sn==2:
+		line_plot(x,y,methods_tmp,colors,
+				f'/home/bo/Dropbox/Research/SIGCOMM23/images/prob{sn}.eps',
+				'Failure Rate (%)','Probability (%)',lbsize=36,linewidth=8,markersize=16,bbox_to_anchor=(0.3,.45),ncol=1,
+				linestyles=linestyles,legloc='best',use_probarrow=True,xticks=[0.2*i for i in range(6)],yticks=[0.2*i for i in range(6)])
+	else:
+		line_plot(x,y,methods_tmp,colors,
+				f'/home/bo/Dropbox/Research/SIGCOMM23/images/prob{sn}.eps',
+				'Failure Rate (%)','',lbsize=36,linewidth=8,markersize=16,linestyles=linestyles,legloc='best',use_probarrow=True,ncol=0,
+				xticks=[0.2*i for i in range(6)],yticks=[0.2*i for i in range(6)])
+
+exit(0)
+# different convs
+re_vs_conv = [[0.011969848242811509,0.00584778639890463],
+[0.010570087859424948,0.0060427126122014315],
+[0.011802116613418533,0.0046021603529590805],
+  [0.010894568690095847,0.004835120949338205],
+[0.010889576677316274, 0.004088696181347941],
+# [0.012602835463258813,0.006356496272630458]
+]
+flops_vs_conv = [0.5298202593545005,0.558022230677192,0.5862242019998837,0.6003,0.642628144645267]#,0.6990320872906503]
+bridge_size = [64,96,128,144,192]#,256]
+re_vs_conv = np.array(re_vs_conv)
+y = re_vs_conv*100
+envs = [f'{bridge_size[i]}\n{int(flops_vs_conv[i]*100)}%' for i in range(5)]
+groupedbar(y,None,'Reliability (%)', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_conv.eps',methods=['Soft','Hard'],envs=envs,
+	ncol=1,sep=1,bbox_to_anchor=(0.5, 1.2),width=0.4,xlabel='Bridge Size and FLOPS (%)',legloc='center right')
+
+# different sampling rates
+re_vs_sr = [[0.011012380191693292,0.003109310816978563],
+[0.009865215654952075,0.0028192986459759715],
+[0.009728434504792351,0.00456412596987678],
+[0.008887779552715653,0.0027384755819260635],
+[0.010894568690095847,0.0042408337136771845],]
+
+flops_vs_sr = [1.1925665854377538,0.8964458865494916,0.7483855371053606,0.6743553623832951,0.6003]
+sample_interval = [9,5,3,2,1]
+re_vs_sr = np.array(re_vs_sr)
+y = re_vs_sr*100
+envs = [f'{sample_interval[i]}/9\n{int(flops_vs_sr[i]*100)}%' for i in range(5)]
+groupedbar(y,None,'Reliability (%)', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_sr.eps',methods=['Soft','Hard'],envs=envs,
+	ncol=2,sep=1,bbox_to_anchor=(0.5, 1.2),width=0.4,xlabel='Sampling Interval and FLOPS (%)',legloc='upper center')
+
+# different partition ratios
+diff_ratio_data = [[0.006060303514377014, -0.001283660429027841],
+[0.007938298722044735,2.3771489426446934e-05],
+[0.0085513178913738,0.0013074319184542707],
+[0.011028354632587872,0.002904876007911146],
+[0.010889576677316302,0.004559371671991471],
+[0.010039936102236427,0.006133044272021897],
+[0.013776956869009583,0.010430929560322535],
+[0.012270367412140598,0.01332154267457781]
+]
+diff_ratio_data = np.array(diff_ratio_data)*100
+y = diff_ratio_data
+flops_base = [1.006022295959533,0.8929206401341552,0.7876039034759786,0.6900720859850035,0.6003251876612296,0.518363208504657,0.44418614851528576,0.3777940076931159]
+envs = [f'{100-6.25*i}%\n{int(flops_base[i-1]*100)}%' for i in range(1,9)]
+groupedbar(y,None,'Reliability (%)', 
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_ratio.eps',methods=['Soft','Hard'],envs=envs,
+	ncol=2,sep=1.3,width=0.4,xlabel='Partition Ratio (%) and FLOPS (%)',legloc='upper left')
+
+exit(0)
+# batch breakdown
+latency_breakdown_mean = [[0.00455909734249115, 0.0005560131160076708, 0.00023642764806747438, 0.04561761306425502],
+[0.004631135659217835, 0.0008592742218635976, 0.00022894992828369142, 0.06668495337616376],
+[0.004496246471405029, 0.0013584858769550919, 0.0002239444637298584, 0.11089228095896249],
+[0.004519511394500733, 0.0025342730802483857, 0.00022607625961303712, 0.19675006694938904],
+[0.00478874797821045, 0.005448275371268392, 0.0002342068099975586, 0.3728581001051526],
+[0.0048398783412604285, 0.014246439476907482, 0.00023509953349543075, 0.7486890470647757],
+[0.004399494304778469, 0.015999999999999365, 0.0002341903698672155, 1.4240682725217528]]
+
+latency_breakdown_std = [[0.00019468925378149094, 5.584275363686788e-05, 1.9531520795695604e-05, 0.017782071823511884],
+[0.00017537580325603641, 7.260013062751902e-05, 1.736606173976656e-05, 0.025110829662576592],
+[0.00019017245067606885, 9.149818119041286e-05, 1.685588933829107e-05, 0.043189631076095754],
+[0.00021328910781494919, 0.00013665798550337163, 1.4873707000809235e-05, 0.07779634547285684],
+[0.00019141467146913094, 0.0004524667563076057, 1.677122266685227e-05, 0.1569391868139879],
+[0.00021182092754556427, 0.0011024832600207727, 4.049920186137311e-05, 0.34634288409670605],
+[0.00015224290905889435, 6.349087922075114e-16, 1.9471022131885656e-05, 0.5982422255192984]]
+latency_types = ['NM','DCN','NR','WAN']	
+labels = ['1','2','4','8','16','32','64']
+plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/latency_breakdown_vs_batch.eps',4,(0.5,0.83),title_posy=0.2)
+
+# cifar breakdown
+latency_types = ['NM','DCN','NR','Inf.','WAN']	
+labels = ['Ours','Se.', 'Rn./St.']
+latency_breakdown_mean = [[0.0048398783412604285, 0.014246439476907482, 0.00023509953349543075,0, 0.7486890470647757],
+[0,0,0,0.00483251379701657, 1.0169146132483973],
+[0,0,0,0.00483251379701657, 0.7486877294765364],]
+
+latency_breakdown_std = [[0.00021182092754556427, 0.0011024832600207727, 4.049920186137311e-05,0, 0.34634288409670605],
+[0,0,0,0.0002204459821230588, 0.5684324923094014],
+[0,0,0,0.0002204459821230588, 0.34634275598435527],]
+
+plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/latency_breakdown_cifar.eps',5,(0.5,0.76),title_posy=0.26,ratio=0.6)
+
+
+# imagenet latency breakdown
+latency_breakdown_mean = [
+[0.019284586669921874, 0.06311613967338686, 0.014764462451934815,0, 11.01427887952024],
+[0,0,0,0.018242218704223632, 15.481805917434501],
+[0,0,0,0.018242218704223632, 11.0142774438325],]
+
+latency_breakdown_std = [
+[0.001057063805851016, 0.0015932168873451931, 0.007375720249399674,0, 4.517442117207892],
+[0,0,0,0.007524489114244404, 8.696532160000752],
+[0,0,0,0.007524489114244404, 4.517442844121096],
+]
+plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
+	'/home/bo/Dropbox/Research/SIGCOMM23/images/latency_breakdown_imagenet.eps',5,(0.5,0.76),title_posy=0.26,lim1=100,lim2=16000,ratio=0.6)
+
+exit(0)
+# ratio of latency
+analyze_all_recorded_traces()
+# y = [[0.03125, 2.03125, 32*32*3*4/1024/1024],
+# 	[0.729736328125,40.099609375,224*224*3*4/1024/1024 ]]
+
+x0 = np.array([[0.0625*2*i for i in range(1,5)] for _ in range(2)])
+x = 100-x0*100
+methods_tmp = [f'ResNet{v}' for v in [56,50]]
+y = np.array([2.03125/0.03125,40.099609375/.729736328125]).reshape(2,1)
+y = np.repeat(y,4,axis=1)
 y = y / (x0 * 2)
 line_plot(x,y,methods_tmp,colors,
 		'/home/bo/Dropbox/Research/SIGCOMM23/images/comm_cost.eps',
-		'FLOPS (%)','Comm. Cost Reduction',lbsize=16,linewidth=2,markersize=4,linestyles=linestyles,)
-exit(0)
+		'Partition Ratio (%)','Comm. Cost Reduction Ratio',lbsize=24,linewidth=4,markersize=8,linestyles=linestyles,
+		use_comm_annot=True)
 envs = ['ResNet20','ResNet32','ResNet44','ResNet56','ResNet110']
 methods_tmp = ['Standalone','Split','Ours']
 flops_res = [0.8677293603320655,0.7053025247728113,0.6375213554749708,0.6003251876612296,0.5360070051652971]
@@ -471,58 +627,6 @@ y = np.array(re_vs_nodes)*100
 groupedbar(y,None,'Reliability (%)', 
 	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_nodes.eps',methods=methods,
 	envs=['Two-server','Three-server','Four-server'],width=0.25,bbox_to_anchor=(0.5, 1.25),use_barlabel_x=True,legloc='upper left',ncol=1,)
-
-exit(0)
-# different convs
-re_vs_conv = [[0.011969848242811509,0.00584778639890463],
-[0.010570087859424948,0.0060427126122014315],
-[0.011802116613418533,0.0046021603529590805],
-  [0.010894568690095847,0.004835120949338205],
-[0.010889576677316274, 0.004088696181347941],
-# [0.012602835463258813,0.006356496272630458]
-]
-flops_vs_conv = [0.5298202593545005,0.558022230677192,0.5862242019998837,0.6003,0.642628144645267]#,0.6990320872906503]
-bridge_size = [64,96,128,144,192]#,256]
-re_vs_conv = np.array(re_vs_conv)
-y = re_vs_conv*100
-envs = [f'{bridge_size[i]}\n{int(flops_vs_conv[i]*100)}%' for i in range(5)]
-groupedbar(y,None,'Reliability (%)', 
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_conv.eps',methods=['Soft','Hard'],envs=envs,
-	ncol=1,sep=1,bbox_to_anchor=(0.5, 1.2),width=0.4,xlabel='Bridge Size and FLOPS (%)',legloc='center right')
-
-# different sampling rates
-re_vs_sr = [[0.011012380191693292,0.003109310816978563],
-[0.009865215654952075,0.0028192986459759715],
-[0.009728434504792351,0.00456412596987678],
-[0.008887779552715653,0.0027384755819260635],
-[0.010894568690095847,0.0042408337136771845],]
-
-flops_vs_sr = [1.1925665854377538,0.8964458865494916,0.7483855371053606,0.6743553623832951,0.6003]
-sample_interval = [9,5,3,2,1]
-re_vs_sr = np.array(re_vs_sr)
-y = re_vs_sr*100
-envs = [f'{sample_interval[i]}/9\n{int(flops_vs_sr[i]*100)}%' for i in range(5)]
-groupedbar(y,None,'Reliability (%)', 
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_sr.eps',methods=['Soft','Hard'],envs=envs,
-	ncol=2,sep=1,bbox_to_anchor=(0.5, 1.2),width=0.4,xlabel='Sampling Interval and FLOPS (%)',legloc='upper center')
-
-# different partition ratios
-diff_ratio_data = [[0.006060303514377014, -0.001283660429027841],
-[0.007938298722044735,2.3771489426446934e-05],
-[0.0085513178913738,0.0013074319184542707],
-[0.011028354632587872,0.002904876007911146],
-[0.010889576677316302,0.004559371671991471],
-[0.010039936102236427,0.006133044272021897],
-[0.013776956869009583,0.010430929560322535],
-[0.012270367412140598,0.01332154267457781]
-]
-diff_ratio_data = np.array(diff_ratio_data)*100
-y = diff_ratio_data
-flops_base = [1.006022295959533,0.8929206401341552,0.7876039034759786,0.6900720859850035,0.6003251876612296,0.518363208504657,0.44418614851528576,0.3777940076931159]
-envs = [f'{6.25*i}%\n{int(flops_base[i-1]*100)}%' for i in range(1,9)]
-groupedbar(y,None,'Reliability (%)', 
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/re_vs_ratio.eps',methods=['Soft','Hard'],envs=envs,
-	ncol=2,sep=1.3,width=0.4,xlabel='Partition Ratio and FLOPS (%)',legloc='upper left')
 
 exit(0)
 # baseline
@@ -677,59 +781,6 @@ plot_computation_dist(flops,labels,filename,horizontal=False)
 
 
 
-# batch breakdown
-latency_breakdown_mean = [[0.00455909734249115, 0.0005560131160076708, 0.00023642764806747438, 0.04561761306425502],
-[0.004631135659217835, 0.0008592742218635976, 0.00022894992828369142, 0.06668495337616376],
-[0.004496246471405029, 0.0013584858769550919, 0.0002239444637298584, 0.11089228095896249],
-[0.004519511394500733, 0.0025342730802483857, 0.00022607625961303712, 0.19675006694938904],
-[0.00478874797821045, 0.005448275371268392, 0.0002342068099975586, 0.3728581001051526],
-[0.0048398783412604285, 0.014246439476907482, 0.00023509953349543075, 0.7486890470647757],
-[0.004399494304778469, 0.015999999999999365, 0.0002341903698672155, 1.4240682725217528]]
-
-latency_breakdown_std = [[0.00019468925378149094, 5.584275363686788e-05, 1.9531520795695604e-05, 0.017782071823511884],
-[0.00017537580325603641, 7.260013062751902e-05, 1.736606173976656e-05, 0.025110829662576592],
-[0.00019017245067606885, 9.149818119041286e-05, 1.685588933829107e-05, 0.043189631076095754],
-[0.00021328910781494919, 0.00013665798550337163, 1.4873707000809235e-05, 0.07779634547285684],
-[0.00019141467146913094, 0.0004524667563076057, 1.677122266685227e-05, 0.1569391868139879],
-[0.00021182092754556427, 0.0011024832600207727, 4.049920186137311e-05, 0.34634288409670605],
-[0.00015224290905889435, 6.349087922075114e-16, 1.9471022131885656e-05, 0.5982422255192984]]
-latency_types = ['N-Map','DCN','N-Reduce','WAN']	
-labels = ['1','2', '4','8','16', '32','64']
-plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/latency_breakdown_vs_batch.eps',4,(0.5,0.85),title_posy=0.2)
-
-# cifar breakdown
-latency_types = ['N-Map','DCN','N-Reduce','Infer','WAN']	
-labels = ['Ours','SE.', 'RN.']
-latency_breakdown_mean = [[0.0048398783412604285, 0.014246439476907482, 0.00023509953349543075,0, 0.7486890470647757],
-[0,0,0,0.00483251379701657, 1.0169146132483973],
-[0,0,0,0.00483251379701657, 0.7486877294765364],]
-
-latency_breakdown_std = [[0.00021182092754556427, 0.0011024832600207727, 4.049920186137311e-05,0, 0.34634288409670605],
-[0,0,0,0.0002204459821230588, 0.5684324923094014],
-[0,0,0,0.0002204459821230588, 0.34634275598435527],]
-
-plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/latency_breakdown_cifar.eps',3,(0.5,0.825),title_posy=0.25,ratio=0.6)
-
-
-# imagenet latency breakdown
-latency_breakdown_mean = [
-[0.019284586669921874, 0.06311613967338686, 0.014764462451934815,0, 11.01427887952024],
-[0,0,0,0.018242218704223632, 15.481805917434501],
-[0,0,0,0.018242218704223632, 11.0142774438325],]
-
-latency_breakdown_std = [
-[0.001057063805851016, 0.0015932168873451931, 0.007375720249399674,0, 4.517442117207892],
-[0,0,0,0.007524489114244404, 8.696532160000752],
-[0,0,0,0.007524489114244404, 4.517442844121096],
-]
-plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
-	'/home/bo/Dropbox/Research/SIGCOMM23/images/latency_breakdown_imagenet.eps',3,(0.5,0.85),title_posy=0.25,lim1=100,lim2=16000,ratio=0.6)
-
-
-# ratio of latency
-analyze_all_recorded_traces()
 # soft
 y = [[0.09999999999999999, 0.10054512779552716, 0.10054512779552716, 0.11902755591054312, 0.24644369009584666, 0.4110902555910543, 0.5672503993610223, 0.6601238019169329, 0.7321505591054313, 0.793057108626198, 0.8280910543130989, 0.8515195686900958, 0.8795467252396165, 0.8962060702875398, 0.903905750798722, 0.9113977635782747, 0.915401357827476, 0.9167292332268369, 0.9250139776357826, 0.9292152555910542], [0.09999999999999999, 0.10026757188498403, 0.10026757188498403, 0.12053314696485622, 0.19403953674121407, 0.30107228434504796, 0.40742012779552716, 0.4781529552715654, 0.5490015974440895, 0.6168170926517572, 0.6582428115015976, 0.6940595047923324, 0.7466353833865815, 0.7764436900958467, 0.8043510383386583, 0.8349560702875399, 0.8493550319488816, 0.8560443290734824, 0.8767372204472844, 0.8892432108626197], [0.09999999999999999, 0.10055511182108626, 0.10055511182108626, 0.12967052715654953, 0.265960463258786, 0.43768769968051113, 0.5874161341853036, 0.6758865814696484, 0.7458226837060702, 0.8056110223642173, 0.838514376996805, 0.8573542332268371, 0.8893550319488819, 0.9001757188498403, 0.9084305111821086, 0.9165774760383385, 0.9192432108626198, 0.9202935303514378, 0.9301637380191693, 0.9328494408945687]]
 y += [[0.09999999999999999, 0.10053514376996806, 0.10266573482428117, 0.14354432907348244, 0.3245746805111821, 0.5350858626198083, 0.7037440095846644, 0.7912959265175717, 0.8449900159744409, 0.885880591054313, 0.9049580670926517, 0.9186940894568689, 0.9284964057507986, 0.933292731629393, 0.9351956869009583, 0.9370287539936102, 0.937821485623003, 0.938356629392971, 0.9386242012779551, 0.9404373003194888], [0.09999999999999999, 0.10027755591054313, 0.10027755591054313, 0.12064297124600636, 0.19427915335463258, 0.3012919329073483, 0.40771964856230036, 0.478013178913738, 0.5486142172523961, 0.6166074281150159, 0.6581130191693292, 0.6936900958466452, 0.7458466453674121, 0.7759944089456868, 0.8038019169329074, 0.8345666932907347, 0.8490255591054312, 0.8558346645367412, 0.8764576677316294, 0.8892332268370605], [0.09999999999999999, 0.10055511182108626, 0.10348841853035144, 0.16188897763578275, 0.35286341853035147, 0.5664017571884984, 0.7198242811501598, 0.8020607028753993, 0.8510183706070287, 0.8899960063897764, 0.9071705271565496, 0.9196485623003194, 0.9303614217252397, 0.933849840255591, 0.9360303514376996, 0.9376257987220447, 0.938180910543131, 0.9387060702875398, 0.9400139776357828, 0.9408266773162939]]

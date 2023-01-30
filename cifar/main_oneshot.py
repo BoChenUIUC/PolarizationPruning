@@ -414,7 +414,6 @@ if args.VLB_conv:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
                     actual_cost += 8*8*l.conv2.weight.size(0)*4 # bytes
     print(comm_cost/1024/1024,actual_cost/1024/1024,comm_cost/actual_cost,comm_cost/(32*32*3*4),comm_cnt)
-    exit(0)
     cfg[0] = sum(model.aggr_sizes)
     layers = []
     for i in range(1,len(cfg)):

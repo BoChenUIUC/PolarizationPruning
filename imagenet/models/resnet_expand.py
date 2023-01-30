@@ -422,7 +422,6 @@ class ResNetExpand(nn.Module):
                         continue
                     before_save += feat_size * m.weight.size(0) * 4 / 1024 / 1024
             print(image_size,before_save,after_save)
-            exit(0)
 
 
         if expand_idx:

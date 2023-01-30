@@ -1612,41 +1612,60 @@ def evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_
     RMLaaS_latency_breakdown = []
     selection_list = []
     num_query = len(all_correct[0])
-    for query_index in range(num_query):
-        # for each node, 
-        query_latency = None
-        query_result = None
-        for node_idx in range(args.split_num):
-            # decide one or none of the rest nodes to cooperate
-            # derive latency and compare with best
-            node_latency = [all_map_time[node_idx+args.split_num][query_index], latency_thresh]
-            subnet_idx = node_idx + args.split_num
-            for other_node_idx in range(args.split_num):
-                if other_node_idx == node_idx:continue
-                # skip nodes that are lost
-                if wanlatency_list[other_node_idx][query_index] > 1000:continue
-                dcn_conn_idx = node_idx*args.split_num + other_node_idx
-                dcn_latency = dcnlatency_list[dcn_conn_idx][query_index]
-                other_node_latency = [all_map_time[other_node_idx+args.split_num][query_index], dcn_latency]
-                if sum(other_node_latency) < sum(node_latency):
-                    node_latency = other_node_latency
-                    subnet_idx = node_idx
-            # add reduce time for whole sub network
-            node_latency += [all_reduce_time[subnet_idx][query_index]]
-            # add WAN communication latency to node
-            node_latency += [wanlatency_list[node_idx][query_index]]
-            if query_latency is None or sum(node_latency) < sum(query_latency):
-                query_latency = node_latency
-                query_result = all_correct[subnet_idx][query_index]
-                subnet_sel = subnet_idx
-        RMLaaS_res += [query_result]
-        RMLaaS_latency += [sum(query_latency)]
-        RMLaaS_latency_breakdown += [query_latency]
-        if sum(query_latency)>1000:
-            # no response
-            selection_list += [-1]
-        else:
-            selection_list += [subnet_sel]
+    if len(all_map_time) >1 :
+        for query_index in range(num_query):
+            # for each node, 
+            query_latency = None
+            query_result = None
+            for node_idx in range(args.split_num):
+                # decide one or none of the rest nodes to cooperate
+                # derive latency and compare with best
+                node_latency = [all_map_time[node_idx+args.split_num][query_index], latency_thresh]
+                subnet_idx = node_idx + args.split_num
+                for other_node_idx in range(args.split_num):
+                    if other_node_idx == node_idx:continue
+                    # skip nodes that are lost
+                    if wanlatency_list[other_node_idx][query_index] > 1000:continue
+                    dcn_conn_idx = node_idx*args.split_num + other_node_idx
+                    dcn_latency = dcnlatency_list[dcn_conn_idx][query_index]
+                    other_node_latency = [all_map_time[other_node_idx+args.split_num][query_index], dcn_latency]
+                    if sum(other_node_latency) < sum(node_latency):
+                        node_latency = other_node_latency
+                        subnet_idx = node_idx
+                # add reduce time for whole sub network
+                node_latency += [all_reduce_time[subnet_idx][query_index]]
+                # add WAN communication latency to node
+                node_latency += [wanlatency_list[node_idx][query_index]]
+                if query_latency is None or sum(node_latency) < sum(query_latency):
+                    query_latency = node_latency
+                    query_result = all_correct[subnet_idx][query_index]
+                    subnet_sel = subnet_idx
+            RMLaaS_res += [query_result]
+            RMLaaS_latency += [sum(query_latency)]
+            RMLaaS_latency_breakdown += [query_latency]
+            if sum(query_latency)>1000:
+                # no response
+                selection_list += [-1]
+            else:
+                selection_list += [subnet_sel]
+    else:
+        query_index = 0
+        for ift0,c0 in zip(all_map_time[0],all_correct[0]):
+            latency = [ift0,wanlatency_list[0][query_index]]
+            selected_node = 0
+            other_node_latency = [ift0,wanlatency_list[1][query_index]]
+            if sum(other_node_latency) < sum(latency):
+                latency = other_node_latency
+                selected_node = 1
+            RMLaaS_res += [c0]
+            RMLaaS_latency += [sum(latency)]
+            RMLaaS_latency_breakdown += [latency]
+            query_index += 1
+            if sum(latency)>1000:
+                # no response
+                selection_list += [-1]
+            else:
+                selection_list += [selected_node]
 
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection,service_type=0,correct_lst=all_correct)
 
@@ -1798,10 +1817,15 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     all_reduce_time = []
     all_correct = []
     print('Running RMLaaS...')
+    num_sn = len(torch.nonzero(torch.tensor(args.alphas)))
     if arch == "resnet50":
         for i in range(len(args.alphas)):
+            if args.alphas[i]==0:continue
             masked_model = sample_partition_network(args,model,net_id=i,inplace=True)
-            map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
+            if num_sn > 1:
+                map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
+            else:
+                map_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, standalone=True)
             all_map_time += [map_time_lst]
             all_reduce_time += [reduce_time_lst]
             all_correct += [correct_lst]
@@ -1810,14 +1834,15 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         raise NotImplementedError(f"do not support arch {arch}")
     # evaluate map/reduce time
     print('Break compute latency down...')
-    # map
-    for sn_idx in range(args.split_num,args.split_num*2):
-        map_mean,map_std = np.array(all_map_time[sn_idx]).mean(),np.array(all_map_time[sn_idx]).std()
-        print(f'Map time {sn_idx}: {map_mean:.6f}({map_std:.6f})')
-    # reduce
-    for sn_idx in range(args.split_num*2):
-        reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
-        print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
+    if num_sn > 1:
+        # map
+        for sn_idx in range(args.split_num,args.split_num*2):
+            map_mean,map_std = np.array(all_map_time[sn_idx]).mean(),np.array(all_map_time[sn_idx]).std()
+            print(f'Map time {sn_idx}: {map_mean:.6f}({map_std:.6f})')
+        # reduce
+        for sn_idx in range(args.split_num*2):
+            reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
+            print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
 
     # run originial model
     print('Running original ML service')

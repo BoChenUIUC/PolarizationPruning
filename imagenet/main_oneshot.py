@@ -2160,7 +2160,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
             top1.update(prec1[0], image.size(0))
             top5.update(prec5[0], image.size(0))
             if map_reduce or standalone:
-                correct_lst.append(float(prec5[0]))
+                correct_lst.append(float(prec1[0]))
 
             val_iter.set_description(
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f}). '

@@ -400,9 +400,11 @@ if args.VLB_conv:
     model.aggr_sizes = [model.conv1.weight.size(0)]
     comm_cost += shapes[0]*shapes[0]*model.conv1.weight.size(0)*4
     actual_cost += 8*8*model.conv1.weight.size(0)*4
+    comm_cnt = 0
     for i,layer in enumerate([model.layer1,model.layer2,model.layer3]):
         for idx,l in enumerate(layer):
             comm_cost += shapes[i]*shapes[i]*l.conv1.weight.size(0)*2*4 # bytes
+            comm_cnt += 1
             if args.sampling_interval == 9:
                 if idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
@@ -411,7 +413,8 @@ if args.VLB_conv:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
                     actual_cost += 8*8*l.conv2.weight.size(0)*4 # bytes
-    print(comm_cost/1024/1024,actual_cost/1024/1024,comm_cost/actual_cost,comm_cost/(32*32*3*4))
+    print(comm_cost/1024/1024,actual_cost/1024/1024,comm_cost/actual_cost,comm_cost/(32*32*3*4),comm_cnt)
+    exit(0)
     cfg[0] = sum(model.aggr_sizes)
     layers = []
     for i in range(1,len(cfg)):

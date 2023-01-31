@@ -1317,13 +1317,19 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
                 selection_list += [subnet_sel]
     else:
         query_index = 0
+        R_order = 2
         for ift0,c0 in zip(all_map_time[0],all_correct[0]):
             latency = [ift0,wanlatency_list[0][query_index]]
             selected_node = 0
-            other_node_latency = [ift0,wanlatency_list[1][query_index]]
-            if sum(other_node_latency) < sum(latency):
-                latency = other_node_latency
-                selected_node = 1
+            for node_idx in range(1,R_order):
+                other_node_latency = [ift0, wanlatency_list[node_idx][query_index]]
+                if sum(other_node_latency) < sum(latency):
+                    latency = other_node_latency
+                    selected_node = node_idx
+            # other_node_latency = [ift0,wanlatency_list[1][query_index]]
+            # if sum(other_node_latency) < sum(latency):
+            #     latency = other_node_latency
+            #     selected_node = 1
             RMLaaS_res += [c0]
             RMLaaS_latency += [sum(latency)]
             RMLaaS_latency_breakdown += [latency]
@@ -1438,16 +1444,16 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        # print(stats.mean(axis=1).tolist())
-        # print(stats.std(axis=1).tolist())
+        print(stats.mean(axis=1).tolist())
+        print(stats.std(axis=1).tolist())
         r2 = (stats[2]-stats[0]).mean(axis=1)
         r3 = (stats[3]-stats[0]).mean(axis=1)
         r4 = (stats[4]-stats[0]).mean(axis=1)
         r2_base = (stats[2]-stats[1]).mean(axis=1)
         r3_base = (stats[3]-stats[1]).mean(axis=1)
         r4_base = (stats[4]-stats[1]).mean(axis=1)
-        print(r2.max())
-        # print([r2.max(),r3.max(),r4.max()])
+        # print(r2.max())
+        print([r2.max(),r3.max(),r4.max()])
         # print([r2_base.max(),r3_base.max(),r4_base.max()])
     # print('Latency breakdown...')
     # for i in range(3):

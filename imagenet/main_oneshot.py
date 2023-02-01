@@ -1822,6 +1822,9 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
             masked_model = sample_partition_network(args,model,net_id=i,inplace=True)
+            flop = compute_conv_flops_par(masked_model, cuda=True)
+            print(flop/args.BASEFLOPS)
+            continue
             if num_sn > 1:
                 map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
                 all_reduce_time += [reduce_time_lst]

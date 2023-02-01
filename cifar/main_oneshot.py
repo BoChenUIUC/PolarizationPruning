@@ -1317,7 +1317,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
                 selection_list += [subnet_sel]
     else:
         query_index = 0
-        R_order = 4
+        R_order = 2
         for ift0,c0 in zip(all_map_time[0],all_correct[0]):
             latency = [ift0,wanlatency_list[0][query_index]]
             selected_node = 0

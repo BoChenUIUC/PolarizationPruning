@@ -1451,6 +1451,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         else:
             stats = stats[:,:,-5:]
         print((stats[[2]]-stats[[0]]))
+        print((stats[[2]]-stats[[0]]).shape)
         print((stats[[2]]-stats[[0]]).min(axis=1).max())
         print((stats[[2]]-stats[[0]]).mean(axis=1).max())
         print((stats[[2]]-stats[[0]]).max(axis=1).max())

@@ -1446,10 +1446,10 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         stats = np.array(stats).reshape(metrics_shape)
         # print(stats.mean(axis=1).tolist())
         # print(stats.std(axis=1).tolist())
-        # if stats.shape[-1] != args.num_ddls:
-        #     stats = stats[:,:,:5]
-        # else:
-        #     stats = stats[:,:,-5:]
+        if stats.shape[-1] != args.num_ddls:
+            stats = stats[:,:,:5]
+        else:
+            stats = stats[:,:,-5:]
         print((stats[[2]]-stats[[0]]).min(axis=1).max())
         print((stats[[2]]-stats[[0]]).mean(axis=1).max())
         print((stats[[2]]-stats[[0]]).max(axis=1).max())

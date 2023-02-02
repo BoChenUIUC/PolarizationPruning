@@ -1450,7 +1450,9 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         #     stats = stats[:,:,:5]
         # else:
         #     stats = stats[:,:,-5:]
-        print((stats[[2]]-stats[[0]]).mean(axis=1))
+        print((stats[[2]]-stats[[0]]).min(axis=1).max())
+        print((stats[[2]]-stats[[0]]).mean(axis=1).max())
+        print((stats[[2]]-stats[[0]]).max(axis=1).max())
         r2 = (stats[2]-stats[0]).mean(axis=0)
         r3 = (stats[3]-stats[0]).mean(axis=0)
         r4 = (stats[4]-stats[0]).mean(axis=0)

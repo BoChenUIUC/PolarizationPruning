@@ -1819,10 +1819,16 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     all_correct = []
     print('Running RMLaaS...')
     num_sn = len(torch.nonzero(torch.tensor(args.alphas)))
+    model.eval()
+    if arch == "resnet50":
+        for i in [0]:
+            masked_model = sample_partition_network(args,model,net_id=i)
+            flop = compute_conv_flops_par(masked_model, cuda=True)
+            prec1 = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None)
     if arch == "resnet50":
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
-            masked_model = sample_partition_network(args,model,net_id=i,inplace=True)
+            masked_model = sample_partition_network(args,model,net_id=i)
             flop = compute_conv_flops_par(masked_model, cuda=True)
             if num_sn > 1:
                 map_time_lst,reduce_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, map_reduce=True)
@@ -2141,13 +2147,10 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
 
             if map_reduce:
                 end = time.time()
-                # output = model(image,map_fwd=True)
-                output = model(image)
-                if isinstance(output, tuple):
-                    output, out_aux = output
+                output = model(image,map_fwd=True)
                 map_time_lst.append(time.time()-end)
                 end = time.time()
-                # output = model(output,reduce_fwd=True)
+                output = model(output,reduce_fwd=True)
                 reduce_time_lst.append(time.time()-end)
             else:
                 end = time.time()

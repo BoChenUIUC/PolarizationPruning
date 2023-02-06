@@ -1445,10 +1445,10 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
         # print(stats.std(axis=1).tolist())
-        # if stats.shape[-1] != args.num_ddls:
-        #     stats = stats[:,:,:5]
-        # else:
-        #     stats = stats[:,:,-5:]
+        if stats.shape[-1] != args.num_ddls:
+            stats = stats[:,:,:10]
+        else:
+            stats = stats[:,:,10:]
         print((stats[[2]]-stats[[0]]).mean(axis=1))
         print((stats[[2]]-stats[[0]]).min(axis=1).max())
         print((stats[[2]]-stats[[0]]).mean(axis=1).max())

@@ -1775,12 +1775,12 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown[0] += RMLaaS_latency_breakdown
         latency_breakdown[1] += no_rep_latency_breakdown
         latency_breakdown[2] += total_rep_latency_breakdown
-    print('Accuracy and latency stats...')
-    for stats in [all_accuracy,all_latency]:
-        # print(stats)
-        stats = np.array(stats)
-        print(stats.mean(axis=-1).tolist())
-        print(stats.std(axis=-1).tolist())
+    # print('Accuracy and latency stats...')
+    # for stats in [all_accuracy,all_latency]:
+    #     # print(stats)
+    #     stats = np.array(stats)
+    #     print(stats.mean(axis=-1).tolist())
+    #     print(stats.std(axis=-1).tolist())
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
@@ -2141,10 +2141,13 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
 
             if map_reduce:
                 end = time.time()
-                output = model(image,map_fwd=True)
+                # output = model(image,map_fwd=True)
+                output = model(image)
+                if isinstance(output, tuple):
+                    output, out_aux = output
                 map_time_lst.append(time.time()-end)
                 end = time.time()
-                output = model(output,reduce_fwd=True)
+                # output = model(output,reduce_fwd=True)
                 reduce_time_lst.append(time.time()-end)
             else:
                 end = time.time()

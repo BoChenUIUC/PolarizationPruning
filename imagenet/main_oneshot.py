@@ -1821,11 +1821,6 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     num_sn = len(torch.nonzero(torch.tensor(args.alphas)))
     model.eval()
     if arch == "resnet50":
-        for i in [0]:
-            masked_model = sample_partition_network(args,model,net_id=i)
-            flop = compute_conv_flops_par(masked_model, cuda=True)
-            prec1 = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None)
-    if arch == "resnet50":
         for i in range(len(args.alphas)):
             if args.alphas[i]==0:continue
             masked_model = sample_partition_network(args,model,net_id=i)

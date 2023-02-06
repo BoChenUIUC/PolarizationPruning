@@ -1446,7 +1446,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         stats = np.array(stats).reshape(metrics_shape)
         print(stats.mean(axis=1).tolist())
         print(stats.std(axis=1).tolist())
-        # stats = stats[:,:,:11]
+        stats = stats[:,:,:11]
         r2 = (stats[2]-stats[0]).mean(axis=0)
         r3 = (stats[3]-stats[0]).mean(axis=0)
         r4 = (stats[4]-stats[0]).mean(axis=0)

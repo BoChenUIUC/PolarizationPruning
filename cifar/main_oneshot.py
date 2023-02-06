@@ -1444,12 +1444,17 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
-        print(stats.mean(axis=1).tolist())
-        print(stats.std(axis=1).tolist())
+        # print(stats.mean(axis=1).tolist())
+        # print(stats.std(axis=1).tolist())
         stats = stats[:,:,:11]
-        r2 = (stats[2]-stats[0]).mean(axis=0)
-        r3 = (stats[3]-stats[0]).mean(axis=0)
-        r4 = (stats[4]-stats[0]).mean(axis=0)
+        if 0 in args.alphas:
+            r2 = (stats[2]-stats[0]).max(axis=0)
+            r3 = (stats[3]-stats[0]).max(axis=0)
+            r4 = (stats[4]-stats[0]).max(axis=0)
+        else:
+            r2 = (stats[2]-stats[0]).min(axis=0)
+            r3 = (stats[3]-stats[0]).min(axis=0)
+            r4 = (stats[4]-stats[0]).min(axis=0)
         r2_base = (stats[2]-stats[1]).mean(axis=0)
         r3_base = (stats[3]-stats[1]).mean(axis=0)
         r4_base = (stats[4]-stats[1]).mean(axis=0)

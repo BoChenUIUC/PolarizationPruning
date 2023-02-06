@@ -1403,7 +1403,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0):
 
     # consistency+availability
     if trace_selection < 10:
-        deadlines = [1.02*10**(0.1*i-1) for i in range(args.num_ddls)]
+        deadlines = [1.02*10**(1-0.1*i) for i in range(args.num_ddls)]
     elif trace_selection < 20:
         exit(0)
         deadlines = [0.1*i for i in range(1,21)]
@@ -1445,7 +1445,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
         # print(stats.std(axis=1).tolist())
-        stats = stats[:,:,10:]
+        stats = stats[:,:,:11]
         print(stats[0])
         r2 = (stats[2]-stats[0]).mean(axis=0)
         r3 = (stats[3]-stats[0]).mean(axis=0)

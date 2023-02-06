@@ -1448,9 +1448,9 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         # print(stats.std(axis=1).tolist())
         stats = stats[:,:,:11]
         if 0 in args.alphas:
-            r2 = (stats[2]-stats[0]).mean(axis=0)
-            r3 = (stats[3]-stats[0]).mean(axis=0)
-            r4 = (stats[4]-stats[0]).mean(axis=0)
+            r2 = (stats[2]-stats[0]).max(axis=0)
+            r3 = (stats[3]-stats[0]).max(axis=0)
+            r4 = (stats[4]-stats[0]).max(axis=0)
         else:
             r2 = (stats[2]-stats[0]).min(axis=0)
             r3 = (stats[3]-stats[0]).min(axis=0)

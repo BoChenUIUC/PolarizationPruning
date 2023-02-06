@@ -1733,7 +1733,7 @@ def evaluate_service_metrics(result_list,latency_list,trace_selection=0,service_
     # consistency+availability
     # 5-25;1.2-1.5
     if trace_selection < 10:
-        deadlines = [i+5 for i in range(20)]
+        deadlines = [15.5*10**(1-0.1*i) for i in range(21)]
     # elif trace_selection < 20:
     #     deadlines = [1.2+0.015*i for i in range(20)]
     elif trace_selection >=200:
@@ -1775,19 +1775,20 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown[0] += RMLaaS_latency_breakdown
         latency_breakdown[1] += no_rep_latency_breakdown
         latency_breakdown[2] += total_rep_latency_breakdown
-    print('Accuracy and latency stats...')
-    for stats in [all_accuracy,all_latency]:
-        # print(stats)
-        stats = np.array(stats)
-        print(stats.mean(axis=-1).tolist())
-        print(stats.std(axis=-1).tolist())
+    # print('Accuracy and latency stats...')
+    # for stats in [all_accuracy,all_latency]:
+    #     # print(stats)
+    #     stats = np.array(stats)
+    #     print(stats.mean(axis=-1).tolist())
+    #     print(stats.std(axis=-1).tolist())
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
         print(stats.mean(axis=1).tolist())
         print(stats.std(axis=1).tolist())
-        r2 = (stats[2]-stats[0]).mean(axis=1)
-        r2_base = (stats[2]-stats[1]).mean(axis=1)
+        stats = stats[:,:,:11]
+        r2 = (stats[2]-stats[0]).mean(axis=0)
+        r2_base = (stats[2]-stats[1]).mean(axis=0)
         print([r2.max(),r2_base.max()])
     # print('Latency breakdown...')
     # for i in range(3):
@@ -1857,7 +1858,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     rep = 10
     if args.split_num in {2}:
         num_loss_rates = 21
-        num_ddls = 20
+        num_ddls = 21
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]
         # if args.split_num == 2:

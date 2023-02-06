@@ -1436,22 +1436,20 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown[0] += RMLaaS_latency_breakdown
         latency_breakdown[1] += no_rep_latency_breakdown
         latency_breakdown[2] += total_rep_latency_breakdown
-    # print('Accuracy and latency stats...')
-    # for stats in [all_accuracy,all_latency]:
-    #     stats = np.array(stats)
-    #     print(stats.mean(axis=-1).tolist())
-    #     print(stats.std(axis=-1).tolist())
+    print('Accuracy and latency stats...')
+    for stats in [all_accuracy,all_latency]:
+        stats = np.array(stats)
+        print(stats.mean(axis=-1).tolist())
+        print(stats.std(axis=-1).tolist())
     print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
         # print(stats.mean(axis=1).tolist())
         # print(stats.std(axis=1).tolist())
-        if stats.shape[-1] != args.num_ddls:
-            stats = stats[:,:,:5]
-        else:
-            stats = stats[:,:,-5:]
-        print((stats[[2]]-stats[[0]]))
-        print((stats[2]-stats[0]))
+        # if stats.shape[-1] != args.num_ddls:
+        #     stats = stats[:,:,:5]
+        # else:
+        #     stats = stats[:,:,-5:]
         print((stats[[2]]-stats[[0]]).min(axis=1).max())
         print((stats[[2]]-stats[[0]]).mean(axis=1).max())
         print((stats[[2]]-stats[[0]]).max(axis=1).max())
@@ -1463,7 +1461,7 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         r4_base = (stats[4]-stats[1]).mean(axis=0)
         # print(r2.max())
         print([r2.max(),r3.max(),r4.max()])
-        # print([r2_base.max(),r3_base.max(),r4_base.max()])
+        print([r2_base.max(),r3_base.max(),r4_base.max()])
     # print('Latency breakdown...')
     # for i in range(3):
     #     print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())

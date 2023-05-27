@@ -27,7 +27,145 @@ colors = [
 markers = ['o','P','s','D','v','^','<','>']
 
 
+
 def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,lfsize=labelsize_b,legloc='best',
+				xticks=None,yticks=None,xticklabel=None,ncol=None, yerr=None,markers=markers,
+				use_arrow=False,arrow_coord=(0.4,30),ratio=None,bbox_to_anchor=(1.1,1.2),use_doublearrow=False,
+				linestyles=None,use_annot=False,linewidth=None,markersize=None):
+	if linewidth is None:
+		linewidth = 2
+	if markersize is None:
+		markersize = 8
+	fig, ax = plt.subplots()
+	ax.grid(zorder=0)
+	for i in range(len(XX)):
+		xx,yy = XX[i],YY[i]
+		if yerr is None:
+			if linestyles is not None:
+				plt.plot(xx, yy, color = color[i], marker = markers[i], 
+					linestyle = linestyles[i], 
+					label = label[i], 
+					linewidth=linewidth, markersize=markersize)
+			else:
+				plt.plot(xx, yy, color = color[i], marker = markers[i], 
+					label = label[i], 
+					linewidth=linewidth, markersize=markersize)
+		else:
+			plt.errorbar(xx, yy, yerr=yerr[i], color = color[i], 
+				marker = markers[i], label = label[i], 
+				linewidth=linewidth, markersize=markersize)
+	plt.xlabel(xlabel, fontsize = lbsize)
+	plt.ylabel(ylabel, fontsize = lbsize)
+	if xticks is not None:
+		if xticklabel is None:
+			plt.xticks(xticks,fontsize=lfsize)
+		else:
+			plt.xticks(xticks,xticklabel,fontsize=lfsize)
+	ax.tick_params(axis='both', which='major', labelsize=lbsize)
+	if yticks is not None:
+		plt.yticks(yticks,fontsize=lbsize)
+
+	if ncol!=0:
+		if ncol is None:
+			plt.legend(loc=legloc,fontsize = lfsize)
+		else:
+			plt.legend(loc=legloc,fontsize = lfsize,ncol=ncol,bbox_to_anchor=bbox_to_anchor)
+	if use_annot:
+		for i in range(len(XX)):
+			xx,yy = XX[i],YY[i]
+			for x,y in zip(xx,yy):
+				ind_color = '#4f646f'
+				if x>8:
+					h = y + 0.02 if i==0 else y - 0.04
+					w = x - 0.5
+				elif x==8:
+					h = y + 0.02 if i==0 else y - 0.04
+					w = x
+				else:
+					h = y + 0.04 if i==0 else y-0.02
+					w = x + 0.2 if i==0 else x + 0.5
+				ax.text(w, h, f'{y:.3f}', ha="center", va="center", rotation='horizontal', size=20,fontweight='bold',color=color[i])
+	
+	if ratio is not None:
+		xleft, xright = ax.get_xlim()
+		ybottom, ytop = ax.get_ylim()
+		ax.set_aspect(abs((xright-xleft)/(ybottom-ytop))*ratio)
+	# plt.xlim((0.8,3.2))
+	# plt.ylim((-40,90))
+	plt.tight_layout()
+	fig.savefig(path,bbox_inches='tight')
+	plt.close()
+
+def groupedbar(data_mean,data_std,ylabel,path,colors,yticks=None,envs = [2,3,4],
+				methods=['Ours','Standalone','Optimal','Ours*','Standalone*','Optimal*'],use_barlabel_x=False,use_barlabe_y=False,
+				ncol=3,bbox_to_anchor=(0.46, 1.28),sep=1.25,width=0.15,xlabel=None,legloc=None,labelsize=labelsize_b,ylim=None,
+				use_downarrow=False,rotation=None,lgsize=None):
+	if lgsize is None:
+		lgsize = labelsize
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	num_methods = data_mean.shape[1]
+	num_env = data_mean.shape[0]
+	center_index = np.arange(1, num_env + 1)*sep
+	# colors = ['lightcoral', 'orange', 'yellow', 'palegreen', 'lightskyblue']
+	# colors = ['coral', 'orange', 'green', 'cyan', 'blue']
+
+	ax.grid()
+	ax.spines['bottom'].set_linewidth(3)
+	ax.spines['top'].set_linewidth(3)
+	ax.spines['left'].set_linewidth(3)
+	ax.spines['right'].set_linewidth(3)
+	if rotation is None:
+		plt.xticks(center_index, envs, size=labelsize)
+	else:
+		plt.xticks(center_index, envs, size=labelsize, rotation=rotation)
+	plt.xticks(fontsize=labelsize)
+	plt.yticks(fontsize=labelsize)
+	ax.set_ylabel(ylabel, size=labelsize)
+	if xlabel is not None:
+		ax.set_xlabel(xlabel, size=labelsize)
+	if yticks is not None:
+		plt.yticks(yticks,fontsize=labelsize)
+	if ylim is not None:
+		ax.set_ylim(ylim)
+	for i in range(num_methods):
+		x_index = center_index + (i - (num_methods - 1) / 2) * width
+		hbar=plt.bar(x_index, data_mean[:, i], width=width, linewidth=2,
+		        color=colors[i], label=methods[i], hatch=hatches[i], edgecolor='k')
+		if data_std is not None:
+		    plt.errorbar(x=x_index, y=data_mean[:, i],
+		                 yerr=data_std[:, i], fmt='k.', elinewidth=3,capsize=4)
+		if use_barlabel_x:
+			if i in [2,3]:
+				for k,xdx in enumerate(x_index):
+					ax.text(xdx-0.07,data_mean[k,i]+3,f'{data_mean[k,i]:.4f}',fontsize = labelsize, rotation='vertical',fontweight='bold')
+		if use_barlabe_y and i==2:
+			for k,xdx in enumerate(x_index):
+				ax.text(xdx-0.08,data_mean[k,i]+1,f'{data_mean[k,i]:.4f}',fontsize = labelsize, rotation='vertical',fontweight='bold')
+		if use_downarrow:
+			if i==1:
+				for j in range(2,data_mean.shape[0]):
+					ax.annotate(text='', xy=(x_index[j],data_mean[j,i]), xytext=(x_index[j],200), arrowprops=dict(arrowstyle='<->',lw=4))
+					ax.text(x_index[j]-0.04, 160, '$\downarrow$'+f'{200-data_mean[j,i]:.0f}%', ha="center", va="center", rotation='vertical', size=labelsize ,fontweight='bold')
+					# ax.text(center_index[j]-0.02,data_mean[j,i]+5,'$\downarrow$'+f'{200-data_mean[j,i]:.0f}%',fontsize = 16, fontweight='bold')
+			else:
+				for k,xdx in enumerate(x_index):
+					ax.text(xdx-0.07,data_mean[k,i]+5,f'{data_mean[k,i]:.2f}',fontsize = labelsize,fontweight='bold')
+
+	if ncol>0:
+		if legloc is None:
+			plt.legend(bbox_to_anchor=bbox_to_anchor, fancybox=True,
+			           loc='upper center', ncol=ncol, fontsize=lgsize)
+		else:
+			plt.legend(fancybox=True,
+			           loc=legloc, ncol=ncol, fontsize=lgsize)
+	fig.savefig(path, bbox_inches='tight')
+	plt.close()
+
+
+
+
+def line_plot2(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,lfsize=labelsize_b,legloc='best',
 				xticks=None,yticks=None,ncol=None, yerr=None,
 				use_arrow=False,arrow_coord=(0.4,30)):
 	fig, ax = plt.subplots()
@@ -118,6 +256,9 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,lfsize=lab
 	fig.savefig(path,bbox_inches='tight')
 	plt.close()
 
+
+
+
 x = []
 y = []
 # original
@@ -144,10 +285,30 @@ x += [[92.67,90.62,86.42,80.16,72.02,64.39,55.75,46.84,36.59,27.71,18.18,0.00]]
 # ONN16
 y += [[0.1320,0.1590,0.5718,0.8065,0.8238,0.8444,0.8881,0.9162,0.9228,0.9283,0.9355,0.9357,0.9375,0.9391,0.9427,0.9433]]
 x += [[92.95,92.78,88.97,86.40,81.69,76.06,70.21,64.26,58.40,51.57,44.47,36.67,30.07,23.33,14.82,0.00]]
-line_plot(x, y,['Original','Lasso','Polar','OFA','ONN-L4','ONN-L8','ONN-L12','ONN-L16'],colors,
-		'/home/bo/Dropbox/Research/CVPR23/images/compare_scalability.eps',
-		'Pruned FLOPS (%)','Top1 Accuracy (%)',yticks=[i*10 for i in range(10)],xticks=[i*10 for i in range(1,10)],use_arrow=True)	
+line_plot2(x, y,['Original','Lasso','Polar','OFA','ONN-L4','ONN-L8','ONN-L12','ONN-L16'],colors,
+		'/home/bo/Dropbox/Research/ICCV23/images/compare_scalability.eps',
+		'Sparsity (%)','Top1 Accuracy (%)',yticks=[i*10 for i in range(10)],xticks=[i*10 for i in range(1,10)],use_arrow=True)	
 
+exit(0)
+
+methods = ['Mean','Variance']
+y = [[0.008,0.006],
+[0.016,0.029]]
+hatches = ['/' ,'\\','--','x', '+', 'O','-',]
+colors_tmp = ['#e3342f','#4dc0b5','#38c172','#ffed4a','#f6993f','#3490dc','#6574cd','#9561e2','#f66d9b']
+y = np.array(y);
+groupedbar(y,None,'Stat. Heterogeneity', 
+	f'/home/bo/Dropbox/Research/ICCV23/images/sh_vs_model.eps',colors_tmp,methods=methods,labelsize=32,xlabel='',
+	envs=['ResNet-56','ResNet-50'],sep=1,width=0.3,legloc='best',ncol=1,lgsize=24,yticks=[0.01,0.02,0.03])
+
+x = [[4*i for i in range(1,5)]for _ in range(2)]
+y = [[0.0084,0.0113,0.0124,0.0132],
+	[0.0058,0.1608,0.2268,0.2533]]
+
+line_plot(x, y,['Mean','Variance'],colors_tmp,
+		'/home/bo/Dropbox/Research/ICCV23/images/sh.eps',
+		'#Onion Layers','Stat. Heterogeneity',xticks = [4,8,12,16],lbsize=32,lfsize=24,use_annot=True)	
+exit(0)
 # --------------------------------------------
 
 # def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,lfsize=labelsize_b,legloc='best',

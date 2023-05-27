@@ -34,7 +34,7 @@ from tqdm import tqdm
 import copy
 import torch.nn.functional as F
 
-model_names = ["resnet50", "mobilenetv2"]
+model_names = ["resnet50", "mobilenetv2", "SwinTransformer", "ConvNext"]
 
 
 class LossType(Enum):
@@ -482,6 +482,8 @@ def main_worker(gpu, ngpus_per_node, args):
         elif args.arch == "mobilenetv2":
             model = mobilenet_v2(width_mult=args.width_multiplier,
                                  use_gate=args.gate)
+        # elif args.arch == "SwinTransformer":
+        # elif args.arch == "ConvNext":
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
 
@@ -523,6 +525,11 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model.cuda()
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
+        ratio_list = []
+        for i in range(0,32):
+            ratio_list += [compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/32)]
+        print(ratio_list)
+        exit(0)
         if args.arch == 'resnet50':
             teacher_path = './original/resnet/model_best.pth.tar'
         else:
@@ -712,7 +719,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 
     print("Best prec@1: {}".format(best_prec1))
 
-def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
+def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> float:
     """
     compute the FLOPs for CIFAR models
     NOTE: ONLY compute the FLOPs for Convolution layers and Linear layers
@@ -725,11 +732,11 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
         output_channels, output_height, output_width = output[0].size()
 
         if self.groups == 1:
-            kernel_ops = self.kernel_size[0] * self.kernel_size[1] * self.in_channels
+            kernel_ops = self.kernel_size[0] * self.kernel_size[1] * (self.in_channels * ratio)
         else:
             kernel_ops = self.kernel_size[0] * self.kernel_size[1]
 
-        flops = kernel_ops * output_channels * output_height * output_width
+        flops = kernel_ops * (output_channels * ratio) * output_height * output_width
 
         if hasattr(self, 'flops_multiplier'):
             flops *= self.flops_multiplier
@@ -741,7 +748,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False) -> float:
     def linear_hook(self, input, output):
         weight_ops = self.weight.nelement()
 
-        flops = weight_ops
+        flops = weight_ops * ratio
 
         if hasattr(self, 'flops_multiplier'):
             flops *= self.flops_multiplier

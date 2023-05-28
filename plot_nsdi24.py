@@ -73,7 +73,7 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 		else:
 			if yerr is None:
 				plt.plot(xx, yy, color = color[i], marker = markers[i], 
-					label = label[i], 
+					label = label[i], linestyle = linestyles[i], 
 					linewidth=linewidth, markersize=markersize)
 			else:
 				if markersize > 0:
@@ -152,58 +152,14 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 				ax.annotate('Naive neuron sharing: 174', xy=(xx[2],yy[2]+0.1), xytext=(60,2.15), fontsize=lbsize,fontweight='bold',arrowprops=dict(arrowstyle='->',lw=2))
 			else:
 				ax.annotate('Naive neuron sharing: 71', xy=(xx[5],yy[5]-0.1), xytext=(48,.5), fontsize=lbsize,fontweight='bold',arrowprops=dict(arrowstyle='->',lw=2))
-	if use_resnet56_2arrow:
-		lgsize=16
-		ax.annotate(text='', xy=(10,78), xytext=(60,78), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		ax.text(
-		    35, 79, "Stage#0", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-		ax.annotate(text='', xy=(60,87.5), xytext=(200,87.5), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		ax.text(
-		    130, 88.5, "Stage#1", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-		# for l,r,lr in [(10,60,0.1),(60,120,0.02),(120,160,0.004),(160,200,0.0008)]:
-		# 	if l==160:
-		# 		h = 87.5
-		# 	elif l==120:
-		# 		h = 85
-		# 	else:
-		# 		h = 81
-		# 	ax.annotate(text='', xy=(l,h), xytext=(r,h), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		# 	ax.text(
-		# 	    (l+r)/2, h+1, f"lr={lr}", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-	if use_resnet56_3arrow:
-		lgsize=16
-		ax.annotate(text='', xy=(10,75), xytext=(60,75), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		ax.text(
-		    35, 76, "Stage#0", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-		ax.annotate(text='', xy=(60,87.5), xytext=(200,87.5), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		ax.text(
-		    130, 89, "Stage#1", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-		# for l,r,lr in [(10,60,0.1),(60,120,0.02),(120,160,0.004),(160,200,0.0008)]:
-		# 	h = 78 if l<160 else 87
-		# 	ax.annotate(text='', xy=(l,h), xytext=(r,h), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		# 	ax.text(
-		# 	    (l+r)/2, h+1, f"lr={lr}", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-	if use_resnet56_4arrow:
-		lgsize=16
-		ax.annotate(text='', xy=(10,73), xytext=(60,73), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		ax.text(
-		    35, 74.5, "Stage#0", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-		ax.annotate(text='', xy=(60,85), xytext=(200,85), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		ax.text(
-		    130, 86.5, "Stage#1", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-		# for l,r,lr in [(10,60,0.1),(60,120,0.02),(120,160,0.004),(160,200,0.0008)]:
-		# 	h = 77 if l<160 else 87
-		# 	ax.annotate(text='', xy=(l,h), xytext=(r,h), arrowprops=dict(arrowstyle='<->',lw=linewidth))
-		# 	ax.text(
-		# 	    (l+r)/2, h+1, f"lr={lr}", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
+	
 	if use_resnet50arrow:
-		lgsize=16
-		ax.annotate(text='', xy=(0,62), xytext=(40,62), arrowprops=dict(arrowstyle='<->',lw=linewidth))
+		ax.annotate(text='', xy=(0,72), xytext=(40,72), arrowprops=dict(arrowstyle='<->',lw=linewidth))
 		ax.text(
-		    20, 63, "Stage#0", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
-		ax.annotate(text='', xy=(40,68), xytext=(160,68), arrowprops=dict(arrowstyle='<->',lw=linewidth))
+		    20, 73, "Stage#0", ha="center", va="center", rotation='horizontal', size=lgsize,fontweight='bold')
+		ax.annotate(text='', xy=(40,76), xytext=(160,76), arrowprops=dict(arrowstyle='<->',lw=linewidth))
 		ax.text(
-		    100, 69, "Stage#1", ha="center", va="center", rotation='horizontal', size=lbsize,fontweight='bold')
+		    100, 77, "Stage#1", ha="center", va="center", rotation='horizontal', size=lgsize,fontweight='bold')
 		# for l,r,lr in [(0,40,0.1),(40,80,0.1),(80,120,0.01),(120,160,0.001)]:
 		# 	ax.annotate(text='', xy=(l,64), xytext=(r,64), arrowprops=dict(arrowstyle='<->',lw=linewidth))
 		# 	ax.text(
@@ -507,12 +463,113 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
-x = [[1-1.0*i/32 for i in range(32)]]
+
+
+for name in ['resnet50']:
+	numsn = 4
+	colors_tmp = colors
+	all_acc = [[] for _ in range(numsn)]
+	all_epoch = [[] for _ in range(numsn)]
+	lines = 0
+	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/{name}.log','r') as f:
+		for line in f.readlines():
+			line = line.split(' ')
+			epoch = eval(line[0])
+			line = line[1].strip().split(',')[2:]
+			accuracy_list = [eval(n.split('(')[0]) for n in line if len(n)>=6]
+			for i,n in enumerate(accuracy_list):
+				all_acc[i] += [n]
+				all_epoch[i] += [lines]
+			lines += 1
+	max_list = [85.2,84.1]
+	for i in range(2):
+		max1 = max(max(all_acc[0+2*i]),max(all_acc[1+2*i]))
+		all_acc[0+2*i] = (np.array(all_acc[0+2*i])/max1*max_list[i]).tolist()
+		all_acc[1+2*i] = (np.array(all_acc[1+2*i])/max1*max_list[i]).tolist()
+	methods_tmp = [f'SN#{i}' for i in range(numsn)]
+	xticks = [0,40,80,120,160]
+	ncol = 2
+	line_plot(all_epoch,all_acc,methods_tmp,colors_tmp,
+			f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/convnext_learning_curve.eps',
+			'Epoch','Test Top-1 Acc. (%)',markersize=0,linewidth=2,xticks=xticks,legloc='best',lbsize=24,ncol=ncol,use_resnet50arrow=True,lgsize=18)
+exit(0)
+
+acc_method_model = [[85.8,85.2,84.1,84.2],[83.5,83.2,82.6,82.8],[76.13,75.3,72.2,72.4],[72.192,71.1,68.0,68.1]]
+envs = ['ConvNeXt','Swin','ResNet','MobileNet']
+methods = ['Original','REACT-2/2','REACT-1/2','Approx']
+y = np.array(acc_method_model)
+groupedbar(y,None,'Top-1 Acc. (%)', 
+	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/acc_method_model.eps',methods=methods,labelsize=20,
+	envs=envs,ncol=1,width=.2,sep=1,legloc='upper right',lgsize=16,ylim=(65,90))
+
+x = [];y = []
+default = 0.1
+for i in range(1):
+	xx = np.linspace(0,11)*0.01
+	yy = acc_method_model[i][0] * (1 - xx**2) + default * xx**2
+	x += [xx]; y += [yy]
+	yy = acc_method_model[i][1] * (1-(2+i) * xx**(1+i) * (1-xx)-xx**(2+i)) + acc_method_model[i][2] * (2+i) * xx**(1+i) * (1-xx) + default * xx**(2+i)
+	x += [xx]; y += [yy]
+	yy = acc_method_model[i][3] * (1 - xx**2) + default * xx**2
+	x += [xx]; y += [yy]
+methods = ['Original','REACT','Approx']
+linestyles_ = ['solid','dashed','dotted','dashdot']
+line_plot(x,y,methods,colors,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_response.eps',
+		'Failure Rate','Effective Top-1 Acc. (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
+		lgsize=18,legloc='lower left')
+
+acc_repl_model = [[85.8,85.2,84.2,84.2],[85.8,85.0,83.9,84.2],[85.8,84.7,83.6,84.2]]
+envs = ['2','3','4']
+methods = ['Original','REACT-2/2','REACT-1/2','Approx']
+y = np.array(acc_repl_model)
+groupedbar(y,None,'Top-1 Acc. (%)', 
+	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/acc_repl_model.eps',methods=methods,labelsize=20,
+	envs=envs,ncol=1,width=.2,sep=1,legloc='lower left',lgsize=16,ylim=(82,86),xlabel='# of Replicas')
+
+x = [];y = []
+default = 0.1
+for i in range(3):
+	xx = np.linspace(0,26)*0.01
+	yy = acc_repl_model[i][1] * (1-(2+i) * xx**(1+i) * (1-xx)-xx**(2+i)) + acc_repl_model[i][2] * (2+i) * xx**(1+i) * (1-xx) + default * xx**(2+i)
+	x += [xx]; y += [yy]
+	yy = acc_repl_model[i][3] * (1 - xx**(2+i)) + default * xx**(2+i)
+	x += [xx]; y += [yy]
+methods = ['REACT-N2','Approx-N2','REACT-N3','Approx-N3','REACT-N4','Approx-N4']
+linestyles_ = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
+line_plot(x,y,methods,colors,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_repl_response.eps',
+		'Failure Rate','Effective Top-1 Acc. (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
+		lgsize=18,legloc='lower left')
+exit(0)
+
+x = [
+	[4.5,7.7,8.7,15.4,34.4,60.9],
+	[4.5,7.7,8.7,15.4],
+	[1.82,2.06,3.68,4.12,7.85,11.58],
+	[0.01292,0.03721,0.05929,0.09714,0.15,0.20908,0.30079],
+	]
+y = [
+	[82.9,84.2000,84.6,85.8,86.6,87.0],
+	[81.2,82.8000,83.2,83.5],
+	[69.758,72.4000,73.314,76.130,77.374,78.312],
+	[34.896,52.352,60.092,64.592,68.1000,69.952,72.192],
+	]
+
+methods = ['ConvNeXt','Swin-Transformer','ResNet','MobileNet-v2']
+line_plot(x,y,methods,colors,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/flops_vs_acc.eps',
+		'Relative FLOPS (%)','Accuracy (%)',lbsize=24,linewidth=4,markersize=8,linestyles=linestyles,
+		lgsize=20)
+
+x = [[1-1.0*i/32 for i in range(32)] for _ in range(3)]
 y = [[15438473216.0, 14498716864.0, 13588464000.0, 12707714624.0, 11856468736.0, 11034726336.0, 10242487424.0, 9479752000.0, 8746520064.0, 8042791616.0, 7368566656.0, 6723845184.0, 6108627200.0, 5522912704.0, 4966701696.0, 4439994176.0, 3942790144.0, 3475089600.0, 3036892544.0, 2628198976.0, 2249008896.0, 1899322304.0, 1579139200.0, 1288459584.0, 1027283456.0, 795610816.0, 593441664.0, 420776000.0, 277613824.0, 163955136.0, 79799936.0, 25148224.0],
 [4094803968.0, 3843109680.0, 3599398080.0, 3363669168.0, 3135922944.0, 2916159408.0, 2704378560.0, 2500580400.0, 2304764928.0, 2116932144.0, 1937082048.0, 1765214640.0, 1601329920.0, 1445427888.0, 1297508544.0, 1157571888.0, 1025617920.0, 901646640.0, 785658048.0, 677652144.0, 577628928.0, 485588400.0, 401530560.0, 325455408.0, 257362944.0, 197253168.0, 145126080.0, 100981680.0, 64819968.0, 36640944.0, 16444608.0, 4230960.0],
 [300774272.0, 282935512.0, 265641240.0, 248891456.0, 232686160.0, 217025352.0, 201909032.0, 187337200.0, 173309856.0, 159827000.0, 146888632.0, 134494752.0, 122645360.0, 111340456.0, 100580040.0, 90364112.0, 80692672.0, 71565720.0, 62983256.0, 54945280.0, 47451792.0, 40502792.0, 34098280.0, 28238256.0, 22922720.0, 18151672.0, 13925112.0, 10243040.0, 7105456.0, 4512360.0, 2463752.0, 959632.0]]
+selected = 10
 y = np.array(y)
-
+print(y[:,selected]/y[:,0])
+# y = y/(y[:,0].repeat(32).reshape(3,32))
 methods = ['Swin-B','ResNet50','MobileNet-v2']
 line_plot(x,y,methods,colors,
 		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/flops_vs_ratio.eps',
@@ -520,22 +577,7 @@ line_plot(x,y,methods,colors,
 		lgsize=20)	
 exit(0)
 
-x = [[4.5,8.7,15.4,34.4,60.9],
-	[4.5,8.7,15.4],
-	# [1.82,3.68,4.12,7.85,11.58],
-	# [0.01292,0.03721,0.05929,0.09714,0.20908,0.30079],
-	]
-y = [[82.9,84.6,85.8,86.6,87.0],
-	[81.2,83.2,83.5],
-	# [69.758,73.314,76.130,77.374,78.312],
-	# [34.896,52.352,60.092,64.592,69.952,72.192],
-	]
-methods = ['ConvNeXt','Swin-Transformer']#,'ResNet','MobileNet-v2']
-line_plot(x,y,methods,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/flops_vs_acc.eps',
-		'FLOPS (%)','Accuracy (%)',lbsize=24,linewidth=4,markersize=8,linestyles=linestyles,
-		lgsize=20)	
-exit(0)
+# ======================================new/old========================================================
 
 flops = [[200,100,132,129],
 [200,100,132,115],
@@ -796,55 +838,6 @@ y = np.array(y)[[0,1,2,3]]*100;yerr = np.array(yerr)[[0,1,2,3]]*100
 line_plot(x, y,['NR','TR2','TR3','TR4'],colors,
 		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/mot0.eps',
 		'Failure Rate (%)','Effective Accuracy (%)',lbsize=20,use_re_label=True,markersize=8,ylim=(0,100),lgsize=19)
-exit(0)
-
-for name in ['resnet50','resnet56-2','resnet56-3','resnet56-4']:
-	numsn = 4
-	colors_tmp = colors
-	if name == 'resnet56-3':
-		numsn = 6
-	elif name == 'resnet56-4':
-		numsn = 8
-		colors_tmp = ['#e3342f','#f6993f','#ffed4a','#38c172','#4dc0b5','#3490dc','#6574cd','#9561e2','#f66d9b']
-	all_acc = [[] for _ in range(numsn)]
-	all_epoch = [[] for _ in range(numsn)]
-	if name == 'resnet50':
-		lines = 0
-	else:
-		lines = 10
-	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/{name}.log','r') as f:
-		for line in f.readlines():
-			line = line.split(' ')
-			epoch = eval(line[0])
-			if name != 'resnet50' and ((epoch<10) or (epoch >=60 and epoch < 320) or (epoch >= 380 and epoch < 440) or\
-				 (epoch >=480 and epoch < 500) or (epoch>=540)):continue
-			line = line[1].strip().split(',')[2:]
-			if name != 'resnet50':
-				accuracy_list = [eval(n.split('(')[0])*100 for n in line if len(n)>=6]
-			else:
-				accuracy_list = [eval(n.split('(')[0]) for n in line if len(n)>=6]
-			for i,n in enumerate(accuracy_list):
-				all_acc[i] += [n]
-				all_epoch[i] += [lines]
-			lines += 1
-	methods_tmp = [f'SN#{i}' for i in range(numsn)]
-	if name != 'resnet50':
-		xticks = [10,60,120,160,200]
-	else:
-		xticks = [0,40,80,120,160]
-	ncol = 2 if name == 'resnet56-4' else 1
-	if name == 'resnet56-2' or name == 'resnet56-3':
-		line_plot(all_epoch,all_acc,methods_tmp,colors_tmp,
-				f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/{name}.eps',
-				'Epoch','Test Accuracy (%)',markersize=0,linewidth=2,xticks=xticks,legloc='best',lbsize=24,ncol=ncol,
-				use_resnet56_2arrow=(name == 'resnet56-2'),use_resnet56_3arrow=(name == 'resnet56-3'),
-				use_resnet56_4arrow=(name == 'resnet56-4'),use_resnet50arrow=(name == 'resnet50'),yticks=range(75,100,5))
-	else:
-		line_plot(all_epoch,all_acc,methods_tmp,colors_tmp,
-				f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/{name}.eps',
-				'Epoch','Test Accuracy (%)',markersize=0,linewidth=2,xticks=xticks,legloc='best',lbsize=24,ncol=ncol,
-				use_resnet56_2arrow=(name == 'resnet56-2'),use_resnet56_3arrow=(name == 'resnet56-3'),
-				use_resnet56_4arrow=(name == 'resnet56-4'),use_resnet50arrow=(name == 'resnet50'))
 exit(0)
 n_soft = 11;n_hard = 11;
 methods_tmp = ['TR','NR','RR','Ours']

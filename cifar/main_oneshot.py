@@ -1243,7 +1243,7 @@ def create_wan_trace(trace_selection,num_query):
                 if line_count == num_query*4:break
     elif trace_selection < 20:
         # recorded trace
-        trace_start = (trace_selection-10)*400
+        trace_start = 0
         with open(f'WAN/{12*args.test_batch_size:06d}','r') as f:
             line_count = 0
             for l in f.readlines()[trace_start:]:

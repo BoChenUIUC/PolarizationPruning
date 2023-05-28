@@ -1544,8 +1544,9 @@ def simulation(model, arch, prune_mode, num_classes):
             line_count += 1
             if line_count == num_query*num_dcn_conns:break
     with open(f'dcn.{len(all_map_time)}.log','a+') as f:
-        for latency in dcnlatency_list:
-            f.write(f'{latency}\n')
+        for latency_list in dcnlatency_list:
+            for latency  in latency_list:
+                f.write(f'{latency}\n')
     # comm_size = 128*8*8*4*args.test_batch_size
     rep = 10
     if args.split_num in {2,3,4}:

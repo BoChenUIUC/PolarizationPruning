@@ -1340,7 +1340,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             else:
                 selection_list += [selected_node]
 
-    with open(f'react.{len(all_map_time)}.{int(trace_selection/10)}.log') as f:
+    with open(f'react.{len(all_map_time)}.{int(trace_selection/10)}.log','a+') as f:
         for latency in RMLaaS_latency:
             f.write(f'{latency}\n')
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection)
@@ -1363,7 +1363,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
         else:
             selection_list += [0]
 
-    with open(f'original.{len(all_map_time)}.{int(trace_selection/10)}.log') as f:
+    with open(f'original.{len(all_map_time)}.{int(trace_selection/10)}.log','a+') as f:
         for latency in no_rep_latency:
             f.write(f'{latency}\n')
     metrics1 = evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection)
@@ -1394,8 +1394,8 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
                 selection_list += [-1]
             else:
                 selection_list += [selected_node]
-                
-        with open(f'rep{R_order}.{len(all_map_time)}.{int(trace_selection/10)}.log') as f:
+
+        with open(f'rep{R_order}.{len(all_map_time)}.{int(trace_selection/10)}.log','a+') as f:
             for latency in total_rep_latency:
                 f.write(f'{latency}\n')
         metrics234 += [evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection)]

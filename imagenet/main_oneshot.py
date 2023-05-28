@@ -1673,7 +1673,9 @@ def evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_
                 selection_list += [-1]
             else:
                 selection_list += [selected_node]
-
+    with open(f'react.{len(all_map_time)}.log','a+') as f:
+        for latency in RMLaaS_latency:
+            f.write(f'{latency}\n')
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection,service_type=0,correct_lst=all_correct)
 
     # analyze no replication
@@ -1693,7 +1695,9 @@ def evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_
             selection_list += [-1]
         else:
             selection_list += [0]
-
+    with open(f'original.{len(all_map_time)}.log','a+') as f:
+        for latency in no_rep_latency:
+            f.write(f'{latency}\n')
     metrics1 = evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection,service_type=1)
 
     # analyze total replication
@@ -1719,6 +1723,9 @@ def evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_
             selection_list += [-1]
         else:
             selection_list += [selected_node]
+    with open(f'rep2.{len(all_map_time)}.log','a+') as f:
+        for latency in total_rep_latency:
+            f.write(f'{latency}\n')
 
     metrics2 = evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection,service_type=2)
     # if trace_selection in {0,10}:
@@ -1819,6 +1826,10 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
             record_latency_list += [float(l[0])/1000.]
         for i in range(4):
             dcnlatency_list[i] += np.random.permutation(record_latency_list).tolist()[:num_query]
+    with open(f'dcn.log','a+') as f:
+        for latency_list in dcnlatency_list:
+            for latency  in latency_list:
+                f.write(f'{latency}\n')
     print('Traces loaded ok.')
 
     all_map_time = []
@@ -1869,7 +1880,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         traces = [i for i in range(rep)]
         # if args.split_num == 2:
         #     traces += [10+i for i in range(rep)]
-        traces += [200+i for i in range(rep*num_loss_rates)]
+        # traces += [200+i for i in range(rep*num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query,args)
             metrics_of_one_trace = evaluate_one_trace(args,trace_selection,dcnlatency_list,wanlatency_list,all_map_time,all_reduce_time,all_correct,infer_time_lst,correct_lst)

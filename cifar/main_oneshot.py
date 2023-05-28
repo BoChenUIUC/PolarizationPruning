@@ -400,7 +400,7 @@ if args.VLB_conv:
     model.aggr_sizes = [model.conv1.weight.size(0)]
 
     before_save += shapes[0]*shapes[0]*model.conv1.weight.size(0)*4
-    after_save += 16*16*(16+16)*4
+    after_save += 16*16*(16+16)*4*2
 
     comm_cnt = 0
     for i,layer in enumerate([model.layer1,model.layer2,model.layer3]):
@@ -414,7 +414,8 @@ if args.VLB_conv:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
     print('Before save (MB):',before_save/1024/1024,'After save (MB):',after_save/1024/1024,
-        before_save/after_save,before_save/(32*32*3*4),comm_cnt)
+        'Before to after ratio:',before_save/after_save,'Before to input ratio:',before_save/(32*32*3*4),
+        'After to input ratio:',after_save/(32*32*3*4),comm_cnt)
     exit(0)
     cfg[0] = sum(model.aggr_sizes)
     layers = []

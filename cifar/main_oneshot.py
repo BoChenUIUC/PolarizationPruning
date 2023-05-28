@@ -1340,7 +1340,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             else:
                 selection_list += [selected_node]
 
-    with open(f'react.{len(all_map_time)}.{int(trace_selection/10)}.log','a+') as f:
+    with open(f'react.{len(all_map_time)}.log','a+') as f:
         for latency in RMLaaS_latency:
             f.write(f'{latency}\n')
     metrics0 = evaluate_service_metrics(RMLaaS_res,RMLaaS_latency,trace_selection)
@@ -1363,7 +1363,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
         else:
             selection_list += [0]
 
-    with open(f'original.{len(all_map_time)}.{int(trace_selection/10)}.log','a+') as f:
+    with open(f'original.{len(all_map_time)}.log','a+') as f:
         for latency in no_rep_latency:
             f.write(f'{latency}\n')
     metrics1 = evaluate_service_metrics(no_rep_res,no_rep_latency,trace_selection)
@@ -1395,7 +1395,7 @@ def evaluate_one_trace(trace_selection,dcnlatency_list,wanlatency_list,all_map_t
             else:
                 selection_list += [selected_node]
 
-        with open(f'rep{R_order}.{len(all_map_time)}.{int(trace_selection/10)}.log','a+') as f:
+        with open(f'rep{R_order}.{len(all_map_time)}.log','a+') as f:
             for latency in total_rep_latency:
                 f.write(f'{latency}\n')
         metrics234 += [evaluate_service_metrics(total_rep_res,total_rep_latency,trace_selection)]
@@ -1543,12 +1543,15 @@ def simulation(model, arch, prune_mode, num_classes):
             dcnlatency_list[line_count//num_query] += [float(l[0])/1000.]
             line_count += 1
             if line_count == num_query*num_dcn_conns:break
+    with open(f'dcn.{len(all_map_time)}.log','a+') as f:
+        for latency in dcnlatency_list:
+            f.write(f'{latency}\n')
     # comm_size = 128*8*8*4*args.test_batch_size
     rep = 10
     if args.split_num in {2,3,4}:
         metrics_of_all_traces = []
         traces = [i for i in range(rep)]
-        traces += [10+i for i in range(rep)]
+        # traces += [10+i for i in range(rep)]
         # traces += [200+i for i in range(rep*args.num_loss_rates)]
         for trace_selection in traces:
             wanlatency_list = create_wan_trace(trace_selection,num_query)

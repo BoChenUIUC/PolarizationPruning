@@ -227,27 +227,35 @@ def plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_
 	plt.tight_layout()
 	fig.savefig(filename,bbox_inches='tight')
 
+
 def measurements_to_cdf(latency,epsfile,labels,xticks=None,xticklabel=None,linestyles=linestyles,colors=colors,
-						xlabel='Query Latency (s)',ylabel='CDF',ratio=None,lbsize = 18,linewidth=4):
+                        xlabel='Normalized QoE',ylabel='CDF',ratio=None,lbsize = 18,lfsize = 18,linewidth=4,bbox_to_anchor=(0.5,-.5),
+                        loc='upper center',ncol=3,use_arrow=False,arrow_rotation=-45,arrow_coord=(0,0)):
     # plot cdf
     fig, ax = plt.subplots()
     ax.grid(zorder=0)
     for i,latency_list in enumerate(latency):
         N = len(latency_list)
-        cdf_x = np.sort(np.array(latency_list))*100
+        cdf_x = np.sort(np.array(latency_list))
         cdf_p = np.array(range(N))/float(N)
         plt.plot(cdf_x, cdf_p, color = colors[i], label = labels[i], linewidth=linewidth, linestyle=linestyles[i])
+        print(i,cdf_x[int(N//2)],cdf_x[int(N*99/100)],cdf_x[int(N*999/1000)])
     plt.xlabel(xlabel, fontsize = lbsize)
     plt.ylabel(ylabel, fontsize = lbsize)
+    if use_arrow:
+    	ax.text(arrow_coord[0], arrow_coord[1], "Better", ha="center", va="center", rotation=arrow_rotation if arrow_rotation!=180 else 0, size=lbsize, bbox=dict(boxstyle="larrow,pad=0.3" if arrow_rotation!=180 else "rarrow,pad=0.3", fc="white", ec="black", lw=2))
     if xticks is not None:
         plt.xticks(xticks,fontsize=lbsize)
     if xticklabel is not None:
         ax.set_xticklabels(xticklabel)
     if ratio is not None:
-	    xleft, xright = ax.get_xlim()
-	    ybottom, ytop = ax.get_ylim()
-	    ax.set_aspect(abs((xright-xleft)/(ybottom-ytop))*ratio)
-    plt.legend(loc='best',fontsize = lbsize)
+        xleft, xright = ax.get_xlim()
+        ybottom, ytop = ax.get_ylim()
+        ax.set_aspect(abs((xright-xleft)/(ybottom-ytop))*ratio)
+    if bbox_to_anchor is not None:
+    	plt.legend(loc=loc,fontsize = lfsize,bbox_to_anchor=bbox_to_anchor, fancybox=True,ncol=ncol)
+    else:
+    	plt.legend(loc=loc,fontsize = lfsize, fancybox=True,ncol=ncol)
     plt.tight_layout()
     fig.savefig(epsfile,bbox_inches='tight')
     plt.close()
@@ -325,7 +333,7 @@ def analyze_all_recorded_traces():
     labels = ['ResNet56','ResNet50']
     ratio = 1/ratio+1
     x = [[2**(i) for i in range(7)] for _ in range(len(labels))]
-    line_plot(x, ratio,labels,colors,'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cost.eps','Batch Size','Latency Inflation Ratio',
+    line_plot(x, ratio,labels,colors,'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost3.eps','Batch Size','Latency Inflation Ratio',
     	lbsize=24,linewidth=8,markersize=16,)	
 
 
@@ -463,7 +471,57 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
+# required communication / input communication
+print('Required to input ratio:',2.03125/(32*32*3*4/1024/1024),40.099609375/(224*224*3*4/1024/1024))
+x0 = np.array([[1.0/32*i for i in range(1,33)] for _ in range(2)])
+x = 100-x0*100
+methods_tmp = [f'ResNet{v}' for v in [56,50]]
+y = np.array([0.03125/(32*32*3*4/1024/1024),.729736328125/(224*224*3*4/1024/1024)]).reshape(2,1)+1
+y = np.repeat(y,8,axis=1)
+y = y * (x0*2 )
+line_plot(x,y,methods_tmp,colors,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost.eps',
+		'Partition Ratio (%)','Bandwidth Inflation Ratio',lbsize=24,linewidth=8,markersize=16,linestyles=linestyles,
+		use_comm_annot=True,yticks=[1,2,3,4])
 
+analyze_all_recorded_traces()
+exit(0)
+latency_list = [[],[]]
+for idx,filename in enumerate(['cifar10','imagenet']):
+	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/{filename}/dcn.log','r') as f:
+		for l in f.readlines():
+			latency_list[idx] += [float(l)]
+labels = ['CIFAR-10', 'ImageNet']
+measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/dcn_latency_cdf.eps',labels,linestyles=linestyles,
+		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+
+latency_list = [[],[],[]]
+for idx,filename in enumerate(['original','react2','rep2']):
+	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/imagenet/{filename}.log','r') as f:
+		for l in f.readlines():
+			latency_list[idx] += [float(l)]
+labels = ['Original', 'REACT-N2','Approx-N2']
+measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cdf2.eps',labels,linestyles=linestyles,
+		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+
+latency_list = [[],[],[],[]]
+for idx,filename in enumerate(['original','react2','react3','react4']):
+	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/cifar10/{filename}.log','r') as f:
+		for l in f.readlines():
+			latency_list[idx] += [float(l)]
+labels = ['Original', 'REACT-N2', 'REACT-N3','REACT-N4']
+measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_repl_cdf.eps',labels,linestyles=linestyles,
+		colors=colors,bbox_to_anchor=(.7,0.5),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+
+latency_list = [[],[],[]]
+for idx,filename in enumerate(['original','react2','rep2']):
+	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/cifar10/{filename}.log','r') as f:
+		for l in f.readlines():
+			latency_list[idx] += [float(l)]
+labels = ['Original', 'REACT-N2','Approx-N2']
+measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cdf.eps',labels,linestyles=linestyles,
+		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+exit(0)
 
 for name in ['resnet50']:
 	numsn = 4
@@ -642,21 +700,6 @@ groupedbar(y,None,'Consistency (%)',
 	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/hard_re_res.eps',methods=methods_tmp,labelsize=24,
 	envs=envs,ncol=1,width=.25,sep=1,legloc=None,use_barlabe_y=True,bbox_to_anchor=(0.2,0.9))
 
-exit(0)
-
-print(2.03125/(32*32*3*4/1024/1024),40.099609375/(224*224*3*4/1024/1024))
-x0 = np.array([[0.0625*i for i in range(1,9)] for _ in range(2)])
-x = 100-x0*100
-methods_tmp = [f'ResNet{v}' for v in [56,50]]
-y = np.array([0.03125/(32*32*3*4/1024/1024),.729736328125/(224*224*3*4/1024/1024)]).reshape(2,1)+1
-y = np.repeat(y,8,axis=1)
-y = y * (x0*2 )
-line_plot(x,y,methods_tmp,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost.eps',
-		'Partition Ratio (%)','Bandwidth Inflation Ratio',lbsize=24,linewidth=8,markersize=16,linestyles=linestyles,
-		use_comm_annot=True,yticks=[1,2,3,4])
-
-analyze_all_recorded_traces()
 exit(0)
 
 # baseline

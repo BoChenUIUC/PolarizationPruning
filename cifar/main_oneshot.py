@@ -1243,7 +1243,7 @@ def create_wan_trace(trace_selection,num_query):
                 if line_count == num_query*4:break
     elif trace_selection < 20:
         # recorded trace
-        trace_start = (trace_selection-10)*800
+        trace_start = (trace_selection-10)*1000
         with open(f'WAN/{12*args.test_batch_size:06d}','r') as f:
             line_count = 0
             for l in f.readlines()[trace_start:]:
@@ -1445,12 +1445,12 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         latency_breakdown[0] += RMLaaS_latency_breakdown
         latency_breakdown[1] += no_rep_latency_breakdown
         latency_breakdown[2] += total_rep_latency_breakdown
-    # print('Accuracy and latency stats...')
-    # for stats in [all_accuracy,all_latency]:
-    #     stats = np.array(stats)
-    #     print(stats.mean(axis=-1).tolist())
-    #     print(stats.std(axis=-1).tolist())
-    print('Reliability...')
+    print('Accuracy and latency stats...')
+    for stats in [all_accuracy,all_latency]:
+        stats = np.array(stats)
+        print(stats.mean(axis=-1).tolist())
+        print(stats.std(axis=-1).tolist())
+    # print('Reliability...')
     for stats in [all_effective_accuracy]:
         stats = np.array(stats).reshape(metrics_shape)
         # print(stats.mean(axis=1).tolist())
@@ -1468,13 +1468,13 @@ def analyze_trace_metrics(metrics_of_all_traces,metrics_shape):
         r3_base = (stats[3]-stats[1]).mean(axis=0)
         r4_base = (stats[4]-stats[1]).mean(axis=0)
         # print(r2.max())
-        print([r2.max(),r3.max(),r4.max()])
-        print([r2_base.max(),r3_base.max(),r4_base.max()])
-    # print('Latency breakdown...')
-    # for i in range(3):
-    #     print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
-    # for i in range(3):
-    #     print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
+        # print([r2.max(),r3.max(),r4.max()])
+        # print([r2_base.max(),r3_base.max(),r4_base.max()])
+    print('Latency breakdown...')
+    for i in range(3):
+        print((np.array(latency_breakdown[i]).mean(axis=0)).tolist())
+    for i in range(3):
+        print((np.array(latency_breakdown[i]).std(axis=0)).tolist())
 
 def simulation(model, arch, prune_mode, num_classes):
     np.random.seed(0)

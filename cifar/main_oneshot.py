@@ -395,7 +395,7 @@ if args.VLB_conv:
     else:
         exit(0)
     comm_cost = 0
-    actual_cost = 0
+    actual_cost = 0#8*8*(16+16)*4
     shapes = [32,16,8]
     model.aggr_sizes = [model.conv1.weight.size(0)]
     comm_cost += shapes[0]*shapes[0]*model.conv1.weight.size(0)*4
@@ -428,9 +428,11 @@ if args.VLB_conv:
         end = time.time()
         out_list = []
         out = F.relu(self.bn1(self.conv1(x)))
+        print(0,out.size())
         out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer1):
             out = l(out)
+            print(1,out.size())
             if args.sampling_interval == 9:
                 if idx == len(self.layer1)-1: 
                     out_list.append(F.avg_pool2d(out, 4))
@@ -439,6 +441,7 @@ if args.VLB_conv:
                     out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer2):
             out = l(out)
+            print(2,out.size())
             if args.sampling_interval == 9:
                 if idx == len(self.layer2)-1: 
                     out_list.append(F.avg_pool2d(out, 2))
@@ -447,17 +450,16 @@ if args.VLB_conv:
                     out_list.append(F.avg_pool2d(out, 2))
         for idx,l in enumerate(self.layer3):
             out = l(out)
+            print(3,out.size())
             if args.sampling_interval == 9:
                 if idx == len(self.layer3)-1: 
                     out_list.append(out)
             else:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(self.layer3)-1:
                     out_list.append(out)
+        exit(0)
         map_time = time.time() - end
         end = time.time()
-        for x in out_list:
-            print(x.size())
-        exit(0)
         out = torch.cat(out_list,1)
         # aggregate layer
         out = self.aggr(out)

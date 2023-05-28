@@ -394,26 +394,28 @@ if args.VLB_conv:
         cfg = [352,224,model.in_planes]
     else:
         exit(0)
-    comm_cost = 0
-    actual_cost = 0#8*8*(16+16)*4
+    before_save = 0
+    after_save = 0
     shapes = [32,16,8]
     model.aggr_sizes = [model.conv1.weight.size(0)]
-    comm_cost += shapes[0]*shapes[0]*model.conv1.weight.size(0)*4
-    actual_cost += 8*8*model.conv1.weight.size(0)*4
+
+    before_save += shapes[0]*shapes[0]*model.conv1.weight.size(0)*4
+    after_save += 16*16*(16+16)*4
+
     comm_cnt = 0
     for i,layer in enumerate([model.layer1,model.layer2,model.layer3]):
         for idx,l in enumerate(layer):
-            comm_cost += shapes[i]*shapes[i]*l.conv1.weight.size(0)*2*4 # bytes
+            before_save += shapes[i]*shapes[i]*l.conv1.weight.size(0)*2*4 # bytes
             comm_cnt += 1
             if args.sampling_interval == 9:
                 if idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
-                    actual_cost += 8*8*l.conv2.weight.size(0)*4 # bytes
             else:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
-                    actual_cost += 8*8*l.conv2.weight.size(0)*4 # bytes
-    print(comm_cost/1024/1024,actual_cost/1024/1024,comm_cost/actual_cost,comm_cost/(32*32*3*4),comm_cnt)
+    print('Before save (MB):',before_save/1024/1024,'After save (MB):',after_save/1024/1024,
+        before_save/after_save,before_save/(32*32*3*4),comm_cnt)
+    exit(0)
     cfg[0] = sum(model.aggr_sizes)
     layers = []
     for i in range(1,len(cfg)):
@@ -428,11 +430,9 @@ if args.VLB_conv:
         end = time.time()
         out_list = []
         out = F.relu(self.bn1(self.conv1(x)))
-        print(0,out.size())
         out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer1):
             out = l(out)
-            print(1,out.size())
             if args.sampling_interval == 9:
                 if idx == len(self.layer1)-1: 
                     out_list.append(F.avg_pool2d(out, 4))
@@ -441,7 +441,6 @@ if args.VLB_conv:
                     out_list.append(F.avg_pool2d(out, 4))
         for idx,l in enumerate(self.layer2):
             out = l(out)
-            print(2,out.size())
             if args.sampling_interval == 9:
                 if idx == len(self.layer2)-1: 
                     out_list.append(F.avg_pool2d(out, 2))
@@ -450,14 +449,12 @@ if args.VLB_conv:
                     out_list.append(F.avg_pool2d(out, 2))
         for idx,l in enumerate(self.layer3):
             out = l(out)
-            print(3,out.size())
             if args.sampling_interval == 9:
                 if idx == len(self.layer3)-1: 
                     out_list.append(out)
             else:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(self.layer3)-1:
                     out_list.append(out)
-        exit(0)
         map_time = time.time() - end
         end = time.time()
         out = torch.cat(out_list,1)

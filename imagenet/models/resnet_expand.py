@@ -404,7 +404,7 @@ class ResNetExpand(nn.Module):
             self.fc = nn.Linear(int(cfg[-1]), 1000)
             self.aggr_sizes = [64, 256, 512, 1024, 2048]
             image_size = 224*224*3*4/1024/1024
-            after_save = sum(self.aggr_sizes) * 7 * 7 * 4 / 1024 / 1024
+            after_save = (64 + 256 + 512) * 14 * 14 * 4 / 1024 / 1024 * 2
             before_save = 0
             for n,m in self.named_modules():
                 if isinstance(m, nn.Conv2d):
@@ -420,9 +420,11 @@ class ResNetExpand(nn.Module):
                     else:
                         print(n,'not counted')
                         continue
-                    before_save += feat_size * m.weight.size(0) * 4 / 1024 / 1024
-            print(image_size,before_save,after_save)
-
+                    before_save += feat_size * m.weight.size(0) * 2 * 4 / 1024 / 1024
+            print('Before save (MB):',before_save,'After save (MB):',after_save,
+            'Before to after ratio:',before_save/after_save,'Before to input ratio:',before_save/image_size,
+            'After to input ratio:',after_save/image_size)
+            exit(0)
 
         if expand_idx:
             # set channel expand index

@@ -291,7 +291,8 @@ def analyze_all_recorded_traces():
             	latency_list = latency_list*10
         all_latency_list += [latency_list]
     import csv
-    with open('../curr_videostream.csv', mode='r') as csv_file:
+    # with open('../curr_videostream.csv', mode='r') as csv_file:
+    with open('../curr_httpgetmt.csv', mode='r') as csv_file:
         # read network traces 
         csv_reader = csv.DictReader(csv_file)
         latency_list = []
@@ -299,14 +300,17 @@ def analyze_all_recorded_traces():
         num_of_line = 0
         bandwidth_list = []
         for row in csv_reader:
-            if float(row["latency"])>1e7 or float(row["latency"])<0 or float(row["downthrpt"])>1e8:
+            # if float(row["latency"])>1e7 or float(row["latency"])<0 or float(row["downthrpt"])>1e8:
+            #     continue
+            if row["bytes_sec_interval"] == 'NULL':
                 continue
-            bandwidth_list += [float(row["downthrpt"])]
+            # bandwidth_list += [float(row["downthrpt"])]
+            bandwidth_list += [float(row["bytes_sec_interval"])]
             for bs in [2**i for i in range(7)]:
                 query_size = 3*32*32*4*bs # bytes
-                latency_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
+                latency_list += [query_size/float(row["bytes_sec_interval"]) ]
                 query_size = 3*224*224*4*bs
-                latency224_list += [query_size/float(row["downthrpt"]) + float(row["latency"])/1e6]
+                latency224_list += [query_size/float(row["bytes_sec_interval"])]
             num_of_line += 1
             if num_of_line==10000:break
         all_latency_list += np.array(latency_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
@@ -408,7 +412,7 @@ def plot_computation_dist(flops,labels,filename,horizontal,bbox_to_anchor=None,r
 def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 				methods=['Ours','Standalone','Optimal','Ours*','Standalone*','Optimal*'],use_barlabel_x=False,use_barlabe_y=False,
 				ncol=3,bbox_to_anchor=(0.46, 1.28),sep=1.25,width=0.15,xlabel=None,legloc=None,labelsize=labelsize_b,ylim=None,
-				use_downarrow=False,rotation=None,lgsize=None):
+				use_downarrow=False,rotation=None,lgsize=None,yticklabel=None):
 	if lgsize is None:
 		lgsize = labelsize
 	fig = plt.figure()
@@ -435,6 +439,8 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 		ax.set_xlabel(xlabel, size=labelsize)
 	if yticks is not None:
 		plt.yticks(yticks,fontsize=labelsize)
+	if yticklabel is not None:
+		ax.set_yticklabels(yticklabel)
 	if ylim is not None:
 		ax.set_ylim(ylim)
 	for i in range(num_methods):
@@ -471,18 +477,60 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
+acc_repl_model = [[85.8,85.2,84.2,84.2],[85.8,85.0,83.9,84.2],[85.8,84.7,83.6,84.2]]
+
+x = [];y = []
+default = 0.1
+for i in range(3):
+	xx = np.linspace(0,26)*0.01
+	if i==0:
+		p1 = 4 * xx**3 * (1-xx) + 2 * xx**2 * (1-xx)**2
+	elif i==1:
+		p1 = 4 * xx**3 * (1-xx) + 1 * xx**2 * (1-xx)**2
+	else:
+		p1 = 4 * xx**3 * (1-xx)
+	yy = acc_repl_model[i][1] * (1-p1-xx**4) + acc_repl_model[i][2] * p1 + default * xx**4
+	x += [xx]; y += [yy]
+methods = ['REACT-N2','REACT-N3','REACT-N4']
+linestyles_ = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
+line_plot(x,y,methods,colors,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_N_response.eps',
+		'Failure Rate','Effective Top-1 Acc. (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
+		lgsize=18,legloc='lower left')
+exit(0)
+x = [
+	[4.5,8.7,15.4,34.4,60.9],
+	[4.5,8.7,15.4],
+	[1.82,3.68,4.12,7.85,11.58],
+	[0.01292,0.03721,0.05929,0.09714,0.20908,0.30079],
+	]
+y = [
+	[82.9,84.6,85.8,86.6,87.0],
+	[81.2,83.2,83.5],
+	[69.758,73.314,76.130,77.374,78.312],
+	[34.896,52.352,60.092,64.592,69.952,72.192],
+	]
+
+x = [np.log10(np.array(l)*1e9).tolist() for l in x]
+methods = ['ConvNeXt','Swin-Transformer','ResNet','MobileNet-v2']
+linestyles = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
+line_plot(x,y,methods,colors,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/flops_vs_acc.eps',
+		'FLOPS','Accuracy (%)',lbsize=24,linewidth=4,markersize=8,linestyles=linestyles,xticks=range(7,12),ylim=(30,90),
+		lgsize=20,xticklabel=[f'1e{i}' for i in range(7,12)])
+exit(0)
+# Before save (MB): 2.03125 After save (MB): 0.0625 Before to after ratio: 32.5 Before to input ratio: 173.33333333333334 After to input ratio: 5.333333333333333 27
+# Before save (MB): 80.19921875 After save (MB): 1.244140625 Before to after ratio: 64.46153846153847 Before to input ratio: 139.66666666666666 After to input ratio: 2.1666666666666665
 # required communication / input communication
-print('Required to input ratio:',2.03125/(32*32*3*4/1024/1024),40.099609375/(224*224*3*4/1024/1024))
-x0 = np.array([[1.0/32*i for i in range(1,33)] for _ in range(2)])
-x = 100-x0*100
-methods_tmp = [f'ResNet{v}' for v in [56,50]]
-y = np.array([0.03125/(32*32*3*4/1024/1024),.729736328125/(224*224*3*4/1024/1024)]).reshape(2,1)+1
-y = np.repeat(y,8,axis=1)
-y = y * (x0*2 )
-line_plot(x,y,methods_tmp,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost.eps',
-		'Partition Ratio (%)','Bandwidth Inflation Ratio',lbsize=24,linewidth=8,markersize=16,linestyles=linestyles,
-		use_comm_annot=True,yticks=[1,2,3,4])
+# print('Required to input ratio:',2.03125/(32*32*3*4/1024/1024),40.099609375/(224*224*3*4/1024/1024))
+ratio_method_model = [[174.33,6.33],[140.67,3.17]]
+envs = ['ResNet-56','ResNet-50']
+methods = ['Before sampling','After sampling']
+y = np.array(ratio_method_model)
+y = np.log10(y)
+groupedbar(y,None,'Relative Comm. Overhead', 
+	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost.eps',methods=methods,labelsize=24,
+	envs=envs,ncol=1,width=.3,sep=1,legloc=None,lgsize=24,bbox_to_anchor=(0.4,0.8),yticks=[np.log10(3),1,2,np.log10(200)],yticklabel=[3,10,100,200])
 
 analyze_all_recorded_traces()
 exit(0)
@@ -600,25 +648,6 @@ line_plot(x,y,methods,colors,
 		'Failure Rate','Effective Top-1 Acc. (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
 		lgsize=18,legloc='lower left')
 exit(0)
-
-x = [
-	[4.5,7.7,8.7,15.4,34.4,60.9],
-	[4.5,7.7,8.7,15.4],
-	[1.82,2.06,3.68,4.12,7.85,11.58],
-	[0.01292,0.03721,0.05929,0.09714,0.15,0.20908,0.30079],
-	]
-y = [
-	[82.9,84.2000,84.6,85.8,86.6,87.0],
-	[81.2,82.8000,83.2,83.5],
-	[69.758,72.4000,73.314,76.130,77.374,78.312],
-	[34.896,52.352,60.092,64.592,68.1000,69.952,72.192],
-	]
-
-methods = ['ConvNeXt','Swin-Transformer','ResNet','MobileNet-v2']
-line_plot(x,y,methods,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/flops_vs_acc.eps',
-		'Relative FLOPS (%)','Accuracy (%)',lbsize=24,linewidth=4,markersize=8,linestyles=linestyles,
-		lgsize=20)
 
 x = [[1-1.0*i/32 for i in range(32)] for _ in range(3)]
 y = [[15438473216.0, 14498716864.0, 13588464000.0, 12707714624.0, 11856468736.0, 11034726336.0, 10242487424.0, 9479752000.0, 8746520064.0, 8042791616.0, 7368566656.0, 6723845184.0, 6108627200.0, 5522912704.0, 4966701696.0, 4439994176.0, 3942790144.0, 3475089600.0, 3036892544.0, 2628198976.0, 2249008896.0, 1899322304.0, 1579139200.0, 1288459584.0, 1027283456.0, 795610816.0, 593441664.0, 420776000.0, 277613824.0, 163955136.0, 79799936.0, 25148224.0],

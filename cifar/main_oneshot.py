@@ -1492,10 +1492,11 @@ def simulation(model, arch, prune_mode, num_classes):
 
     # run originial model
     print('Running original ML service')
-    infer_time_lst,correct_lst = test(teacher_model,standalone=True)
-    # evaluate standalone running time
-    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
-    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
+    for _ in range(5):
+        infer_time_lst,correct_lst = test(teacher_model,standalone=True)
+        # evaluate standalone running time
+        infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
+        print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
     # print('correctness:')
     # print(correct_lst)
     exit(0)

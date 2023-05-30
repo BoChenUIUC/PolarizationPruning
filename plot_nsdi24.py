@@ -477,6 +477,8 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
+[[0.001550,0.001603,0.001611,0.001658,0.001571]]
+
 acc_repl_model = [[85.8,85.2,84.2,84.2],[85.8,85.0,83.9,84.2],[85.8,84.7,83.6,84.2]]
 
 x = [];y = []

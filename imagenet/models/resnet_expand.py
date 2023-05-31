@@ -391,13 +391,13 @@ class ResNetExpand(nn.Module):
         self.aggr = None
         if bridge_type>=0:
             aggr_layers = []
-            aggr_layers.append(nn.Conv2d((64 + 256 + 512), 512, kernel_size=3, stride=1, padding=1, bias=False))
+            aggr_layers.append(nn.Conv2d((64 + 256 + 512 + 1024 + 2048), 2048, kernel_size=3, stride=1, padding=1, bias=False))
             aggr_layers.append(nn.BatchNorm2d(512))
             aggr_layers.append(nn.ReLU())
             self.aggr = nn.Sequential(*aggr_layers)
             aggr_layers[0].__name__ = 'aggr'
             image_size = 224*224*3*4/1024/1024
-            after_save = (64 + 256 + 512) * 14 * 14 * 4 / 1024 / 1024 * 2
+            after_save = (64 + 256 + 512 + 1024 + 2048) * 7 * 7 * 4 / 1024 / 1024 * 2
             before_save = 0
             for n,m in self.named_modules():
                 if isinstance(m, nn.Conv2d):
@@ -414,10 +414,9 @@ class ResNetExpand(nn.Module):
                         print(n,'not counted')
                         continue
                     before_save += feat_size * m.weight.size(0) * 2 * 4 / 1024 / 1024
-            # print('Before save (MB):',before_save,'After save (MB):',after_save,
-            # 'Before to after ratio:',before_save/after_save,'Before to input ratio:',before_save/image_size,
-            # 'After to input ratio:',after_save/image_size)
-            # exit(0)
+            print('Before save (MB):',before_save,'After save (MB):',after_save,
+            'Before to after ratio:',before_save/after_save,'Before to input ratio:',before_save/image_size,
+            'After to input ratio:',after_save/image_size)
 
         if expand_idx:
             # set channel expand index
@@ -517,19 +516,21 @@ class ResNetExpand(nn.Module):
             x = self.bn1(x)
             x = self.relu(x)
             x = self.maxpool(x) # 56x56
-            out_list.append(F.avg_pool2d(x, 2))
+            out_list.append(F.avg_pool2d(x, 8))
 
             x = self.layer1(x)  # 56x56,256
-            out_list.append(F.avg_pool2d(x, 2))
+            out_list.append(F.avg_pool2d(x, 8))
             x = self.layer2(x)  # 28x28,512
-            out_list.append(F.avg_pool2d(x, 1))
-
-            out_list = torch.cat(out_list,1)
-            # aggregate layer
-            x = self.aggr(out_list)
+            out_list.append(F.avg_pool2d(x, 4))
 
             x = self.layer3(x)  # 14x14,1024
+            out_list.append(F.avg_pool2d(x, 2))
             x = self.layer4(x)  # 7x7,2048
+            out_list.append(x)
+
+            # aggregate layer
+            out_list = torch.cat(out_list,1)
+            x = self.aggr(out_list)
 
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)

@@ -579,6 +579,18 @@ class MobileNetV2(nn.Module):
             nn.Linear(self.last_channel, num_classes),
         )
 
+        # aggregation layer
+        self.aggr = None
+        if bridge_type>=0:
+            aggr_layers = []
+            aggr_layers.append(nn.Conv2d((32 + 16 + 24 + 32 + 64 + 96 + 160 + 320 + 1280), self.last_channel, kernel_size=3, stride=1, padding=1, bias=False))
+            aggr_layers.append(nn.BatchNorm2d(self.last_channel))
+            aggr_layers.append(nn.ReLU())
+            self.aggr = nn.Sequential(*aggr_layers)
+            self.aggr_loc = [0,1,3,6,10,13,16,17,18]
+            self.aggr_ds_ratio = [16,16,8,4,2,1,1,1,1]
+            aggr_layers[0].__name__ = 'aggr'
+
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -605,9 +617,13 @@ class MobileNetV2(nn.Module):
         out_list = []
         for i,l in enumerate(self.features):
             x = l(x)
-            out_list.append(x)
-            print(i,x.size())
+            if i in self.aggr_loc:
+                out_list.append(F.avg_pool2d(x, self.aggr_ds_ratio[len(out_list)]))
         # Cannot use "squeeze" as batch-size can be 1 => must use reshape with x.shape[0]
+        if self.aggr is not None:
+            # aggregate layer
+            out_list = torch.cat(out_list,1)
+            x = self.aggr(out_list)
         x = nn.functional.adaptive_avg_pool2d(x, 1).reshape(x.shape[0], -1)
         x = self.classifier(x)
         return x

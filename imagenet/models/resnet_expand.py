@@ -461,6 +461,7 @@ class ResNetExpand(nn.Module):
 
     def forward(self, x, map_fwd=False, reduce_fwd=False):
         if self.aggr is None:
+            print('demo:',x.size())
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)
@@ -517,15 +518,12 @@ class ResNetExpand(nn.Module):
             x = self.bn1(x)
             x = self.relu(x)
             x = self.maxpool(x) # 56x56
-            out_list.append(F.avg_pool2d(x, 4))
+            out_list.append(F.avg_pool2d(x, 2))
 
             x = self.layer1(x)  # 56x56,256
-            out_list.append(F.avg_pool2d(x, 4))
-            x = self.layer2(x)  # 28x28,512
             out_list.append(F.avg_pool2d(x, 2))
-            for m in out_list:
-                print(m.size())
-            exit(0)
+            x = self.layer2(x)  # 28x28,512
+            out_list.append(F.avg_pool2d(x, 1))
 
             x = torch.cat(out_list,1)
             # aggregate layer

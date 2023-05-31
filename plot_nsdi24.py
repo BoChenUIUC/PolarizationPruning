@@ -492,6 +492,10 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
+# resnet-50, 64
+# 19 0.49477564147949954
+# 31 0.49527233338853693 0.4622416755364485
+
 # plot rep vs latency cdf; rep vs computation
 latency = [[0.8651444067997442, 3.1388551201301063, 3.467007832221128],
 			[0.6422523006381087, 1.7715859235991278, 2.267751282911982],
@@ -590,6 +594,8 @@ line_plot(x,y,methods,colors,
 		'FLOPS','Accuracy (%)',lbsize=24,linewidth=4,markersize=8,linestyles=linestyles,xticks=range(7,12),ylim=(30,90),
 		lgsize=20,xticklabel=[f'1e{i}' for i in range(7,12)])
 exit(0)
+# Before save (MB): 80.19921875 After save (MB): 1.45947265625 Before to after ratio: 54.950819672131146 Before to input ratio: 139.66666666666666 After to input ratio: 2.5416666666666665
+
 # Before save (MB): 2.03125 After save (MB): 0.0625 Before to after ratio: 32.5 Before to input ratio: 173.33333333333334 After to input ratio: 5.333333333333333 27
 # Before save (MB): 80.19921875 After save (MB): 1.244140625 Before to after ratio: 64.46153846153847 Before to input ratio: 139.66666666666666 After to input ratio: 2.1666666666666665
 # required communication / input communication

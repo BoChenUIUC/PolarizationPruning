@@ -413,9 +413,9 @@ if args.VLB_conv:
             else:
                 if idx%args.sampling_interval == args.sampling_interval-1 or idx == len(layer)-1:
                     model.aggr_sizes += [l.conv2.weight.size(0)]
-    # print('Before save (MB):',before_save/1024/1024,'After save (MB):',after_save/1024/1024,
-    #     'Before to after ratio:',before_save/after_save,'Before to input ratio:',before_save/(32*32*3*4),
-    #     'After to input ratio:',after_save/(32*32*3*4),comm_cnt)
+    print('Before save (MB):',before_save/1024/1024,'After save (MB):',after_save/1024/1024,
+        'Before to after ratio:',before_save/after_save,'Before to input ratio:',before_save/(32*32*3*4),
+        'After to input ratio:',after_save/(32*32*3*4),comm_cnt)
     # exit(0)
     cfg[0] = sum(model.aggr_sizes)
     layers = []
@@ -458,6 +458,9 @@ if args.VLB_conv:
                     out_list.append(out)
         map_time = time.time() - end
         end = time.time()
+        for m in out_list:
+            print(m.size())
+        exit(0)
         out = torch.cat(out_list,1)
         # aggregate layer
         out = self.aggr(out)

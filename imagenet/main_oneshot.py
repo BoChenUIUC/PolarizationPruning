@@ -525,10 +525,9 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model.cuda()
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
-        exit(0)
         ratio_list = []
         for i in range(0,32):
-            ratio_list += [compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/32)]
+            ratio_list += [compute_conv_flops_par(model, cuda=True, ratio=1-1.0*i/32)/args.baseline_flops]
         print(ratio_list)
         exit(0)
         if args.arch == 'resnet50':
@@ -747,7 +746,6 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     list_linear = []
 
     def linear_hook(self, input, output):
-        print(self.weight.size(),input.size(),output.size())
         weight_ops = self.weight.nelement()
 
         flops = weight_ops * ratio
@@ -780,7 +778,6 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     model(demo_input)
 
     total_flops = sum(list_conv) + sum(list_linear)
-    print(list_linear)
 
     # clear handles
     for h in handles:

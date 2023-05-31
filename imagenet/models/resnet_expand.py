@@ -392,7 +392,7 @@ class ResNetExpand(nn.Module):
         if bridge_type>=0:
             aggr_layers = []
             aggr_layers.append(nn.Conv2d((64 + 256 + 512 + 1024 + 2048), 2048, kernel_size=3, stride=1, padding=1, bias=False))
-            aggr_layers.append(nn.BatchNorm2d(512))
+            aggr_layers.append(nn.BatchNorm2d(2048))
             aggr_layers.append(nn.ReLU())
             self.aggr = nn.Sequential(*aggr_layers)
             aggr_layers[0].__name__ = 'aggr'

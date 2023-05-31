@@ -602,9 +602,11 @@ class MobileNetV2(nn.Module):
         # This exists since TorchScript doesn't support inheritance, so the superclass method
         # (this one) needs to have a name other than `forward` that can be accessed in a subclass
         # x = self.features(x)
-        for l in self.features:
+        out_list = []
+        for i,l in enumerate(self.features):
             x = l(x)
-            print(x.size())
+            out_list.append(x)
+            print(i,x.size())
         # Cannot use "squeeze" as batch-size can be 1 => must use reshape with x.shape[0]
         x = nn.functional.adaptive_avg_pool2d(x, 1).reshape(x.shape[0], -1)
         x = self.classifier(x)

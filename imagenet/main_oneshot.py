@@ -525,15 +525,14 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model.cuda()
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
-        ratio_list = []
         N = 1
         for i in range(0,N):
-            ratio_list += [compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/N)/args.BASEFLOPS]
-        print(ratio_list)
-        ratio_list = []
+            flops_ratio = compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/N)/args.BASEFLOPS
+            print(flops_ratio)
         for i in range(0,N):
-            ratio_list += [compute_conv_flops_par(model, cuda=True, ratio=1-1.0*i/N)/args.BASEFLOPS]
-        print(ratio_list)
+            flops,aggr_ratio = compute_conv_flops_par(model, cuda=True, ratio=1-1.0*i/N)
+
+            print(flops/args.BASEFLOPS, aggr_ratio)
         exit(0)
         if args.arch == 'resnet50':
             teacher_path = './original/resnet/model_best.pth.tar'
@@ -731,10 +730,9 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     """
 
     list_conv = []
+    list_aggr = []
 
     def conv_hook(self, input, output):
-        if hasattr(self, '__name__'):
-            print(self.__name__)
         batch_size, input_channels, input_height, input_width = input[0].size()
         output_channels, output_height, output_width = output[0].size()
 
@@ -749,6 +747,8 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
             flops *= self.flops_multiplier
 
         list_conv.append(flops)
+        if hasattr(self, '__name__') and self.__name__ == 'aggr':
+            list_aggr.append(flops)
 
     list_linear = []
 
@@ -785,11 +785,15 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     model(demo_input)
 
     total_flops = sum(list_conv) + sum(list_linear)
+    aggr_ratio = sum(list_aggr) / total_flops
 
     # clear handles
     for h in handles:
         h.remove()
-    return total_flops
+    if aggr_ratio >0:
+        return total_flops, aggr_ratio
+    else:
+        return total_flops
 
 def updateBN(model, sparsity, sparsity_on_bn3, gate: bool, exclude_out: bool, is_mobilenet=False):
     """Apply L1-Norm on sparse layers"""

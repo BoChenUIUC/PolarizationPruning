@@ -400,7 +400,7 @@ if args.VLB_conv:
     model.aggr_sizes = [model.conv1.weight.size(0)]
 
     before_save += shapes[0]*shapes[0]*model.conv1.weight.size(0)*4
-    after_save += 16*16*(16+16)*4*2
+    after_save += 8*8*(16+16+32+64)*4*2
 
     comm_cnt = 0
     for i,layer in enumerate([model.layer1,model.layer2,model.layer3]):

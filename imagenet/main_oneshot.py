@@ -526,12 +526,12 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
         ratio_list = []
-        for i in range(0,32):
-            ratio_list += [compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/32)/args.BASEFLOPS]
+        for i in range(0,64):
+            ratio_list += [compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/64)/args.BASEFLOPS]
         print(ratio_list)
         ratio_list = []
-        for i in range(0,32):
-            ratio_list += [compute_conv_flops_par(model, cuda=True, ratio=1-1.0*i/32)/args.BASEFLOPS]
+        for i in range(0,64):
+            ratio_list += [compute_conv_flops_par(model, cuda=True, ratio=1-1.0*i/64)/args.BASEFLOPS]
         print(ratio_list)
         exit(0)
         if args.arch == 'resnet50':

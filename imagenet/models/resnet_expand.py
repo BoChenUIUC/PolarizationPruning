@@ -522,6 +522,9 @@ class ResNetExpand(nn.Module):
             out_list.append(F.avg_pool2d(x, 4))
             x = self.layer2(x)  # 28x28,512
             out_list.append(F.avg_pool2d(x, 2))
+            for m in out_list:
+                print(m.size())
+            exit(0)
 
             x = torch.cat(out_list,1)
             # aggregate layer

@@ -586,7 +586,7 @@ class MobileNetV2(nn.Module):
         self.aggr_ds_ratio = [16,16,8,4,2,2,1,1,1]
         if bridge_type>=0:
             aggr_layers = []
-            aggr_layers.append(nn.Conv2d((32 + 16 + 24 + 32 + 64 + 96 + 160 + 320 + 1280), self.last_channel, kernel_size=3, stride=1, padding=1, bias=False))
+            aggr_layers.append(nn.Conv2d((32 + 16 + 24 + 32 + 64 + 96 + 160 + 320 + 1280), self.last_channel, kernel_size=1, stride=1, padding=0, bias=False))
             aggr_layers.append(nn.BatchNorm2d(self.last_channel))
             aggr_layers.append(nn.ReLU())
             self.aggr = nn.Sequential(*aggr_layers)
@@ -619,7 +619,6 @@ class MobileNetV2(nn.Module):
         for i,l in enumerate(self.features):
             x = l(x)
             if i in self.aggr_loc:
-                print(x.size(),self.aggr_ds_ratio[len(out_list)])
                 out_list.append(F.avg_pool2d(x, self.aggr_ds_ratio[len(out_list)]))
         # Cannot use "squeeze" as batch-size can be 1 => must use reshape with x.shape[0]
         if self.aggr is not None:

@@ -747,6 +747,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     list_linear = []
 
     def linear_hook(self, input, output):
+        print(weight.size())
         weight_ops = self.weight.nelement()
 
         flops = weight_ops * ratio
@@ -779,7 +780,6 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     model(demo_input)
 
     total_flops = sum(list_conv) + sum(list_linear)
-    print(list_conv)
     print(list_linear)
 
     # clear handles

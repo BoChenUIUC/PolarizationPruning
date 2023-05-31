@@ -733,7 +733,8 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     list_conv = []
 
     def conv_hook(self, input, output):
-        print(self.__class__.__name__)
+        if hasattr(self, '__name__'):
+            print(self.__name__)
         batch_size, input_channels, input_height, input_width = input[0].size()
         output_channels, output_height, output_width = output[0].size()
 

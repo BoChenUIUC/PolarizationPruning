@@ -395,7 +395,7 @@ class ResNetExpand(nn.Module):
             aggr_layers.append(nn.BatchNorm2d(512))
             aggr_layers.append(nn.ReLU())
             self.aggr = nn.Sequential(*aggr_layers)
-            self.__name__ = 'aggr'
+            aggr_layers[0].__name__ = 'aggr'
             image_size = 224*224*3*4/1024/1024
             after_save = (64 + 256 + 512) * 14 * 14 * 4 / 1024 / 1024 * 2
             before_save = 0

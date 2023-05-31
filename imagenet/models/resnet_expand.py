@@ -468,6 +468,7 @@ class ResNetExpand(nn.Module):
 
             x = self.layer1(x)  # 32x32
             x = self.layer2(x)  # 16x16
+            print('?',x.size())
             x = self.layer3(x)  # 8x8
 
             if self.enable_aux_fc:

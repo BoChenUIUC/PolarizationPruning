@@ -526,7 +526,7 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
         ratio_list = []
-        N = 16
+        N = 1
         for i in range(0,N):
             ratio_list += [compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/N)/args.BASEFLOPS]
         print(ratio_list)
@@ -783,6 +783,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     model(demo_input)
 
     total_flops = sum(list_conv) + sum(list_linear)
+    print(list_linear)
 
     # clear handles
     for h in handles:

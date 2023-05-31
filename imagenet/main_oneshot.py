@@ -525,11 +525,12 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model.cuda()
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
-        # ratio_list = []
-        # for i in range(0,32):
-        #     ratio_list += [compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/32)]
-        # print(ratio_list)
-        # exit(0)
+        exit(0)
+        ratio_list = []
+        for i in range(0,32):
+            ratio_list += [compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/32)]
+        print(ratio_list)
+        exit(0)
         if args.arch == 'resnet50':
             teacher_path = './original/resnet/model_best.pth.tar'
         else:
@@ -778,6 +779,8 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     model(demo_input)
 
     total_flops = sum(list_conv) + sum(list_linear)
+    print(list_conv)
+    print(list_linear)
 
     # clear handles
     for h in handles:

@@ -412,7 +412,7 @@ def plot_computation_dist(flops,labels,filename,horizontal,bbox_to_anchor=None,r
 def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 				methods=['Ours','Standalone','Optimal','Ours*','Standalone*','Optimal*'],use_barlabel_x=False,use_barlabe_y=False,
 				ncol=3,bbox_to_anchor=(0.46, 1.28),sep=1.25,width=0.15,xlabel=None,legloc=None,labelsize=labelsize_b,ylim=None,
-				use_downarrow=False,rotation=None,lgsize=None,yticklabel=None):
+				use_downarrow=False,rotation=None,lgsize=None,yticklabel=None,latency_annot=False,bandwidth_annot=False,latency_met_annot=False):
 	if lgsize is None:
 		lgsize = labelsize
 	fig = plt.figure()
@@ -467,6 +467,21 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 				for k,xdx in enumerate(x_index):
 					ax.text(xdx-0.07,data_mean[k,i]+5,f'{data_mean[k,i]:.2f}',fontsize = labelsize,fontweight='bold')
 
+		if latency_annot:
+			if i==1:
+				for k,xdx in enumerate(x_index):
+					mult = data_mean[k,i]/data_mean[k,0]
+					ax.text(xdx-0.3,data_mean[k,i]+2,f'{mult:.1f}\u00D7',fontsize = labelsize)
+		if bandwidth_annot:
+			if i==1:
+				for k,xdx in enumerate(x_index):
+					mult = int(10**data_mean[k,i]/10**data_mean[k,0])
+					ax.text(xdx-0.4,data_mean[k,i]+0.1,f'{mult}\u00D7',fontsize = labelsize)
+		if latency_met_annot:
+			if i>=1:
+				for k,xdx in enumerate(x_index):
+					mult = (-data_mean[k,i] + data_mean[k,0])/data_mean[k,0]*100
+					ax.text(xdx-0.07,data_mean[k,i]+0.1,'$\downarrow$'+f'{mult:.1f}%',fontsize = labelsize,rotation='vertical')
 	if ncol>0:
 		if legloc is None:
 			plt.legend(bbox_to_anchor=bbox_to_anchor, fancybox=True,
@@ -477,7 +492,61 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
-[[0.001550,0.001603,0.001611,0.001658,0.001571]]
+# plot rep vs latency cdf; rep vs computation
+latency = [[0.8651444067997442, 3.1388551201301063, 3.467007832221128],
+			[0.6422523006381087, 1.7715859235991278, 2.267751282911982],
+			[0.576112568325518, 1.425773471235434, 1.5793761956525325],
+			# [0.5390899176400686, 1.1127228729699334, 1.4071868097611444]
+			]
+envs = ['Medium','99th','99.9th']
+methods_tmp = ['N=1','N=2','N=3']
+y = np.array(latency).T
+groupedbar(y,None,'Latency (ms)', 
+	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_vs_repl.eps',methods=methods_tmp,labelsize=24,xlabel='Metrics',
+	envs=envs,ncol=1,width=.25,sep=1,legloc=None,bbox_to_anchor=(0.17,1),lgsize=20,latency_met_annot=True)
+exit(0)
+
+# comp vs. acc, network improve with comp
+# plot computation allocation
+
+model_speed = [[0.001550,0.001603,0.001611,0.001658,0.001571],
+[0.002421,0.002373,0.002384,0.002364,0.002371],
+[0.003368,0.003466,0.003473,0.003332,0.003474],
+[0.004526,0.004356,0.004388,0.004400,0.004459],
+[0.008456,0.008505,0.008504,0.008475,0.008479]]
+model_speed = np.array(model_speed).mean(axis=1)
+
+rounds = [19,31,43,55,109]
+latency_list = []
+with open(f'../DCN/{22:06d}','r') as f:
+	for l in f.readlines():
+		l = l.strip().split(' ')
+		latency_list += [float(l[0])/1000]
+latency = np.array(rounds) * np.array(latency_list).mean()
+
+
+envs = ['R20','R32','R44','R56','R110']
+methods_tmp = ['Comp.','Comm.']
+y = np.stack((model_speed,latency)).T*1000
+
+groupedbar(y,None,'Latency (ms)', 
+	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_vs_model.eps',methods=methods_tmp,labelsize=24,
+	envs=envs,ncol=1,width=.3,sep=1,legloc=None,bbox_to_anchor=(0.25,1),latency_annot=True,ylim=(0,70))
+
+relative_bw = [61,99,136,173,341]
+base_bw = 32*32*3*4 / 1024#12kB
+y = [[12,12,12,12,12],[61*12,99*12,136*12,173*12,341*12]]
+methods_tmp = ['Input','Comm.']
+y = np.array(y).T;y = np.log10(y)
+groupedbar(y,None,'Bandwidth Consumption (KB)', 
+	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/bandwidth_vs_model.eps',methods=methods_tmp,labelsize=24,
+	envs=envs,ncol=1,width=.3,sep=1,legloc=None,bbox_to_anchor=(0.7,.7),bandwidth_annot=True,
+	yticks=[1,2,3,4],yticklabel=[10,100,1000,10000],ylim=(0,4))
+
+print(model_speed,latency,latency/model_speed,np.array(latency_list).mean())
+
+
+exit(0)
 
 acc_repl_model = [[85.8,85.2,84.2,84.2],[85.8,85.0,83.9,84.2],[85.8,84.7,83.6,84.2]]
 

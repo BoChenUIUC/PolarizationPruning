@@ -481,7 +481,8 @@ def main_worker(gpu, ngpus_per_node, args):
                              bridge_type=args.VLB_conv_type)
         elif args.arch == "mobilenetv2":
             model = mobilenet_v2(width_mult=args.width_multiplier,
-                                 use_gate=args.gate)
+                                 use_gate=args.gate,
+                             bridge_type=args.VLB_conv_type)
         # elif args.arch == "SwinTransformer":
         # elif args.arch == "ConvNext":
         else:

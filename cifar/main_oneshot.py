@@ -458,9 +458,6 @@ if args.VLB_conv:
                     out_list.append(out)
         map_time = time.time() - end
         end = time.time()
-        for m in out_list:
-            print(m.size())
-        exit(0)
         out = torch.cat(out_list,1)
         # aggregate layer
         out = self.aggr(out)

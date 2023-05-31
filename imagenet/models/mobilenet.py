@@ -466,7 +466,8 @@ class MobileNetV2(nn.Module):
                  width_mult=1.0,
                  inverted_residual_setting=None,
                  round_nearest=8,
-                 block=None):
+                 block=None,
+                 bridge_type=-1):
         """
         MobileNet V2 main class
 

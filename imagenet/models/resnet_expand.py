@@ -391,10 +391,9 @@ class ResNetExpand(nn.Module):
         self.aggr = None
         if bridge_type>=0:
             aggr_layers = []
-            for i in range(1,len(cfg)):
-                aggr_layers.append(nn.Conv2d((64 + 256 + 512), 1024, kernel_size=3, stride=1, padding=1, bias=False))
-                aggr_layers.append(nn.BatchNorm2d(1024))
-                aggr_layers.append(nn.ReLU())
+            aggr_layers.append(nn.Conv2d((64 + 256 + 512), 1024, kernel_size=3, stride=1, padding=1, bias=False))
+            aggr_layers.append(nn.BatchNorm2d(1024))
+            aggr_layers.append(nn.ReLU())
             self.aggr = nn.Sequential(*aggr_layers)
             image_size = 224*224*3*4/1024/1024
             after_save = (64 + 256 + 512) * 14 * 14 * 4 / 1024 / 1024 * 2

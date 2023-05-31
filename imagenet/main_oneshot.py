@@ -779,7 +779,9 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     if cuda:
         demo_input = demo_input.cuda()
         model = model.cuda()
+    print('==============',demo_input.size())
     model(demo_input)
+    exit(0)
 
     total_flops = sum(list_conv) + sum(list_linear)
 

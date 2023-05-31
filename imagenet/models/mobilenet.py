@@ -619,6 +619,7 @@ class MobileNetV2(nn.Module):
         for i,l in enumerate(self.features):
             x = l(x)
             if i in self.aggr_loc:
+                print(x.size(),self.aggr_ds_ratio[len(out_list)])
                 out_list.append(F.avg_pool2d(x, self.aggr_ds_ratio[len(out_list)]))
         # Cannot use "squeeze" as batch-size can be 1 => must use reshape with x.shape[0]
         if self.aggr is not None:

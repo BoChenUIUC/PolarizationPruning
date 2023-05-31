@@ -581,14 +581,14 @@ class MobileNetV2(nn.Module):
 
         # aggregation layer
         self.aggr = None
+        self.aggr_loc = [0,1,3,6,10,13,16,17,18]
+        self.aggr_ds_ratio = [16,16,8,4,2,1,1,1,1]
         if bridge_type>=0:
             aggr_layers = []
             aggr_layers.append(nn.Conv2d((32 + 16 + 24 + 32 + 64 + 96 + 160 + 320 + 1280), self.last_channel, kernel_size=3, stride=1, padding=1, bias=False))
             aggr_layers.append(nn.BatchNorm2d(self.last_channel))
             aggr_layers.append(nn.ReLU())
             self.aggr = nn.Sequential(*aggr_layers)
-            self.aggr_loc = [0,1,3,6,10,13,16,17,18]
-            self.aggr_ds_ratio = [16,16,8,4,2,1,1,1,1]
             aggr_layers[0].__name__ = 'aggr'
 
         # weight initialization

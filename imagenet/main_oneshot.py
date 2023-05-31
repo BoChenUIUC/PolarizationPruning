@@ -733,6 +733,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     list_conv = []
 
     def conv_hook(self, input, output):
+        print(self.__class__.__name__)
         batch_size, input_channels, input_height, input_width = input[0].size()
         output_channels, output_height, output_width = output[0].size()
 
@@ -783,7 +784,6 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
     model(demo_input)
 
     total_flops = sum(list_conv) + sum(list_linear)
-    print(list_linear)
 
     # clear handles
     for h in handles:

@@ -308,8 +308,8 @@ def analyze_all_recorded_traces():
             	latency_list = latency_list*10
         all_latency_list += [latency_list]
     import csv
-    # with open('../curr_videostream.csv', mode='r') as csv_file:
-    with open('../curr_httpgetmt.csv', mode='r') as csv_file:
+    with open('../curr_videostream.csv', mode='r') as csv_file:
+    # with open('../curr_httpgetmt.csv', mode='r') as csv_file:
         # read network traces 
         csv_reader = csv.DictReader(csv_file)
         latency_list = []
@@ -317,15 +317,17 @@ def analyze_all_recorded_traces():
         num_of_line = 0
         bandwidth_list = []
         for row in csv_reader:
-            if row["bytes_sec_interval"] == 'NULL':
-                continue
-            # bandwidth_list += [float(row["downthrpt"])]
-            bandwidth_list += [float(row["bytes_sec_interval"])]
+            # if row["bytes_sec_interval"] == 'NULL':
+            #     continue
+            bandwidth_list += [float(row["downthrpt"])]
+            # bandwidth_list += [float(row["bytes_sec_interval"])]
             for bs in [2**i for i in range(7)]:
                 query_size = 3*32*32*4*bs # bytes
-                latency_list += [query_size/float(row["bytes_sec_interval"]) ]
+                latency_list += [query_size/float(row["downthrpt"]) ]
+                # latency_list += [query_size/float(row["bytes_sec_interval"]) ]
                 query_size = 3*224*224*4*bs
-                latency224_list += [query_size/float(row["bytes_sec_interval"])]
+                latency224_list += [query_size/float(row["downthrpt"])]
+                # latency224_list += [query_size/float(row["bytes_sec_interval"])]
             num_of_line += 1
             if num_of_line==10000:break
         all_latency_list += np.array(latency_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
@@ -1148,16 +1150,10 @@ def simulate():
     query_size = 3*32*32*4*np.array([2**(i) for i in range(7)])
     bw = query_size/all_latency_list[0]/1e6*8
     print(bw.mean(),bw.std(),'MBps',np.array(bandwidth_list).mean()*8,np.array(bandwidth_list).std()*8)
-    ratio = all_latency_list[2:,]/all_latency_list[:2]
-    labels = ['ResNet-56','ResNet-50']
-    ratio = 1/ratio+1
-    linestyles_ = ['solid']*10
-    x = [[2**(i) for i in range(7)] for _ in range(len(labels))]
-    line_plot(x, ratio,labels,colors,'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cost.eps','Throughput (# of Batches)','Relative Latency',
-    	lbsize=24,linewidth=2,markersize=8,markevery=1,linestyles=linestyles_)	
 
+num_samples = 50000
 comp_time = [0.033693,0.034360,0.036269,0.038337,0.042787,0.050216]
-
+comp_time = [0.004653,0.005051,0.005240]
 analyze_all_recorded_traces()
 exit(0)
 plot_reactive_varywait(keyword='adaptive_wait')

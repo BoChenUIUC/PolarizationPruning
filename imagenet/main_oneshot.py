@@ -497,7 +497,8 @@ def main_worker(gpu, ngpus_per_node, args):
             # https://discuss.pytorch.org/t/are-there-reasons-why-dataparallel-was-used-differently-on-alexnet-and-vgg-in-the-imagenet-example/19844
             model.features = torch.nn.DataParallel(model.features)
         else:
-            model = torch.nn.DataParallel(model).cuda()
+            # model = torch.nn.DataParallel(model).cuda()
+            pass
     else:
         model.cuda()
         model = torch.nn.parallel.DistributedDataParallel(model)
@@ -1846,12 +1847,12 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
                 f.write(f'{latency}\n')
     print('Traces loaded ok.')
 
-    # run originial model
-    print('Running original ML service')
-    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
-    # evaluate standalone running time
-    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
-    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
+    # # run originial model
+    # print('Running original ML service')
+    # infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
+    # # evaluate standalone running time
+    # infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
+    # print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
 
     all_map_time = []
     all_reduce_time = []

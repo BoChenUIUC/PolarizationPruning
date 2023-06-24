@@ -528,11 +528,11 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
         N = 64
-        # for i in range(0,N):
-        #     flops_ratio = compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/N)/args.BASEFLOPS
-        #     print(i,flops_ratio)
-        #     if flops_ratio<0.5:break
-        # print(i,flops_ratio)
+        for i in range(0,N):
+            flops_ratio = compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/N)/args.BASEFLOPS
+            print(i,flops_ratio)
+            if flops_ratio<0.5:break
+        print(i,flops_ratio)
         for i in range(0,N):
             flops,aggr_ratio = compute_conv_flops_par(model, cuda=True, ratio=1-1.0*i/N)
             flops_ratio = flops/args.BASEFLOPS
@@ -789,7 +789,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
         demo_input = demo_input.cuda()
         model = model.cuda()
     model(demo_input)
-    print(sum(list_conv) , sum(list_linear))
+    print(list_conv , list_linear)
     total_flops = sum(list_conv) + sum(list_linear)
     aggr_ratio = sum(list_aggr) / total_flops
 

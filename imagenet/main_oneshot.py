@@ -2179,6 +2179,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                 end = time.time()
                 output = model(output,reduce_fwd=True)
                 reduce_time_lst.append(time.time()-end)
+                batch_time.update(map_time_lst[-1] + reduce_time_lst[-1])
             else:
                 end = time.time()
                 # compute output
@@ -2198,7 +2199,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                 correct_lst.append(float(prec1[0]))
 
             val_iter.set_description(
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f}). '
+                  'Time {batch_time.val:.6f} ({batch_time.avg:.6f}). '
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f}). '
                   'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                 batch_time=batch_time, top1=top1, top5=top5))

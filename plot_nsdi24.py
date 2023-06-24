@@ -1120,10 +1120,11 @@ def simulate():
             else:
             	latency_list = latency_list[:1000]
             	latency_list = latency_list*10
+        print(len(latency_list))
         all_latency_list += [latency_list]
-        shuffled_list = latency_list.copy()
-		random.shuffle(shuffled_list)
-        all_latency_list += [shuffled_list]
+        # shuffled_list = latency_list.copy()
+        # random.shuffle(shuffled_list)
+        # all_latency_list += [shuffled_list]
     import csv
     with open('../curr_videostream.csv', mode='r') as csv_file:
         # read network traces 
@@ -1138,13 +1139,20 @@ def simulate():
                 latency_list += [query_size/float(row["downthrpt"])]
             num_of_line += 1
             if num_of_line==10000:break
-        all_latency_list += latency_list
-        shuffled_list = latency_list.copy()
-		random.shuffle(shuffled_list)
+        all_latency_list += np.array(latency_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
+        print(len(latency_list))
+        # shuffled_list = latency_list.copy()
+        # random.shuffle(shuffled_list)
+        # all_latency_list += [shuffled_list]
 
     all_latency_list = np.array(all_latency_list)
-    all_latency_list = all_latency_list.mean(axis=-1).reshape(4,7)
-    print(all_latency_list)
+    # all_latency_list = all_latency_list.mean(axis=-1).reshape(4,7)
+    print(all_latency_list.shape)
+    num_samples = 10000
+    comp_time = np.array([[0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945],[0.010791,0.016995,0.017772,0.019092,0.021050,0.025342,0.033885]])
+    comp_time[0] = comp_time[0]/comp_time[0,3]*0.005791
+    comp_time[1] = comp_time[1]/comp_time[1,3]*0.005687
+    print(comp_time)
 
 num_samples = 50000
 comp_time = [[0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945],

@@ -1849,6 +1849,14 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
 
     # run originial model
     print('Running original ML service')
+    infer_time_lst,correct_lst = validate(val_loader, model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
+    # evaluate standalone running time
+    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
+    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
+    exit(0)
+
+    # run originial model
+    print('Running original ML service')
     infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()

@@ -1847,6 +1847,13 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
                 f.write(f'{latency}\n')
     print('Traces loaded ok.')
 
+    # run originial model
+    print('Running original ML service')
+    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
+    # evaluate standalone running time
+    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
+    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
+
     all_map_time = []
     all_reduce_time = []
     all_correct = []
@@ -1879,13 +1886,6 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         for sn_idx in range(args.split_num*2):
             reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
             print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
-
-    # run originial model
-    print('Running original ML service')
-    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
-    # evaluate standalone running time
-    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
-    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
 
     rep = 10
     if args.split_num in {2}:

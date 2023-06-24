@@ -1103,7 +1103,6 @@ def simulate():
     trpt = []
     trpterr = []
     trace_filenames = []
-    trace_filenames += [f'../DCN/{22*i:06d}' for i in [1,2,4,8,16,32,64]]
     trace_filenames += [f'../DCN-244/{244*i:06d}' for i in [1,2,4,8,16,32,64]]
     latency_mean_list = []
     latency_std_list = []
@@ -1122,40 +1121,42 @@ def simulate():
             	latency_list = latency_list[:1000]
             	latency_list = latency_list*10
         all_latency_list += [latency_list]
+        shuffled_list = latency_list.copy()
+		random.shuffle(shuffled_list)
+        all_latency_list += [shuffled_list]
     import csv
     with open('../curr_videostream.csv', mode='r') as csv_file:
-    # with open('../curr_httpgetmt.csv', mode='r') as csv_file:
         # read network traces 
         csv_reader = csv.DictReader(csv_file)
         latency_list = []
-        latency224_list = []
         num_of_line = 0
         bandwidth_list = []
         for row in csv_reader:
-            if row["bytes_sec_interval"] == 'NULL':
-                continue
-            # bandwidth_list += [float(row["downthrpt"])]
-            bandwidth_list += [float(row["bytes_sec_interval"])]
+            bandwidth_list += [float(row["downthrpt"])]
             for bs in [2**i for i in range(7)]:
-                query_size = 3*32*32*4*bs # bytes
-                latency_list += [query_size/float(row["bytes_sec_interval"]) ]
                 query_size = 3*224*224*4*bs
-                latency224_list += [query_size/float(row["bytes_sec_interval"])]
+                latency_list += [query_size/float(row["downthrpt"])]
             num_of_line += 1
             if num_of_line==10000:break
-        all_latency_list += np.array(latency_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
-        all_latency_list += np.array(latency224_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
+        all_latency_list += latency_list
+        shuffled_list = latency_list.copy()
+		random.shuffle(shuffled_list)
+
     all_latency_list = np.array(all_latency_list)
     all_latency_list = all_latency_list.mean(axis=-1).reshape(4,7)
-    query_size = 3*32*32*4*np.array([2**(i) for i in range(7)])
-    bw = query_size/all_latency_list[0]/1e6*8
-    print(bw.mean(),bw.std(),'MBps',np.array(bandwidth_list).mean()*8,np.array(bandwidth_list).std()*8)
+    print(all_latency_list)
 
 num_samples = 50000
-comp_time = [0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945]
-comp_time0 = [0.010791,0.016995,0.017772,0.019092,0.021050,0.025342,0.033885]
-analyze_all_recorded_traces()
+comp_time = [[0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945],
+			[0.010791,0.016995,0.017772,0.019092,0.021050,0.025342,0.033885]]
+# split
+[0.005436,0.000215]
+# @8
+# proactive: 0.005687
+# ours: 0.005791
+simulate()
 exit(0)
+analyze_all_recorded_traces()
 plot_reactive_varywait(keyword='adaptive_wait')
 plot_acc_n_failure_response()
 

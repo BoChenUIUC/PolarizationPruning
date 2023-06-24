@@ -525,7 +525,7 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             raise NotImplementedError("model {} is not supported".format(args.arch))
         args.teacher_model.cuda()
-        # args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
+        args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
         # N = 64
         # for i in range(0,N):
@@ -542,7 +542,7 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/resnet/model_best.pth.tar'
         else:
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
-        # args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+        args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
     if len(torch.nonzero(torch.tensor(args.alphas)))>1:
         args.ps_batch = len(args.alphas)*4
@@ -1847,21 +1847,6 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
                 f.write(f'{latency}\n')
     print('Traces loaded ok.')
 
-    # run originial model
-    print('Running original ML service')
-    infer_time_lst,correct_lst = validate(val_loader, model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
-    # evaluate standalone running time
-    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
-    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
-    exit(0)
-
-    # run originial model
-    print('Running original ML service')
-    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
-    # evaluate standalone running time
-    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
-    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
-
     all_map_time = []
     all_reduce_time = []
     all_correct = []
@@ -1894,6 +1879,13 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         for sn_idx in range(args.split_num*2):
             reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
             print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
+
+    # run originial model
+    print('Running original ML service')
+    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
+    # evaluate standalone running time
+    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
+    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
 
     rep = 10
     if args.split_num in {2}:
@@ -2217,7 +2209,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                   'Reduce {reduce_time.val:.6f} ({reduce_time.avg:.6f}). '
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f}). '
                   'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                batch_time=batch_time, map_time=map_time, reduce_time=reduce_time, top1=top1, top5=top5))
+                batch_time=batch_time, map_time=map_time, batch_time=batch_time, top1=top1, top5=top5))
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

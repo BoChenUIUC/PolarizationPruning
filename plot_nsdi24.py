@@ -1153,6 +1153,7 @@ def simulate():
 
 num_samples = 50000
 comp_time = [0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945]
+comp_time0 = [0.010791,0.016995,0.017772,0.019092,0.021050,0.025342,0.033885]
 analyze_all_recorded_traces()
 exit(0)
 plot_reactive_varywait(keyword='adaptive_wait')

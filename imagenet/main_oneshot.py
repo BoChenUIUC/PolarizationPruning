@@ -2210,7 +2210,6 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f}). '
                   'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                 batch_time=batch_time, top1=top1, top5=top5))
-    exit(0)
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

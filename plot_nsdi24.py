@@ -5,6 +5,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
+
+import random, math
+
 labelsize_b = 14
 linewidth = 2
 plt.rcParams['xtick.labelsize'] = 16
@@ -13,7 +16,12 @@ plt.rcParams["font.family"] = "Times New Roman"
 colors = ['#DB1F48','#1C4670','#FF9636','#9D5FFB','#21B6A8','#D65780']
 # colors = ['#ED4974','#16B9E1','#58DE7B','#F0D864','#FF8057','#8958D3']
 # colors =['#FD0707','#0D0DDF','#129114','#DDDB03','#FF8A12','#8402AD']
-markers = ['o','^','s','>','P','D','*','v','<'] 
+colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"]
+colors = ["#1f78b4", "#33a02c", "#e31a1c", "#6a3d9a", "#fdbf6f", "#ff7f00"]
+# colors = ["#006d2c", "#31a354", "#74c476", "#bae4b3", "#ececec", "#969696"]
+colors = ["#004c6d", "#f18f01", "#81b214", "#c7243a", "#6b52a1", "#a44a3f"]
+
+markers = ['s','o','^','v','D','<','>','P','*'] 
 hatches = ['/' ,'\\','--','x', '+', 'O','-',]
 linestyles = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
 methods3 = ['Replication (Optimal)','Partition (Ours)','Standalone']
@@ -21,14 +29,14 @@ methods6 = ['Ours','Baseline','Optimal$^{(2)}$','Ours*','Baseline*','Optimal$^{(
 from collections import OrderedDict
 linestyle_dict = OrderedDict(
     [('solid',               (0, ())),
+     ('dashed',              (0, (5, 5))),
      ('dotted',              (0, (1, 5))),
+     ('dashdotted',          (0, (3, 5, 1, 5))),
      ('densely dotted',      (0, (1, 1))),
 
      ('loosely dashed',      (0, (5, 10))),
-     ('dashed',              (0, (5, 5))),
      ('densely dashed',      (0, (5, 1))),
 
-     ('dashdotted',          (0, (3, 5, 1, 5))),
      ('densely dashdotted',  (0, (3, 1, 1, 1))),
 
      ('dashdotdotted',         (0, (3, 5, 1, 5, 1, 5))),
@@ -44,7 +52,7 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 				xticks=None,yticks=None,ncol=None, yerr=None, xticklabel=None,yticklabel=None,xlim=None,ylim=None,ratio=None,
 				use_arrow=False,arrow_coord=(60,0.6),markersize=8,bbox_to_anchor=None,get_ax=0,linewidth=2,logx=False,use_probarrow=False,
 				rotation=None,use_resnet56_2arrow=False,use_resnet56_3arrow=False,use_resnet56_4arrow=False,use_resnet50arrow=False,use_re_label=False,
-				use_comm_annot=False,use_connarrow=False,lgsize=None,oval=False,scatter_soft_annot=False):
+				use_prob_annot=False,use_connarrow=False,lgsize=None,oval=False,scatter_soft_annot=False,markevery=4,annot_aw=None):
 	if lgsize is None:
 		lgsize = lbsize
 	if get_ax==1:
@@ -74,13 +82,13 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 			if yerr is None:
 				plt.plot(xx, yy, color = color[i], marker = markers[i], 
 					label = label[i], linestyle = linestyles[i], 
-					linewidth=linewidth, markersize=markersize)
+					linewidth=linewidth, markersize=markersize, markerfacecolor='none', markevery=markevery)
 			else:
 				if markersize > 0:
 					plt.errorbar(xx, yy, yerr=yerr[i], color = color[i],
 						marker = markers[i], label = label[i], 
 						linestyle = linestyles[i], 
-						linewidth=linewidth, markersize=markersize,
+						linewidth=linewidth, markersize=markersize, markerfacecolor='none', markevery=markevery,
 						capsize=4)
 				else:
 					plt.errorbar(xx, yy, yerr=yerr[i], color = color[i],
@@ -145,21 +153,29 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 				ax.annotate('Most Reliable\nMost Computation', xy=(xx[i],yy[i]), xytext=(xx[i]-50,yy[i]+2),color = color[i], fontsize=lbsize-4,arrowprops=dict(arrowstyle='->',lw=2))
 			elif i==1:
 				ax.annotate('Least Computation\nMost Unreliable', xy=(xx[i],yy[i]), xytext=(xx[i]-5,yy[i]-4),color = color[i], fontsize=lbsize-4,arrowprops=dict(arrowstyle='->',lw=2))
-	if use_comm_annot:
-		for i in range(len(XX)):
-			xx,yy = XX[i],YY[i]
-			if i==0:
-				ax.annotate('Naive neuron sharing: 174', xy=(xx[2],yy[2]+0.1), xytext=(60,2.15), fontsize=lbsize,fontweight='bold',arrowprops=dict(arrowstyle='->',lw=2))
-			else:
-				ax.annotate('Naive neuron sharing: 71', xy=(xx[5],yy[5]-0.1), xytext=(48,.5), fontsize=lbsize,fontweight='bold',arrowprops=dict(arrowstyle='->',lw=2))
+	if use_prob_annot:
+		xx,yy = XX[-1],YY[-1]
+		# [0.6,0.8,0.9]
+		# [1.3303288776709477, 1.8755448348252626, 2.4045152038996433]
+		# ax.annotate('Naive neuron sharing: 174', xy=(xx[2],yy[2]+0.1), xytext=(60,2.15), fontsize=lbsize,fontweight='bold')
+	if annot_aw is not None:
+		if annot_aw == 0:
+			ax.annotate(text='0.37% to max', xy=(0.4,97.28), xytext=(0.45,90), arrowprops=dict(arrowstyle='->',lw=2),size=lgsize,fontweight='bold')
+		elif annot_aw == 1:
+			ax.annotate(text='0.08% to max', xy=(0.4,75.21), xytext=(0.45,73.5), arrowprops=dict(arrowstyle='->',lw=2),size=lgsize,fontweight='bold')
+		else:
+			ax.annotate(text='0.7% inflation', xy=(0.4,0.7), xytext=(0.05,1.4), arrowprops=dict(arrowstyle='->',lw=2),size=lgsize,fontweight='bold')
 	
 	if use_resnet50arrow:
-		ax.annotate(text='', xy=(0,72), xytext=(40,72), arrowprops=dict(arrowstyle='<->',lw=linewidth))
+		ax.annotate(text='', xy=(0,64), xytext=(40,64), arrowprops=dict(arrowstyle='<->',lw=2))
 		ax.text(
-		    20, 73, "Stage#0", ha="center", va="center", rotation='horizontal', size=lgsize,fontweight='bold')
-		ax.annotate(text='', xy=(40,76), xytext=(160,76), arrowprops=dict(arrowstyle='<->',lw=linewidth))
+		    20, 65, "Stage#0", ha="center", va="center", rotation='horizontal', size=lgsize,fontweight='bold')
+		ax.annotate(text='', xy=(40,70), xytext=(160,70), arrowprops=dict(arrowstyle='<->',lw=2))
 		ax.text(
-		    100, 77, "Stage#1", ha="center", va="center", rotation='horizontal', size=lgsize,fontweight='bold')
+		    100, 69, "Stage#1", ha="center", va="center", rotation='horizontal', size=lgsize,fontweight='bold')
+		ax.annotate(text='LR = 0.1', xy=(0,68), xytext=(-8,75), arrowprops=dict(arrowstyle='->',lw=2),size=lgsize,fontweight='bold')
+		ax.annotate(text='LR = 0.01', xy=(80,72.2), xytext=(40,74), arrowprops=dict(arrowstyle='->',lw=2),size=lgsize,fontweight='bold')
+		ax.annotate(text='LR = 0.001', xy=(120,75), xytext=(100,73), arrowprops=dict(arrowstyle='->',lw=2),size=lgsize,fontweight='bold')
 		# for l,r,lr in [(0,40,0.1),(40,80,0.1),(80,120,0.01),(120,160,0.001)]:
 		# 	ax.annotate(text='', xy=(l,64), xytext=(r,64), arrowprops=dict(arrowstyle='<->',lw=linewidth))
 		# 	ax.text(
@@ -187,6 +203,7 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 
 # breakdown for different traces
 def plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,filename,ncol,bbox_to_anchor,lim1=20,lim2=1500,title_posy=0.2,ratio=0.8):
+	# colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 	y_pos = np.arange(len(labels))
 	latency_breakdown_mean = np.array(latency_breakdown_mean).transpose((1,0))*1000
 	latency_breakdown_std = np.array(latency_breakdown_std).transpose((1,0))*1000
@@ -239,7 +256,7 @@ def measurements_to_cdf(latency,epsfile,labels,xticks=None,xticklabel=None,lines
         cdf_x = np.sort(np.array(latency_list))
         cdf_p = np.array(range(N))/float(N)
         plt.plot(cdf_x, cdf_p, color = colors[i], label = labels[i], linewidth=linewidth, linestyle=linestyles[i])
-        print(i,cdf_x[int(N//2)],cdf_x[int(N*99/100)],cdf_x[int(N*999/1000)])
+        print([cdf_x[int(N//2)],cdf_x[int(N*99/100)],cdf_x[int(N*999/1000)]])
     plt.xlabel(xlabel, fontsize = lbsize)
     plt.ylabel(ylabel, fontsize = lbsize)
     if use_arrow:
@@ -334,11 +351,12 @@ def analyze_all_recorded_traces():
     # relative_latency = np.log10(relative_latency)
     # relative_latency = relative_latency.reshape((4,7,10000))
     # relative_latency = relative_latency[2:]
-    labels = ['ResNet56','ResNet50']
+    labels = ['ResNet-56','ResNet-50']
     ratio = 1/ratio+1
+    linestyles_ = ['solid']*10
     x = [[2**(i) for i in range(7)] for _ in range(len(labels))]
-    line_plot(x, ratio,labels,colors,'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost3.eps','Batch Size','Latency Inflation Ratio',
-    	lbsize=24,linewidth=8,markersize=16,)	
+    line_plot(x, ratio,labels,colors,'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cost.eps','Throughput (# of Batches)','Relative Latency',
+    	lbsize=24,linewidth=2,markersize=8,markevery=1,linestyles=linestyles_)	
 
 
 def bar_plot(avg,std,label,path,color,ylabel,labelsize=24,yticks=None,ylim=None):
@@ -422,6 +440,8 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	center_index = np.arange(1, num_env + 1)*sep
 	# colors = ['lightcoral', 'orange', 'yellow', 'palegreen', 'lightskyblue']
 	# colors = ['coral', 'orange', 'green', 'cyan', 'blue']
+	# colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
+
 
 	ax.grid()
 	ax.spines['bottom'].set_linewidth(3)
@@ -492,326 +512,620 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 	fig.savefig(path, bbox_inches='tight')
 	plt.close()
 
+def plot_acc_n_failure_response():
+	# the chance for a result to be full or degraded is 50/50
+	acc_method_model = [[85.8,85.2,84.1,84.2],[83.5,83.2,82.6,82.8],[76.13,75.3,72.2,72.4],[72.192,71.1,68.0,68.1]]
+	acc_method_model = np.array(acc_method_model)
+	# Extract columns 2 and 3
+	column2 = acc_method_model[:, 1]
+	column3 = acc_method_model[:, 2]
 
-latency_list = []
-for idx,filename in enumerate(['original']):
-	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/cifar10/{filename}.log','r') as f:
-		for l in f.readlines():
-			latency_list += [float(l)]
-latency_min,latency_max = min(latency_list),max(latency_list)
-latency_list = (np.array(latency_list))
-L = len(latency_list)
+	# Calculate the average of columns 2 and 3
+	average_column = (column2 * 0.971 + column3 * (1-0.971))
 
-import random
+	# Insert the average column at index 3
+	acc_method_model = np.insert(acc_method_model, 3, average_column, axis=1)
+	acc_method_model = acc_method_model[:,[0,4,3,1,2]]
+	print(acc_method_model)
 
-shuffled_list = latency_list.copy()
-random.shuffle(shuffled_list)
-min_values = [min(x, y) for x, y in zip(latency_list, shuffled_list)]
-print(min_values[int(N*900/1000)],min_values[int(N*950/1000)],min_values[int(N*990/1000)])
+	envs = ['ConvNeXt','Swin','ResNet','MobileNet']
+	methods = ['Original','Proactive','REACTIQ-Runtime','REACTIQ-Full','REACTIQ-Degraded']
+	groupedbar(acc_method_model,None,'Top-1 Acc. (%)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/acc_method_model.eps',methods=methods,labelsize=20,xlabel='Models',
+		envs=envs,ncol=1,width=1./6,sep=1,legloc='upper right',lgsize=14,ylim=(65,90))
+
+	x = [];y = []
+	default = 0.1
+	for i in range(1):
+		xx = np.linspace(0,11)*0.01
+		yy = acc_method_model[i][0] * (1 - xx) + default * xx
+		x += [xx]; y += [yy]
+		yy = acc_method_model[i][0] * (1 - xx**2) + default * xx**2
+		x += [xx]; y += [yy]
+		yy = acc_method_model[i][3] * (1-(2+i) * xx**(1+i) * (1-xx)-xx**(2+i)) + acc_method_model[i][2] * (2+i) * xx**(1+i) * (1-xx) + default * xx**(2+i)
+		x += [xx]; y += [yy]
+		yy = acc_method_model[i][4] * (1 - xx**2) + default * xx**2
+		x += [xx]; y += [yy]
+	methods = ['Original-N1','Original-N2\n(200% Comp.)','Proactive-N2','REACTIQ-N2']
+	linestyles_ = ['solid']*10#,'dashed','dotted','dashdot']
+	y = np.array(y)
+	y = y[[0,1,3,2],:]
+	line_plot(x,y,methods,colors,
+			'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_response.eps',
+			'Failure Rate','Top-1 Acc. (%)',lbsize=24,linewidth=2,markersize=8,linestyles=linestyles_,
+			lgsize=18,legloc='lower left')
+
+	acc_repl_model = [[85.8,85.2,84.1,84.2],[85.8,84.8,83.0,83.2],[85.8,84.3,82.0,82.4]]
+	acc_repl_model = np.array(acc_repl_model)
+	# Extract columns 2 and 3
+	column2 = acc_repl_model[:, 1]
+	column3 = acc_repl_model[:, 2]
+
+	# Calculate the average of columns 2 and 3
+	average_column = (column2 * 0.971 + column3 * (1-0.971))
+
+	# Insert the average column at index 3
+	acc_repl_model = np.insert(acc_repl_model, 3, average_column, axis=1)
+	acc_repl_model = acc_repl_model[:,[0,4,3,1,2]]
+	envs = ['2','3','4']
+	methods = ['Original','Proactive','REACTIQ-Runtime','REACTIQ-Full','REACTIQ-Degraded']
+	groupedbar(acc_repl_model,None,'Top-1 Acc. (%)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/acc_repl_model.eps',methods=methods,labelsize=20,
+		envs=envs,ncol=2,width=1./6,sep=1,legloc='upper left',lgsize=13.5,ylim=(81,88),xlabel='# of Replicas')
+	print(acc_repl_model)
+
+	x = [];y = []
+	default = 0.0
+	for i in range(3):
+		xx = np.linspace(0,10)*0.01
+		yy = acc_repl_model[i][3] * (1-(2+i) * xx**(1+i) * (1-xx)-xx**(2+i)) + acc_repl_model[i][4] * (2+i) * xx**(1+i) * (1-xx) + default * xx**(2+i)
+		x += [xx]; y += [yy]
+		yy = acc_repl_model[i][1] * (1 - xx**(2+i)) + default * xx**(2+i)
+		x += [xx]; y += [yy]
+	methods = ['REACTIQ-N2','REACTIQ-N3','REACTIQ-N4','Proactive-N2','Proactive-N3','Proactive-N4']
+	linestyles_ = ['solid']*6#,'dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
+	y = np.array(y)
+	y = y[[0,2,4,1,3,5]]
+	line_plot(x,y,methods,colors,
+			'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_repl_response.eps',
+			'Failure Rate','Top-1 Acc. (%)',lbsize=24,linewidth=2,markersize=8,linestyles=linestyles_,
+			lgsize=18,legloc='lower left',ncol=2,ylim=(80,86))
+
+def list_to_tail(latency_list,tail_options=[0.5,0.99,0.999]):
+	L = len(latency_list)
+	cdf_x = np.sort(np.array(latency_list))
+	return [cdf_x[int(p*L)] for p in tail_options]
+
+def plot_reactive_varywait(keyword='reactive'):
+	# latency/computation/accuracy of reactive approaches when the threshold changes
+	latency_list = []
+	for idx,filename in enumerate(['original']):
+		with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/imagenet/{filename}.log','r') as f:
+			for l in f.readlines():
+				latency_list += [float(l)]
+	L = len(latency_list)
+	latency_min,latency_max = min(latency_list),max(latency_list)
+
+	# DCN
+	dcn_latency_list = []
+	for idx,filename in enumerate(['imagenet']):
+		with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/{filename}/dcn.log','r') as f:
+			for l in f.readlines():
+				dcn_latency_list += [float(l)]
+	dcn_latency_min,dcn_latency_max = min(dcn_latency_list),max(dcn_latency_list)
+	cdf_x = np.sort(np.array(dcn_latency_list))
+	dcn_L = len(cdf_x)
+	dcn_latency_min = min(cdf_x)
+	dcn_latency_90th = cdf_x[int(dcn_L*0.9)]
+	dcn_latency_99th = cdf_x[int(dcn_L*0.99)]
+	dcn_latency_999th = cdf_x[int(dcn_L*0.999)]
+	dcn_latency_max = max(cdf_x)
+	# print([dcn_latency_min,dcn_latency_90th,dcn_latency_99th,dcn_latency_999th,dcn_latency_max])
+
+	# infer
+	inf_mean = 0.019284586669921874; inf_std = 0.001057063805851016
+	# inf_mean = 0.0048398783412604285; inf_std = 0.00021182092754556427
+	inf_latency = np.random.normal(inf_mean, inf_std, dcn_L).tolist()
+	inf_max = max(inf_latency)
+
+	# resnet-50
+	base_comp = [0.4883683402282493,0.4931303416137934, 0.28606033891261035]
+	base_acc = [75.3,72.2,72.4]
+	base_latency = []
+	for idx,filename in enumerate(['rep2','react2']):
+		with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/imagenet/{filename}.log','r') as f:
+			latency_tmp = []
+			for l in f.readlines():
+				latency_tmp += [float(l)]
+			base_latency += [np.mean(latency_tmp)]
+
+	labels = ['Reactive','REACTIQ-R'] if keyword == 'reactive' else ['REACTIQ']
+	M = 10 #if keyword == 'reactive' else 100
+	all_acc_list = [[base_acc[2] for _ in range(M)],[]] if keyword == 'reactive' else [[]]
+	all_latency_list = [[],[]] if keyword == 'reactive' else [[]]
+	all_comp_list = [[],[]] if keyword == 'reactive' else [[]]
+	# threshold to launch second
+	if keyword == 'reactive':
+		thresh_list = [i/(M-1)*(latency_max) for i in range(M)]
+	else:
+		thresh_list = [i/(M-1)*(dcn_latency_max) for i in range(M)]
+	shuffled_list = latency_list.copy()
+	random.shuffle(shuffled_list)
+	shuffled_inf = inf_latency.copy()
+	random.shuffle(shuffled_inf)
+
+	if keyword != 'reactive':
+		usage1 = [x+dcn_latency_99th>=y+z for x, y, z in zip(inf_latency, shuffled_inf, dcn_latency_list)]
+		usage2 = [y+dcn_latency_99th>=x+z for x, y, z in zip(inf_latency, shuffled_inf, dcn_latency_list)]
+		full_rate = sum(usage1 + usage2)/len(usage1+usage2)
+		comp = full_rate * base_comp[0] * 2 + (1 - full_rate) * 2 * (base_comp[0]) * (1 - base_comp[2]/2)
+		acc = full_rate * (base_acc[0]) + (1 - full_rate) * base_acc[1]
+		print(full_rate, dcn_latency_99th/dcn_latency_max)
+		print(comp,base_comp[0]*2-comp)
+		print(acc,base_acc[0]-acc)
+	for t in thresh_list:
+		if keyword == 'reactive':
+
+			min_values = [min(x, y + t) for x, y in zip(latency_list, shuffled_list)]
+			all_latency_list[0] += [np.mean(min_values)]
+			all_latency_list[1] += [np.mean(min_values)]
+
+			# the first server must be used
+			# the second reactive server is used when the first server latency > threshold
+			usage = [x>=t for x, y in zip(latency_list, shuffled_list)]
+			full_rate = sum(usage)/len(usage)
+			print(full_rate)
+			all_comp_list[0] += [full_rate*base_comp[1]+base_comp[1]]
+
+			# run at low power mode when not reactive
+			all_comp_list[1] += [full_rate * base_comp[0] * 2 + (1 - full_rate) * (base_comp[0]) * (1 - base_comp[2]/2)]
+
+			all_acc_list[1] += [full_rate * (base_acc[0] + base_acc[1])/2 + (1 - full_rate) * base_acc[1]]
+		else:
+			min_values = [t/min(x,y)*100 for x, y in zip(latency_list, shuffled_list)]
+			all_latency_list[0] += [np.mean(min_values)]
+
+			usage1 = [x+t>=y+z for x, y, z in zip(inf_latency, shuffled_inf, dcn_latency_list)]
+			usage2 = [y+t>=x+z for x, y, z in zip(inf_latency, shuffled_inf, dcn_latency_list)]
+			full_rate = sum(usage1 + usage2)/len(usage1+usage2)
+
+			all_comp_list[0] += [full_rate * base_comp[0] * 2 + (1 - full_rate) * 2 * (base_comp[0]) * (1 - base_comp[2]/2)]
+
+			all_acc_list[0] += [full_rate * (base_acc[0]) + (1 - full_rate) * base_acc[1]]
 
 
-N = 1000
-x = [];y = [[],[],[],]
-p90,p95,p99 = 0,0,0
-for i in range(N):
-	latency = i/(N-1)*(latency_max-latency_min) + latency_min
-	x += [latency]
-	p = sum(latency_list<latency)/L
-	y[0] += [p*p]
-	y[1] += [2*p*(1-p)]
-	y[2] += [(1-p)**2]
+	all_latency_list = np.array(all_latency_list)
+	if keyword == 'reactive':
+		for i in range(2):
+			all_latency_list[i,:] += base_latency[i] - all_latency_list[i,0]
+		all_latency_list = (all_latency_list) / (latency_max) * 100
 
-x = [x for _ in range(len(y))]
+	all_comp_list = np.array(all_comp_list) * 100
 
-linestyles_ = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
-methods = ['Two Alive', 'One Alive', 'None Alive',]
-line_plot(x,y,methods,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/prob_vs_latency.eps',
-		'Latency (s)','Likelihood (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
-		lgsize=20,legloc='best',
-		# xticks=[0.8651444067997442, 3.1388551201301063, 3.467007832221128, 0.6422523006381087],
-		# xticklabel=['Med.','99th','99.9th','Med.2']
+	x = [[i/(M-1) for i in range(M)] for _ in labels]
+	xlabel = 'Reaction Threshold (Norm.)' if keyword == 'reactive' else 'Sync Threshold (Norm.)'
+	ncol = None if keyword == 'reactive' else 0
+	markersize = 8 if keyword == 'reactive' else 0
+	xticks = None if keyword == 'reactive' else np.array([0,dcn_latency_99th,dcn_latency_max])/dcn_latency_max
+	xticklabel = None if keyword == 'reactive' else ['0',"99th (Default)",'1']
+	linestyles_ = ['solid']*10#,'dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
+	lgsize = 26 if keyword == 'reactive' else 32
+	line_plot(x,all_comp_list,labels,colors,
+			f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comp_{keyword}.eps',
+			xlabel,'Computation(%)',lbsize=32,linewidth=2,markersize=markersize,linestyles=linestyles_,
+			lgsize=lgsize,legloc='best',markevery=1,ncol=ncol,xticks=xticks,xticklabel=xticklabel,annot_aw=0 if keyword !='reactive' else None)
+	line_plot(x,all_acc_list,labels,colors,
+			f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/acc_{keyword}.eps',
+			xlabel,'Top-1 Acc. (%)',lbsize=32,linewidth=2,markersize=markersize,linestyles=linestyles_,
+			lgsize=lgsize,legloc='best',markevery=1,ncol=ncol,xticks=xticks,xticklabel=xticklabel,annot_aw=1 if keyword !='reactive' else None)
+	line_plot(x,all_latency_list,labels,colors,
+			f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_{keyword}.eps',
+			xlabel,'Latency Inf. (%)',lbsize=32,linewidth=2,markersize=markersize,linestyles=linestyles_,
+			lgsize=lgsize,legloc='best',markevery=1,ncol=ncol,xticks=xticks,xticklabel=xticklabel,annot_aw=2 if keyword !='reactive' else None)
+
+def plot_breakdown():
+	# batch breakdown
+	latency_breakdown_mean = [[0.00455909734249115, 0.0005560131160076708, 0.00023642764806747438, 0.04561761306425502],
+	[0.004631135659217835, 0.0008592742218635976, 0.00022894992828369142, 0.06668495337616376],
+	[0.004496246471405029, 0.0013584858769550919, 0.0002239444637298584, 0.11089228095896249],
+	[0.004519511394500733, 0.0025342730802483857, 0.00022607625961303712, 0.19675006694938904],
+	[0.00478874797821045, 0.005448275371268392, 0.0002342068099975586, 0.3728581001051526],
+	[0.0048398783412604285, 0.014246439476907482, 0.00023509953349543075, 0.7486890470647757],
+	[0.004399494304778469, 0.015999999999999365, 0.0002341903698672155, 1.4240682725217528]]
+
+	latency_breakdown_std = [[0.00019468925378149094, 5.584275363686788e-05, 1.9531520795695604e-05, 0.017782071823511884],
+	[0.00017537580325603641, 7.260013062751902e-05, 1.736606173976656e-05, 0.025110829662576592],
+	[0.00019017245067606885, 9.149818119041286e-05, 1.685588933829107e-05, 0.043189631076095754],
+	[0.00021328910781494919, 0.00013665798550337163, 1.4873707000809235e-05, 0.07779634547285684],
+	[0.00019141467146913094, 0.0004524667563076057, 1.677122266685227e-05, 0.1569391868139879],
+	[0.00021182092754556427, 0.0011024832600207727, 4.049920186137311e-05, 0.34634288409670605],
+	[0.00015224290905889435, 6.349087922075114e-16, 1.9471022131885656e-05, 0.5982422255192984]]
+	latency_types = ['MAP','SYN','RED','F-M']	
+	labels = ['1','2','4','8','16','32','64']
+	plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown_vs_batch.eps',2,(0.77,0.64),title_posy=0.29,lim1=25,ratio=.48,lim2=2500)
+	# cifar breakdown
+	latency_types = ['MAP','SYN','RED','INF','F-M']	
+	labels = ['Original', 'Proactive','REACTIQ',]
+	latency_breakdown_mean = [[0,0,0,0.00483251379701657, 1.0169146132483973],
+	[0,0,0,0.00483251379701657, 0.7486877294765364],
+	[0.0048398783412604285, 0.014246439476907482, 0.00023509953349543075,0, 0.7486890470647757],]
+
+	latency_breakdown_std = [[0,0,0,0.0002204459821230588, 0.5684324923094014],
+	[0,0,0,0.0002204459821230588, 0.34634275598435527],
+	[0.00021182092754556427, 0.0011024832600207727, 4.049920186137311e-05,0, 0.34634288409670605],]
+
+	plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown_cifar.eps',5,(0.5,0.66),title_posy=0.35,ratio=0.25,lim2=2000)
+
+	# imagenet latency breakdown
+	latency_breakdown_mean = [
+	[0,0,0,0.018242218704223632, 15.481805917434501],
+	[0,0,0,0.018242218704223632, 11.0142774438325],
+	[0.019284586669921874, 0.06311613967338686, 0.014764462451934815,0, 11.01427887952024],]
+
+	latency_breakdown_std = [
+	[0,0,0,0.007524489114244404, 8.696532160000752],
+	[0,0,0,0.007524489114244404, 4.517442844121096],
+	[0.001057063805851016, 0.0015932168873451931, 0.007375720249399674,0, 4.517442117207892],
+	]
+	plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown_imagenet.eps',5,(0.5,0.66),title_posy=0.35,lim1=100,lim2=25000,ratio=0.25)
+
+def plot_flops_vs_acc():
+	x = [
+		[4.5,8.7,15.4,34.4,60.9],
+		[4.5,8.7,15.4],
+		[1.82,3.68,4.12,7.85,11.58],
+		[0.01292,0.03721,0.05929,0.09714,0.20908,0.30079],
+		]
+	y = [
+		[82.9,84.6,85.8,86.6,87.0],
+		[81.2,83.2,83.5],
+		[69.758,73.314,76.130,77.374,78.312],
+		[34.896,52.352,60.092,64.592,69.952,72.192],
+		]
+
+	x = [np.log10(np.array(l)*1e9).tolist() for l in x]
+	methods = ['ConvNeXt','Swin-Transformer','ResNet','MobileNet-v2']
+	linestyles = ['solid']*10#,'dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
+	line_plot(x,y,methods,colors,
+			'/home/bo/Dropbox/Research/NSDI24fFaultless/images/flops_vs_acc.eps',
+			'MFLOPS','Top-1 Acc. (%)',lbsize=24,linewidth=2,markersize=8,linestyles=linestyles,xticks=range(7,12),ylim=(30,90),
+			lgsize=20,xticklabel=[f'$10^{i}$' for i in range(1,6)],markevery=1)
+
+
+def plot_motivation():
+	# motivation: DCN latency enable this
+	# if we run two servers, at least one will have the other's information as the DC network is stable
+	# but the early one might be sent to the front-end
+	# need to make sure the fast server receives the slow server in 50% cases.
+	# constant threshold
+	# constant delay
+
+	latency_list = []
+	for idx,filename in enumerate(['original']):
+		with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/cifar10/{filename}.log','r') as f:
+			for l in f.readlines():
+				latency_list += [float(l)]
+	latency_min,latency_max = min(latency_list),max(latency_list)
+	latency_list = (np.array(latency_list))
+	L = len(latency_list)
+
+	y = []
+	# N=2
+	p_list = []
+	for p in [0.05,0.01,0.001]:
+		p = 1-p**(1/2)
+		p_list += [p**2]
+	y += [p_list]
+	# N=3
+	p_list = []
+	for p in [0.05,0.01,0.001]:
+		p = 1-p**(1/3)
+		p_list += [p**3 + 3 * p**2 * (1-p)]
+	y += [p_list]
+	# N=4
+	p_list = []
+	for p in [0.05,0.01,0.001]:
+		p = 1-p**(1/4)
+		p_list += [p**4 + 4 * p**3 * (1-p) + 6 * p**2 * (1-p)**2]
+	y += [p_list]
+
+	envs = ['95th','99th','99.9th']
+	methods_tmp = ['N=2','N=3', 'N=4']
+	y = np.array(y).T*100
+	groupedbar(y,None,'Redundancy (%)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/prob_vs_repl.eps',methods=methods_tmp,labelsize=24,xlabel='Failure Threshold',
+		envs=envs,ncol=1,width=.25,sep=1,legloc='lower right',lgsize=20,)
+
+	N = 100
+	x = [];y = [[],[],[],]
+	p90,p95,p99 = 0,0,0
+	for i in range(N):
+		latency = i/(N-1)*(latency_max-latency_min) + latency_min
+		x += [latency]
+		p = sum(latency_list<latency)/L
+		y[0] += [p*p]
+		y[1] += [2*p*(1-p)]
+		y[2] += [(1-p)**2]
+
+	x = [x for _ in range(len(y))]
+
+	linestyles_ = ['solid']*10#,'dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
+	methods = ['Redundant', 'Exact', 'Failed',]
+	# colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
+	line_plot(x,y,methods,colors,
+			'/home/bo/Dropbox/Research/NSDI24fFaultless/images/prob_vs_latency.eps',
+			'Failure Threshold (s)','Likelihood (%)',lbsize=24,linewidth=2,markersize=8,linestyles=linestyles_,
+			lgsize=20,legloc='best',use_prob_annot=True,
+			xticks=[latency_min,1.324710109274886, 1.8153979640093003, 2.5920196835625706,latency_max],
+			xticklabel=[f'{latency_min:.2f}\nmin','1.32\n95th','1.82\n99th','2.59\n99.9th',f'{latency_max:.2f}\nmax']
+			)
+
+
+def plot_metrics():
+	# latency_list = [[],[]]
+	# for idx,filename in enumerate(['cifar10','imagenet']):
+	# 	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/{filename}/dcn.log','r') as f:
+	# 		for l in f.readlines():
+	# 			latency_list[idx] += [float(l)]
+	# labels = ['CIFAR-10', 'ImageNet']
+	# measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/dcn_latency_cdf.eps',labels,linestyles=linestyles,
+	# 		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+	latency = [[0.014551684027537704, 0.01568313699681312, 0.026199982967227697],
+	[0.06311217998154461, 0.06720246304757893, 0.0727699960116297]
+				]
+	envs = ['CIFAR-10', 'ImageNet']
+	methods_tmp = ['Medium','99th','99.9th']
+	y = np.array(latency)
+	groupedbar(y,None,'Latency (s)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_metrics_dcn.eps',methods=methods_tmp,labelsize=24,xlabel='Dataset',
+		envs=envs,ncol=1,width=.25,sep=1,legloc=None,bbox_to_anchor=(0.25,1.02),lgsize=20,)
+
+	# latency_list = [[],[],[]]
+	# for idx,filename in enumerate(['original','react2','rep2']):
+	# 	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/imagenet/{filename}.log','r') as f:
+	# 		for l in f.readlines():
+	# 			latency_list[idx] += [float(l)]
+	# labels = ['Original', 'REACT-N2','Approx-N2']
+	# measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cdf2.eps',labels,linestyles=linestyles,
+	# 		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+	latency = [[13.118708950557236, 47.00770999836955, 54.96142094344102],
+	[9.801519507608141, 26.822823907091642, 36.71819809887111],
+	[9.723657777764773, 26.744062898290704, 36.63905317049958]
+				]
+	envs = ['Medium','99th','99.9th']
+	methods_tmp = ['Original','Proactive', 'REACTIQ']
+	y = np.array(latency).T
+	y = y[:,[0,2,1]]
+	groupedbar(y,None,'Latency (s)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_metrics_imagenet.eps',methods=methods_tmp,labelsize=24,xlabel='Metrics',
+		envs=envs,ncol=1,width=.25,sep=1,legloc=None,bbox_to_anchor=(0.7,0.4),lgsize=20,latency_met_annot=True)
+
+	# latency_list = [[],[],[],[]]
+	# for idx,filename in enumerate(['original','react2','react3','react4']):
+	# 	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/cifar10/{filename}.log','r') as f:
+	# 		for l in f.readlines():
+	# 			latency_list[idx] += [float(l)]
+	# labels = ['Original', 'REACT-N2', 'REACT-N3','REACT-N4']
+	# measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_repl_cdf.eps',labels,linestyles=linestyles,
+	# 		colors=colors,bbox_to_anchor=(.7,0.5),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+
+	latency = [[0.8651444067997442, 3.1388551201301063, 3.467007832221128],
+	[0.669176916184692, 1.9810741319450342, 2.752692678973059],
+	[0.5923948994946825, 1.3548866270896853, 1.9175132929601952],
+	[0.5504748315755827, 1.1861622719566873, 1.5737354110882709]
+				]
+	envs = ['Medium','99th','99.9th']
+	methods_tmp = ['Original', 'REACTIQ-N2', 'REACTIQ-N3','REACTIQ-N4']
+	y = np.array(latency).T
+	groupedbar(y,None,'Latency (s)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_repl_metrics.eps',methods=methods_tmp,labelsize=24,xlabel='Metrics',
+		envs=envs,ncol=1,width=.2,sep=1,legloc=None,bbox_to_anchor=(0.2,1.02),lgsize=14,latency_met_annot=True,ylim=(0,4.5))
+
+	# latency_list = [[],[],[]]
+	# for idx,filename in enumerate(['original','react2','rep2']):
+	# 	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/cifar10/{filename}.log','r') as f:
+	# 		for l in f.readlines():
+	# 			latency_list[idx] += [float(l)]
+	# labels = ['Original', 'REACT-N2','Approx-N2']
+	# measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cdf.eps',labels,linestyles=linestyles,
+	# 		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+	latency = [[0.8651444067997442, 3.1388551201301063, 3.467007832221128],
+	[0.669176916184692, 1.9810741319450342, 2.752692678973059],
+	[0.6544319294650239, 1.9654508961028212, 2.737339210027809]
+				]
+	envs = ['Medium','99th','99.9th']
+	methods_tmp = ['Original','Proactive', 'REACTIQ']
+	y = np.array(latency).T
+	y = y[:,[0,2,1]]
+	groupedbar(y,None,'Latency (s)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_metrics_cifar.eps',methods=methods_tmp,labelsize=24,xlabel='Metrics',
+		envs=envs,ncol=1,width=.25,sep=1,legloc=None,bbox_to_anchor=(0.7,0.4),lgsize=20,latency_met_annot=True,ylim=(0,4.5))
+
+def plot_comp_vs_model():
+	latency = [[1,0.4877350051600989,0.4842981426839224, 0.0981940241180258],
+				[1,0.4772859694677207,0.4816118024089462, 0.00898199113806668],
+				[1,0.4883683402282493,0.4931303416137934, 0.28606033891261035],
+				[1,0.49477564147949954,0.49501848582754915, 0.08724856076480889]]
+	y = np.array(latency)
+	y[:,1] *= 2
+	y[:,2] *= 2
+	y[:,3] = (1-y[:,3]) * y[:,2]
+	y *= 100
+
+	# Extract columns 2 and 3
+	column2 = y[:, 2]
+	column3 = y[:, 3]
+
+	# Calculate the average of columns 2 and 3
+	average_column = (column2 * 0.971 + column3 * (1-0.971))
+
+	# Insert the average column at index 3
+	y = np.insert(y, 4, average_column, axis=1)
+
+	y[:,[2,3,4]] = y[:,[4,2,3,]]
+	print(y)
+
+	envs = ['ConvNeXt','Swin','ResNet','MobileNet']
+	methods_tmp = ['Original','Proactive','REACTIQ-Runtime','REACTIQ-Full','REACTIQ-Degraded']
+	groupedbar(y,None,'Relative Computation (%)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comp_vs_model.eps',methods=methods_tmp,labelsize=20,xlabel='Models',
+		envs=envs,ncol=1,width=.16,sep=1,legloc=None,bbox_to_anchor=(0.35,0.6),lgsize=18)
+
+
+def plot_cost():
+	# convnext
+	# 25 0.4877350051600989
+	# 28 0.4842981426839224 0.0981940241180258
+
+	# swin
+	# 10 0.4772859694677207
+	# 10 0.4816118024089462 0.00898199113806668
+
+	# mobilenetv2
+	# 20 0.4883683402282493
+	# 27 0.4931303416137934 0.28606033891261035
+
+	# resnet-50, 64
+	# 19 0.49477564147949954
+	# 21 0.49501848582754915 0.08724856076480889
+
+	# Before save (MB): 80.19921875 After save (MB): 1.45947265625 Before to after ratio: 54.950819672131146 Before to input ratio: 139.66666666666666 After to input ratio: 2.5416666666666665
+	# Before save (MB): 2.03125 After save (MB): 0.0625 Before to after ratio: 32.5 Before to input ratio: 173.33333333333334 After to input ratio: 5.333333333333333 27
+
+	# required communication / input communication
+	# print('Required to input ratio:',2.03125/(32*32*3*4/1024/1024),40.099609375/(224*224*3*4/1024/1024))
+	ratio_method_model = [[174.33,6.33],[140.67,3.54]]#96%,97
+	envs = ['ResNet-56','ResNet-50']
+	methods = ['w/o Selective Neural Sharing','w/ Selective Neural Sharing']
+	y = np.array(ratio_method_model)
+	print(y)
+	# y = np.log10(y)
+	groupedbar(y,None,'Relative BW Usage', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/bw_cost.eps',methods=methods,labelsize=24,latency_met_annot=True,
+		envs=envs,ncol=1,width=.3,sep=1,legloc=None,lgsize=20,bbox_to_anchor=(0.5,0.7),
+		# yticks=[np.log10(3),1,2,np.log10(200)],yticklabel=[3,10,100,200]
 		)
 
-exit(0)
+	analyze_all_recorded_traces()
 
-latency = [[0.8651444067997442, 3.1388551201301063, 3.467007832221128],
-			[0.6422523006381087, 1.7715859235991278, 2.267751282911982],
-			[0.576112568325518, 1.425773471235434, 1.5793761956525325],
-			[0.5390899176400686, 1.1127228729699334, 1.4071868097611444]
-			]
-latency = np.array(latency).T
-latency = (latency[:,:1]-latency[:,])/latency[:,:1]*100
-cost = [[100*i for i in range(1,5)] for _ in range(3)]
+def plot_challenge():
+	# comp vs. acc, network improve with comp
+	# plot computation allocation
 
-methods = ['Medium','99th','99.9th']
-linestyles_ = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
-line_plot(latency,cost,methods,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/cost_vs_latency.eps',
-		'Latency Reduction (%)','Computation Cost (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
-		lgsize=20,legloc='best')
+	model_speed = [[0.001550,0.001603,0.001611,0.001658,0.001571],
+	[0.002421,0.002373,0.002384,0.002364,0.002371],
+	[0.003368,0.003466,0.003473,0.003332,0.003474],
+	[0.004526,0.004356,0.004388,0.004400,0.004459],
+	[0.008456,0.008505,0.008504,0.008475,0.008479]]
+	model_speed = np.array(model_speed).mean(axis=1)
 
-# plot rep vs latency cdf; rep vs computation
-latency = [[0.8651444067997442, 3.1388551201301063, 3.467007832221128],
-			[0.6422523006381087, 1.7715859235991278, 2.267751282911982],
-			[0.576112568325518, 1.425773471235434, 1.5793761956525325],
-			[0.5390899176400686, 1.1127228729699334, 1.4071868097611444]
-			]
-envs = ['Medium','99th','99.9th']
-methods_tmp = ['N=1','N=2','N=3', 'N=4']
-y = np.array(latency).T
-groupedbar(y,None,'Latency (ms)', 
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_vs_repl.eps',methods=methods_tmp,labelsize=24,xlabel='Metrics',
-	envs=envs,ncol=1,width=.2,sep=1,legloc=None,bbox_to_anchor=(0.17,1.02),lgsize=20,latency_met_annot=True)
-exit(0)
-
-# convnext
-# 25 0.4877350051600989
-# 28 0.4842981426839224 0.0981940241180258
-
-# swin
-# 10 0.4772859694677207
-# 10 0.4816118024089462 0.00898199113806668
-
-# mobilenetv2
-# 20 0.4883683402282493
-# 27 0.4931303416137934 0.28606033891261035
-
-# resnet-50, 64
-# 19 0.49477564147949954
-# 21 0.49501848582754915 0.08724856076480889
-latency = [[2,0.4877350051600989,0.4842981426839224, 0.0981940241180258],
-			[2,0.4772859694677207,0.4816118024089462, 0.00898199113806668],
-			[2,0.4883683402282493,0.4931303416137934, 0.28606033891261035],
-			[2,0.49477564147949954,0.49501848582754915, 0.08724856076480889]]
-y = np.array(latency)
-y[:,1] *= 2
-y[:,2] *= 2
-y[:,3] = (1-y[:,3]) * y[:,2]
-y *= 100
-
-envs = ['ConvNeXt','Swin','ResNet','MobileNet']
-methods_tmp = ['Replication','Approx','REACT-Full','REACT-Degraded']
-groupedbar(y,None,'Relative Computation (%)', 
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comp_vs_model.eps',methods=methods_tmp,labelsize=20,xlabel='Metrics',
-	envs=envs,ncol=2,width=.16,sep=1,legloc=None,bbox_to_anchor=(0.5,.8),lgsize=16)
-exit(0)
-
-# Before save (MB): 80.19921875 After save (MB): 1.45947265625 Before to after ratio: 54.950819672131146 Before to input ratio: 139.66666666666666 After to input ratio: 2.5416666666666665
-# Before save (MB): 2.03125 After save (MB): 0.0625 Before to after ratio: 32.5 Before to input ratio: 173.33333333333334 After to input ratio: 5.333333333333333 27
-
-# required communication / input communication
-# print('Required to input ratio:',2.03125/(32*32*3*4/1024/1024),40.099609375/(224*224*3*4/1024/1024))
-ratio_method_model = [[174.33,6.33],[140.67,3.54]]
-envs = ['ResNet-56','ResNet-50']
-methods = ['Before sampling','After sampling']
-y = np.array(ratio_method_model)
-y = np.log10(y)
-groupedbar(y,None,'Relative Comm. Overhead', 
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost.eps',methods=methods,labelsize=24,
-	envs=envs,ncol=1,width=.3,sep=1,legloc=None,lgsize=24,bbox_to_anchor=(0.4,0.8),yticks=[np.log10(3),1,2,np.log10(200)],yticklabel=[3,10,100,200])
-
-analyze_all_recorded_traces()
-exit(0)
-
-# comp vs. acc, network improve with comp
-# plot computation allocation
-
-model_speed = [[0.001550,0.001603,0.001611,0.001658,0.001571],
-[0.002421,0.002373,0.002384,0.002364,0.002371],
-[0.003368,0.003466,0.003473,0.003332,0.003474],
-[0.004526,0.004356,0.004388,0.004400,0.004459],
-[0.008456,0.008505,0.008504,0.008475,0.008479]]
-model_speed = np.array(model_speed).mean(axis=1)
-
-rounds = [19,31,43,55,109]
-latency_list = []
-with open(f'../DCN/{22:06d}','r') as f:
-	for l in f.readlines():
-		l = l.strip().split(' ')
-		latency_list += [float(l[0])/1000]
-latency = np.array(rounds) * np.array(latency_list).mean()
-
-
-envs = ['R20','R32','R44','R56','R110']
-methods_tmp = ['Comp.','Comm.']
-y = np.stack((model_speed,latency)).T*1000
-
-groupedbar(y,None,'Latency (ms)', 
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_vs_model.eps',methods=methods_tmp,labelsize=24,
-	envs=envs,ncol=1,width=.3,sep=1,legloc=None,bbox_to_anchor=(0.25,1),latency_annot=True,ylim=(0,70))
-
-relative_bw = [61,99,136,173,341]
-base_bw = 32*32*3*4 / 1024#12kB
-y = [[12,12,12,12,12],[61*12,99*12,136*12,173*12,341*12]]
-methods_tmp = ['Input','Comm.']
-y = np.array(y).T;y = np.log10(y)
-groupedbar(y,None,'Bandwidth Consumption (KB)', 
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/bandwidth_vs_model.eps',methods=methods_tmp,labelsize=24,
-	envs=envs,ncol=1,width=.3,sep=1,legloc=None,bbox_to_anchor=(0.7,.7),bandwidth_annot=True,
-	yticks=[1,2,3,4],yticklabel=[10,100,1000,10000],ylim=(0,4))
-
-print(model_speed,latency,latency/model_speed,np.array(latency_list).mean())
-
-
-exit(0)
-
-acc_repl_model = [[85.8,85.2,84.2,84.2],[85.8,85.0,83.9,84.2],[85.8,84.7,83.6,84.2]]
-
-x = [];y = []
-default = 0.1
-for i in range(3):
-	xx = np.linspace(0,26)*0.01
-	if i==0:
-		p1 = 4 * xx**3 * (1-xx) + 2 * xx**2 * (1-xx)**2
-	elif i==1:
-		p1 = 4 * xx**3 * (1-xx) + 1 * xx**2 * (1-xx)**2
-	else:
-		p1 = 4 * xx**3 * (1-xx)
-	yy = acc_repl_model[i][1] * (1-p1-xx**4) + acc_repl_model[i][2] * p1 + default * xx**4
-	x += [xx]; y += [yy]
-methods = ['REACT-N2','REACT-N3','REACT-N4']
-linestyles_ = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
-line_plot(x,y,methods,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_N_response.eps',
-		'Failure Rate','Effective Top-1 Acc. (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
-		lgsize=18,legloc='lower left')
-exit(0)
-x = [
-	[4.5,8.7,15.4,34.4,60.9],
-	[4.5,8.7,15.4],
-	[1.82,3.68,4.12,7.85,11.58],
-	[0.01292,0.03721,0.05929,0.09714,0.20908,0.30079],
-	]
-y = [
-	[82.9,84.6,85.8,86.6,87.0],
-	[81.2,83.2,83.5],
-	[69.758,73.314,76.130,77.374,78.312],
-	[34.896,52.352,60.092,64.592,69.952,72.192],
-	]
-
-x = [np.log10(np.array(l)*1e9).tolist() for l in x]
-methods = ['ConvNeXt','Swin-Transformer','ResNet','MobileNet-v2']
-linestyles = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
-line_plot(x,y,methods,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/flops_vs_acc.eps',
-		'FLOPS','Accuracy (%)',lbsize=24,linewidth=4,markersize=8,linestyles=linestyles,xticks=range(7,12),ylim=(30,90),
-		lgsize=20,xticklabel=[f'1e{i}' for i in range(7,12)])
-exit(0)
-latency_list = [[],[]]
-for idx,filename in enumerate(['cifar10','imagenet']):
-	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/{filename}/dcn.log','r') as f:
+	rounds = [19,31,43,55,109]
+	latency_list = []
+	with open(f'../DCN/{22:06d}','r') as f:
 		for l in f.readlines():
-			latency_list[idx] += [float(l)]
-labels = ['CIFAR-10', 'ImageNet']
-measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/dcn_latency_cdf.eps',labels,linestyles=linestyles,
-		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+			l = l.strip().split(' ')
+			latency_list += [float(l[0])/1000]
+	latency = np.array(rounds) * np.array(latency_list).mean()
 
-latency_list = [[],[],[]]
-for idx,filename in enumerate(['original','react2','rep2']):
-	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/imagenet/{filename}.log','r') as f:
-		for l in f.readlines():
-			latency_list[idx] += [float(l)]
-labels = ['Original', 'REACT-N2','Approx-N2']
-measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cdf2.eps',labels,linestyles=linestyles,
-		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
 
-latency_list = [[],[],[],[]]
-for idx,filename in enumerate(['original','react2','react3','react4']):
-	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/cifar10/{filename}.log','r') as f:
-		for l in f.readlines():
-			latency_list[idx] += [float(l)]
-labels = ['Original', 'REACT-N2', 'REACT-N3','REACT-N4']
-measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_repl_cdf.eps',labels,linestyles=linestyles,
-		colors=colors,bbox_to_anchor=(.7,0.5),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+	envs = ['20','32','44','56','110']
+	methods_tmp = ['Comp.','Sync.']
+	y = np.stack((model_speed,latency)).T*1000
 
-latency_list = [[],[],[]]
-for idx,filename in enumerate(['original','react2','rep2']):
-	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/logs/cifar10/{filename}.log','r') as f:
-		for l in f.readlines():
-			latency_list[idx] += [float(l)]
-labels = ['Original', 'REACT-N2','Approx-N2']
-measurements_to_cdf(latency_list,f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cdf.eps',labels,linestyles=linestyles,
-		colors=colors,bbox_to_anchor=(.7,0.4),lfsize=20,ncol=1,lbsize=24,xlabel=f'Latency (s)')
+	groupedbar(y,None,'Latency (ms)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_vs_model.eps',methods=methods_tmp,labelsize=24,
+		envs=envs,ncol=1,width=.3,sep=1,legloc=None,bbox_to_anchor=(0.25,1),latency_annot=True,ylim=(0,70),xlabel='ResNet Config')
+
+	relative_bw = [61,99,136,173,341]
+	base_bw = 32*32*3*4 / 1024#12kB
+	y = [[12,12,12,12,12],[61*12,99*12,136*12,173*12,341*12]]
+	methods_tmp = ['Query','Neuron']
+	y = np.array(y).T;y = np.log10(y)
+	groupedbar(y,None,'Bandwidth Usage (KB)', 
+		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/bandwidth_vs_model.eps',methods=methods_tmp,labelsize=24,
+		envs=envs,ncol=1,width=.3,sep=1,legloc=None,bbox_to_anchor=(0.7,.7),bandwidth_annot=True,
+		yticks=[1,2,3,4],yticklabel=[10,'$10^2$','$10^3$','$10^4$'],ylim=(0,4),xlabel='ResNet Config')
+
+	print(model_speed,latency,latency/model_speed,np.array(latency_list).mean())
+
+
+def plot_OI_failure_response():
+	acc_repl_model = [[85.8,85.2,84.1,84.2],[85.8,84.8,83.0,83.2],[85.8,84.3,82.0,82.4]]
+
+	x = [];y = []
+	default = 0.0
+	for i in range(3):
+		xx = np.linspace(0,100)*0.01
+		if i==0:
+			p1 = 4 * xx**3 * (1-xx) + 2 * xx**2 * (1-xx)**2
+		elif i==1:
+			p1 = 4 * xx**3 * (1-xx) + 1 * xx**2 * (1-xx)**2
+		else:
+			p1 = 4 * xx**3 * (1-xx)
+		yy = acc_repl_model[i][1] * (1-p1-xx**4) + acc_repl_model[i][2] * p1 + default * xx**4
+		x += [xx]; y += [yy]
+	methods = ['REACTIQ-N2','REACTIQ-N3','REACTIQ-N4']
+	linestyles_ = ['solid']*10#,'dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
+	line_plot(x,y,methods,colors,
+			'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_N_response.eps',
+			'Failure Rate','Top-1 Acc. (%)',lbsize=24,linewidth=2,markersize=8,linestyles=linestyles_,
+			lgsize=16,legloc='lower left')
+
+def plot_learning_curve():
+	for name in ['resnet50']:
+		numsn = 4
+		colors_tmp = colors
+		all_acc = [[] for _ in range(numsn)]
+		all_epoch = [[] for _ in range(numsn)]
+		lines = 1
+		with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/{name}.log','r') as f:
+			for line in f.readlines():
+				line = line.split(' ')
+				epoch = eval(line[0])
+				line = line[1].strip().split(',')[2:]
+				accuracy_list = [eval(n.split('(')[0]) for n in line if len(n)>=6]
+				for i,n in enumerate(accuracy_list):
+					all_acc[i] += [n]
+					all_epoch[i] += [lines]
+				lines += 1
+		for line in all_acc:
+			print(max(line))
+		all_acc[0] = (np.array(all_acc[0]) + np.array(all_acc[1]))/2
+		del all_acc[1]
+		del all_epoch[1]
+		max_list = [75.3,72.2]
+		max1 = max(all_acc[0])
+		all_acc[0] = (np.array(all_acc[0])/max1*max_list[0]).tolist()
+		max1 = max(max(all_acc[1]),max(all_acc[2]))
+		all_acc[1] = (np.array(all_acc[1])/max1*max_list[1]).tolist()
+		all_acc[2] = (np.array(all_acc[2])/max1*max_list[1]).tolist()
+		methods_tmp = [f'SN#1Rank#1', 'SN#2Rank#2', 'SN#3Rank#2']
+		xticks = [0,40,80,120,160]
+		ncol = 1
+		line_plot(all_epoch,all_acc,methods_tmp,colors_tmp,
+				f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/convnext_learning_curve.eps',
+				'Epoch','Test Top-1 Acc. (%)',markersize=0,linewidth=4,xticks=xticks,legloc='lower right',lbsize=24,ncol=ncol,use_resnet50arrow=True,lgsize=18)
+
+plot_reactive_varywait(keyword='adaptive_wait')
 exit(0)
+plot_acc_n_failure_response()
 
-for name in ['resnet50']:
-	numsn = 4
-	colors_tmp = colors
-	all_acc = [[] for _ in range(numsn)]
-	all_epoch = [[] for _ in range(numsn)]
-	lines = 0
-	with open(f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/{name}.log','r') as f:
-		for line in f.readlines():
-			line = line.split(' ')
-			epoch = eval(line[0])
-			line = line[1].strip().split(',')[2:]
-			accuracy_list = [eval(n.split('(')[0]) for n in line if len(n)>=6]
-			for i,n in enumerate(accuracy_list):
-				all_acc[i] += [n]
-				all_epoch[i] += [lines]
-			lines += 1
-	max_list = [85.2,84.1]
-	for i in range(2):
-		max1 = max(max(all_acc[0+2*i]),max(all_acc[1+2*i]))
-		all_acc[0+2*i] = (np.array(all_acc[0+2*i])/max1*max_list[i]).tolist()
-		all_acc[1+2*i] = (np.array(all_acc[1+2*i])/max1*max_list[i]).tolist()
-	methods_tmp = [f'SN#{i}' for i in range(numsn)]
-	xticks = [0,40,80,120,160]
-	ncol = 2
-	line_plot(all_epoch,all_acc,methods_tmp,colors_tmp,
-			f'/home/bo/Dropbox/Research/NSDI24fFaultless/images/convnext_learning_curve.eps',
-			'Epoch','Test Top-1 Acc. (%)',markersize=0,linewidth=2,xticks=xticks,legloc='best',lbsize=24,ncol=ncol,use_resnet50arrow=True,lgsize=18)
 exit(0)
-
-acc_method_model = [[85.8,85.2,84.1,84.2],[83.5,83.2,82.6,82.8],[76.13,75.3,72.2,72.4],[72.192,71.1,68.0,68.1]]
-envs = ['ConvNeXt','Swin','ResNet','MobileNet']
-methods = ['Original','REACT-2/2','REACT-1/2','Approx']
-y = np.array(acc_method_model)
-groupedbar(y,None,'Top-1 Acc. (%)', 
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/acc_method_model.eps',methods=methods,labelsize=20,
-	envs=envs,ncol=1,width=.2,sep=1,legloc='upper right',lgsize=16,ylim=(65,90))
-
-x = [];y = []
-default = 0.1
-for i in range(1):
-	xx = np.linspace(0,11)*0.01
-	yy = acc_method_model[i][0] * (1 - xx**2) + default * xx**2
-	x += [xx]; y += [yy]
-	yy = acc_method_model[i][1] * (1-(2+i) * xx**(1+i) * (1-xx)-xx**(2+i)) + acc_method_model[i][2] * (2+i) * xx**(1+i) * (1-xx) + default * xx**(2+i)
-	x += [xx]; y += [yy]
-	yy = acc_method_model[i][3] * (1 - xx**2) + default * xx**2
-	x += [xx]; y += [yy]
-methods = ['Original','REACT','Approx']
-linestyles_ = ['solid','dashed','dotted','dashdot']
-line_plot(x,y,methods,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_response.eps',
-		'Failure Rate','Effective Top-1 Acc. (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
-		lgsize=18,legloc='lower left')
-
-acc_repl_model = [[85.8,85.2,84.2,84.2],[85.8,85.0,83.9,84.2],[85.8,84.7,83.6,84.2]]
-envs = ['2','3','4']
-methods = ['Original','REACT-2/2','REACT-1/2','Approx']
-y = np.array(acc_repl_model)
-groupedbar(y,None,'Top-1 Acc. (%)', 
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/acc_repl_model.eps',methods=methods,labelsize=20,
-	envs=envs,ncol=1,width=.2,sep=1,legloc='lower left',lgsize=16,ylim=(82,86),xlabel='# of Replicas')
-
-x = [];y = []
-default = 0.1
-for i in range(3):
-	xx = np.linspace(0,26)*0.01
-	yy = acc_repl_model[i][1] * (1-(2+i) * xx**(1+i) * (1-xx)-xx**(2+i)) + acc_repl_model[i][2] * (2+i) * xx**(1+i) * (1-xx) + default * xx**(2+i)
-	x += [xx]; y += [yy]
-	yy = acc_repl_model[i][3] * (1 - xx**(2+i)) + default * xx**(2+i)
-	x += [xx]; y += [yy]
-methods = ['REACT-N2','Approx-N2','REACT-N3','Approx-N3','REACT-N4','Approx-N4']
-linestyles_ = ['solid','dashed','dotted','dashdot',(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1))]
-line_plot(x,y,methods,colors,
-		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/failure_repl_response.eps',
-		'Failure Rate','Effective Top-1 Acc. (%)',lbsize=24,linewidth=4,markersize=0,linestyles=linestyles_,
-		lgsize=18,legloc='lower left')
+plot_OI_failure_response()
+plot_reactive_varywait()
+plot_breakdown()
+plot_cost()
 exit(0)
+plot_metrics()
+plot_comp_vs_model()
+plot_challenge()
+plot_learning_curve()
+plot_motivation()
+plot_flops_vs_acc()
+
 
 x = [[1-1.0*i/32 for i in range(32)] for _ in range(3)]
 y = [[15438473216.0, 14498716864.0, 13588464000.0, 12707714624.0, 11856468736.0, 11034726336.0, 10242487424.0, 9479752000.0, 8746520064.0, 8042791616.0, 7368566656.0, 6723845184.0, 6108627200.0, 5522912704.0, 4966701696.0, 4439994176.0, 3942790144.0, 3475089600.0, 3036892544.0, 2628198976.0, 2249008896.0, 1899322304.0, 1579139200.0, 1288459584.0, 1027283456.0, 795610816.0, 593441664.0, 420776000.0, 277613824.0, 163955136.0, 79799936.0, 25148224.0],
@@ -962,54 +1276,6 @@ line_plot(x,y1,methods_tmp,colors,
 		'FLOPS (%)','Consistency (%)',lbsize=24,linewidth=0,markersize=16,linestyles=linestyles,xticks=[50,100,150],yticks=[1,2,3],
 		lgsize=20,bbox_to_anchor=(.4,.49),ncol=1,use_arrow=True,arrow_coord=(65,0.8),ratio=.78)	
 exit(0)
-# batch breakdown
-latency_breakdown_mean = [[0.00455909734249115, 0.0005560131160076708, 0.00023642764806747438, 0.04561761306425502],
-[0.004631135659217835, 0.0008592742218635976, 0.00022894992828369142, 0.06668495337616376],
-[0.004496246471405029, 0.0013584858769550919, 0.0002239444637298584, 0.11089228095896249],
-[0.004519511394500733, 0.0025342730802483857, 0.00022607625961303712, 0.19675006694938904],
-[0.00478874797821045, 0.005448275371268392, 0.0002342068099975586, 0.3728581001051526],
-[0.0048398783412604285, 0.014246439476907482, 0.00023509953349543075, 0.7486890470647757],
-[0.004399494304778469, 0.015999999999999365, 0.0002341903698672155, 1.4240682725217528]]
-
-latency_breakdown_std = [[0.00019468925378149094, 5.584275363686788e-05, 1.9531520795695604e-05, 0.017782071823511884],
-[0.00017537580325603641, 7.260013062751902e-05, 1.736606173976656e-05, 0.025110829662576592],
-[0.00019017245067606885, 9.149818119041286e-05, 1.685588933829107e-05, 0.043189631076095754],
-[0.00021328910781494919, 0.00013665798550337163, 1.4873707000809235e-05, 0.07779634547285684],
-[0.00019141467146913094, 0.0004524667563076057, 1.677122266685227e-05, 0.1569391868139879],
-[0.00021182092754556427, 0.0011024832600207727, 4.049920186137311e-05, 0.34634288409670605],
-[0.00015224290905889435, 6.349087922075114e-16, 1.9471022131885656e-05, 0.5982422255192984]]
-latency_types = ['MAP','DCN','RED','WAN']	
-labels = ['1','2','4','8','16','32','64']
-plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown_vs_batch.eps',2,(0.77,0.64),title_posy=0.29,lim1=25,ratio=.48,lim2=2500)
-# cifar breakdown
-latency_types = ['MAP','DCN','RED','INF','WAN']	
-labels = ['NR', 'TR','Ours',]
-latency_breakdown_mean = [[0,0,0,0.00483251379701657, 1.0169146132483973],
-[0,0,0,0.00483251379701657, 0.7486877294765364],
-[0.0048398783412604285, 0.014246439476907482, 0.00023509953349543075,0, 0.7486890470647757],]
-
-latency_breakdown_std = [[0,0,0,0.0002204459821230588, 0.5684324923094014],
-[0,0,0,0.0002204459821230588, 0.34634275598435527],
-[0.00021182092754556427, 0.0011024832600207727, 4.049920186137311e-05,0, 0.34634288409670605],]
-
-plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown_cifar.eps',5,(0.5,0.66),title_posy=0.35,ratio=0.25,lim2=2000)
-
-# imagenet latency breakdown
-latency_breakdown_mean = [
-[0,0,0,0.018242218704223632, 15.481805917434501],
-[0,0,0,0.018242218704223632, 11.0142774438325],
-[0.019284586669921874, 0.06311613967338686, 0.014764462451934815,0, 11.01427887952024],]
-
-latency_breakdown_std = [
-[0,0,0,0.007524489114244404, 8.696532160000752],
-[0,0,0,0.007524489114244404, 4.517442844121096],
-[0.001057063805851016, 0.0015932168873451931, 0.007375720249399674,0, 4.517442117207892],
-]
-plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_types,labels,
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown_imagenet.eps',5,(0.5,0.66),title_posy=0.35,lim1=100,lim2=25000,ratio=0.25)
-exit(0)
 
 # different convs
 re_vs_conv = [[0.00467252396166129,0.004293130990415284],
@@ -1027,23 +1293,6 @@ envs = [f'{bridge_size[i]}\n{round(flops_vs_conv[i]*200)}' for i in range(6)]
 groupedbar(y,None,'Consistency (%)', 
 	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/re_vs_conv.eps',methods=['Jitter','Fail-stop'],envs=envs,labelsize=24,yticks=[0,.2,.4,.6],
 	ncol=1,sep=1,bbox_to_anchor=(0.63, 1.03),width=0.4,xlabel='Bridge Size and FLOPS (%)',legloc=None)
-
-# different sampling rates
-re_vs_sr = [[0.00297523961661339,0.0031948881789138905],
-[0.0004992012779553301,0.0019968051118210983],
-[0.0015974440894568342,0.004293130990415284],
-[0.0026956869009584494,0.0019968051118210983],
- [0.004592651757188482,0.003993610223642197],]
-
-# flops_vs_sr = [1.1925665854377538,0.8964458865494916,0.7483855371053606,0.6743553623832951,0.6003]
-flops_vs_sr = [0.7930,0.6614,0.5956,0.5627,0.5298]
-sample_interval = [9,5,3,2,1]
-re_vs_sr = np.array(re_vs_sr)
-y = re_vs_sr*100
-envs = [f'{sample_interval[i]}/9\n{round(flops_vs_sr[i]*200)}' for i in range(5)]
-groupedbar(y,None,'Consistency (%)', 
-	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/re_vs_sr.eps',methods=['Jitter','Fail-stop'],envs=envs,labelsize=24,
-	ncol=1,sep=1,width=0.4,xlabel='Sampling Interval and FLOPS (%)',legloc=None,bbox_to_anchor=(0.25, 1.03))
 
 # different partition ratios
 diff_ratio_data = [[-0.0023961661341853624,-0.0020966453674121643],
@@ -1073,7 +1322,7 @@ yerr = [[0]+l for l in yerr]
 y = np.array(y)[[0,1,2,3]]*100;yerr = np.array(yerr)[[0,1,2,3]]*100
 line_plot(x, y,['NR','TR2','TR3','TR4'],colors,
 		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/mot0.eps',
-		'Failure Rate (%)','Effective Accuracy (%)',lbsize=20,use_re_label=True,markersize=8,ylim=(0,100),lgsize=19)
+		'Failure Rate (%)','Accuracy (%)',lbsize=20,use_re_label=True,markersize=8,ylim=(0,100),lgsize=19)
 exit(0)
 n_soft = 11;n_hard = 11;
 methods_tmp = ['TR','NR','RR','Ours']
@@ -1322,7 +1571,7 @@ line_plot(x, y,methods_tmp,colors_tmp,
 # line_plot(x,y,methods_tmp,colors,
 # 		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost.eps',
 # 		'Partition Ratio (%)','Comm. Cost Reduction Ratio',lbsize=24,linewidth=8,markersize=16,linestyles=linestyles,
-# 		use_comm_annot=True)
+# 		use_prob_annot=True)
 
 x0 = np.array([0.1*i for i in range(11)])
 x = [(1-x0)*100]
@@ -1372,3 +1621,22 @@ line_plot(x,y,[''],colors,
 # filename = '/home/bo/Dropbox/Research/NSDI24fFaultless/images/flops_dist.eps'
 # plot_computation_dist(flops,labels,filename,horizontal=False)
 # # 77.09%: resnet-50
+
+
+# different sampling rates
+re_vs_sr = [[0.00297523961661339,0.0031948881789138905],
+[0.0004992012779553301,0.0019968051118210983],
+[0.0015974440894568342,0.004293130990415284],
+[0.0026956869009584494,0.0019968051118210983],
+ [0.004592651757188482,0.003993610223642197],]
+
+flops_vs_sr = [0.7930,0.6614,0.5956,0.5627,0.5298]
+sample_interval = [9,5,3,2,1]
+re_vs_sr = np.array(re_vs_sr)
+y = re_vs_sr*100
+envs = [f'{sample_interval[i]}/9\n{round(flops_vs_sr[i]*200)}' for i in range(5)]
+groupedbar(y,None,'Consistency (%)', 
+	'/home/bo/Dropbox/Research/NSDI24fFaultless/images/re_vs_sr.eps',methods=['Jitter','Fail-stop'],envs=envs,labelsize=24,
+	ncol=1,sep=1,width=0.4,xlabel='Sampling Interval and FLOPS (%)',legloc=None,bbox_to_anchor=(0.25, 1.03))
+
+exit(0)

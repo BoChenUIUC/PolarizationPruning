@@ -664,7 +664,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     if args.simulate:
         print('Batch size:',args.batch_size)
-        assert args.batch_size==8
+        # assert args.batch_size==8
         simulation(model, args.arch, args.prune_mode, val_loader, criterion, 0, args)
         exit(0)
 

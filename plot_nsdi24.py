@@ -1152,8 +1152,7 @@ def simulate():
     print(bw.mean(),bw.std(),'MBps',np.array(bandwidth_list).mean()*8,np.array(bandwidth_list).std()*8)
 
 num_samples = 50000
-comp_time = [0.033693,0.034360,0.036269,0.038337,0.042787,0.050216]
-comp_time = [0.004653,0.005051,0.005240]
+comp_time = [0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945]
 analyze_all_recorded_traces()
 exit(0)
 plot_reactive_varywait(keyword='adaptive_wait')

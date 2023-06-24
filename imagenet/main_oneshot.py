@@ -1847,13 +1847,6 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
                 f.write(f'{latency}\n')
     print('Traces loaded ok.')
 
-    # run originial model
-    print('Running original ML service')
-    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
-    # evaluate standalone running time
-    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
-    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
-
     all_map_time = []
     all_reduce_time = []
     all_correct = []
@@ -1886,6 +1879,13 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         for sn_idx in range(args.split_num*2):
             reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
             print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
+
+    # run originial model
+    print('Running original ML service')
+    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
+    # evaluate standalone running time
+    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
+    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
 
     rep = 10
     if args.split_num in {2}:
@@ -2158,6 +2158,8 @@ def train(train_loader, model, criterion, optimizer, epoch, sparsity, args, is_d
 
 def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=False, standalone=False):
     batch_time = AverageMeter()
+    map_time = AverageMeter()
+    reduce_time = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
 
@@ -2177,9 +2179,11 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                 end = time.time()
                 output = model(image,map_fwd=True)
                 map_time_lst.append(time.time()-end)
+                map_time.update(time.time()-end)
                 end = time.time()
                 output = model(output,reduce_fwd=True)
                 reduce_time_lst.append(time.time()-end)
+                reduce_time.update(time.time()-end)
                 batch_time.update(map_time_lst[-1] + reduce_time_lst[-1])
             else:
                 end = time.time()
@@ -2201,9 +2205,12 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
 
             val_iter.set_description(
                   'Time {batch_time.val:.6f} ({batch_time.avg:.6f}). '
+                  'Map {map_time.val:.6f} ({map_time.avg:.6f}). '
+                  'Reduce {reduce_time.val:.6f} ({reduce_time.avg:.6f}). '
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f}). '
                   'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                 batch_time=batch_time, top1=top1, top5=top5))
+    exit(0)
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

@@ -789,7 +789,7 @@ def compute_conv_flops_par(model: torch.nn.Module, cuda=False, ratio=1.0) -> flo
         demo_input = demo_input.cuda()
         model = model.cuda()
     model(demo_input)
-
+    print(sum(list_conv) , sum(list_linear))
     total_flops = sum(list_conv) + sum(list_linear)
     aggr_ratio = sum(list_aggr) / total_flops
 

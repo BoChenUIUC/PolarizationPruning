@@ -52,7 +52,7 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 				xticks=None,yticks=None,ncol=None, yerr=None, xticklabel=None,yticklabel=None,xlim=None,ylim=None,ratio=None,
 				use_arrow=False,arrow_coord=(60,0.6),markersize=8,bbox_to_anchor=None,get_ax=0,linewidth=2,logx=False,use_probarrow=False,
 				rotation=None,use_resnet56_2arrow=False,use_resnet56_3arrow=False,use_resnet56_4arrow=False,use_resnet50arrow=False,use_re_label=False,
-				use_prob_annot=False,use_connarrow=False,lgsize=None,oval=False,scatter_soft_annot=False,markevery=4,annot_aw=None):
+				use_throughput_annot=False,use_connarrow=False,lgsize=None,oval=False,scatter_soft_annot=False,markevery=4,annot_aw=None):
 	if lgsize is None:
 		lgsize = lbsize
 	if get_ax==1:
@@ -153,11 +153,8 @@ def line_plot(XX,YY,label,color,path,xlabel,ylabel,lbsize=labelsize_b,legloc='be
 				ax.annotate('Most Reliable\nMost Computation', xy=(xx[i],yy[i]), xytext=(xx[i]-50,yy[i]+2),color = color[i], fontsize=lbsize-4,arrowprops=dict(arrowstyle='->',lw=2))
 			elif i==1:
 				ax.annotate('Least Computation\nMost Unreliable', xy=(xx[i],yy[i]), xytext=(xx[i]-5,yy[i]-4),color = color[i], fontsize=lbsize-4,arrowprops=dict(arrowstyle='->',lw=2))
-	if use_prob_annot:
-		xx,yy = XX[-1],YY[-1]
-		# [0.6,0.8,0.9]
-		# [1.3303288776709477, 1.8755448348252626, 2.4045152038996433]
-		# ax.annotate('Naive neuron sharing: 174', xy=(xx[2],yy[2]+0.1), xytext=(60,2.15), fontsize=lbsize,fontweight='bold')
+	if use_throughput_annot:
+		ax.annotate(text=f"$\u2191$"+'41%', xy=(XX[1][1],YY[1][1]), xytext=(0,0.8), arrowprops=dict(arrowstyle='->',lw=2),size=lgsize+2,fontweight='bold')
 	if annot_aw is not None:
 		if annot_aw == 0:
 			ax.annotate(text='0.37% to max', xy=(0.4,97.28), xytext=(0.45,90), arrowprops=dict(arrowstyle='->',lw=2),size=lgsize,fontweight='bold')
@@ -845,7 +842,7 @@ def plot_motivation():
 	line_plot(x,y,methods,colors,
 			'/home/bo/Dropbox/Research/NSDI24fFaultless/images/prob_vs_latency.eps',
 			'Failure Threshold (s)','Likelihood (%)',lbsize=24,linewidth=2,markersize=8,linestyles=linestyles_,
-			lgsize=20,legloc='best',use_prob_annot=True,
+			lgsize=20,legloc='best',use_throughput_annot=True,
 			xticks=[latency_min,1.324710109274886, 1.8153979640093003, 2.5920196835625706,latency_max],
 			xticklabel=[f'{latency_min:.2f}\nmin','1.32\n95th','1.82\n99th','2.59\n99.9th',f'{latency_max:.2f}\nmax']
 			)
@@ -1097,63 +1094,131 @@ def plot_learning_curve():
 
 def simulate():
     print('Analyzing all recorded traces...')
-    selected_batch_latency = []
-    y = []
-    yerr = []
-    trpt = []
-    trpterr = []
     trace_filenames = []
     trace_filenames += [f'../DCN-244/{244*i:06d}' for i in [1,2,4,8,16,32,64]]
-    latency_mean_list = []
-    latency_std_list = []
-    trpt_mean_list = []
-    trpt_std_list = []
     all_latency_list = []
+    cross_server_size = 3840*43/64*7*7*2 # bytes
+    single_query_size = 224*224*3 #bytes
     for tidx,filename in enumerate(trace_filenames):
         latency_list = []
         with open(filename,'r') as f:
             for l in f.readlines():
                 l = l.strip().split(' ')
-                latency_list += [float(l[0])/1e3]
+                # millisecond, bytes per second
+                # latency_list += [float(l[0])/1e3]
+                latency_list += [cross_server_size / float(l[1])]
             if len(latency_list)>=10000:
             	latency_list = latency_list[:10000]
             else:
             	latency_list = latency_list[:1000]
             	latency_list = latency_list*10
-        print(len(latency_list))
         all_latency_list += [latency_list]
-        # shuffled_list = latency_list.copy()
-        # random.shuffle(shuffled_list)
-        # all_latency_list += [shuffled_list]
     import csv
+    with open('../curr_httpgetmt.csv', mode='r') as csv_file:
+        # read network traces 
+        csv_reader = csv.DictReader(csv_file)
+        f2m_latency_list = []
+        num_of_line = 0
+        bwlist = []
+        for row in csv_reader:
+            if row["bytes_sec_interval"] != "NULL" and float(row["bytes_sec_interval"])<2e6:continue
+            bw = float(row["bytes_sec_interval"])
+            for bs in [2**i for i in range(7)]:
+                query_size = single_query_size*bs
+                f2m_latency_list += [query_size/bw]
+            num_of_line += 1
+            bwlist += [bw]
+            if num_of_line==10000:break
+        all_latency_list += np.array(f2m_latency_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
+    print("Avg bw:",np.mean(bwlist))
+
     with open('../curr_videostream.csv', mode='r') as csv_file:
         # read network traces 
         csv_reader = csv.DictReader(csv_file)
-        latency_list = []
+        m2f_latency_list = []
         num_of_line = 0
-        bandwidth_list = []
         for row in csv_reader:
-            bandwidth_list += [float(row["downthrpt"])]
             for bs in [2**i for i in range(7)]:
-                query_size = 3*224*224*4*bs
-                latency_list += [query_size/float(row["downthrpt"])]
+                m2f_latency_list += [float(row["latency"])*1e-6]
             num_of_line += 1
             if num_of_line==10000:break
-        all_latency_list += np.array(latency_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
-        print(len(latency_list))
-        # shuffled_list = latency_list.copy()
-        # random.shuffle(shuffled_list)
-        # all_latency_list += [shuffled_list]
+        all_latency_list += np.array(m2f_latency_list).reshape((num_of_line,7)).transpose((1,0)).tolist()
 
     all_latency_list = np.array(all_latency_list)
-    # all_latency_list = all_latency_list.mean(axis=-1).reshape(4,7)
-    print(all_latency_list.shape)
-    num_samples = 10000
-    comp_time = np.array([[0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945],[0.010791,0.016995,0.017772,0.019092,0.021050,0.025342,0.033885]])
-    comp_time[0] = comp_time[0]/comp_time[0,3]*0.005791
-    comp_time[1] = comp_time[1]/comp_time[1,3]*0.005687
-    print(comp_time)
 
+    num_samples = 10000
+    # original,proactive,reactiq
+    comp_time = np.array([[0.004648,0.004606,0.004970,0.005209,0.005569,0.006214,0.006114],
+    						[0.010791,0.016995,0.017772,0.019092,0.021050,0.025342,0.033885],
+    						[0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945],
+    						])
+    comp_time[1] = comp_time[1]/comp_time[1,3]*0.005687
+    comp_time[2] = comp_time[2]/comp_time[2,3]*0.005791
+
+    latency_results = []
+    throughput = []
+    metrics_results = []
+    random.seed(0)
+    for i in range(7):
+        m2m_latency_list = all_latency_list[i]
+        f2m_latency_list = all_latency_list[i+7]
+        m2f_latency_list = all_latency_list[i+14]
+        shuffled_m2m_latency_list = m2m_latency_list.copy()
+        random.shuffle(shuffled_m2m_latency_list)
+        shuffled_m2f_latency_list = m2f_latency_list.copy()
+        random.shuffle(shuffled_m2f_latency_list)
+
+        tail99 = list_to_tail(m2m_latency_list,tail_options=[0.99])[0]
+
+        original_latency = [[a,comp_time[0,i],b] for a,b in zip(f2m_latency_list, m2f_latency_list)]
+        proactive_latency = [[a,comp_time[1,i],min(b,c)] for a,b,c in zip(f2m_latency_list,m2f_latency_list,shuffled_m2f_latency_list)]
+        reactiq_latency = [[a,comp_time[2,i],min(b+min(tail99,d),c+min(tail99,e))] for a,b,c,d,e in zip(f2m_latency_list,\
+        																m2f_latency_list,shuffled_m2f_latency_list,\
+        																m2m_latency_list,shuffled_m2m_latency_list)]
+
+        if i == 0:
+        	for latency in [original_latency,proactive_latency,reactiq_latency]:
+        		metrics_results += [list_to_tail(np.array(latency).sum(axis=1),tail_options=[0.5,0.9,0.99,0.999])]
+
+        for latency in [original_latency,proactive_latency,reactiq_latency]:
+        	latency_results += [list_to_tail(np.array(latency).sum(axis=1),tail_options=[0.99])[0]]
+        	throughput += [(2**i)/np.mean(latency,axis=0).sum()]
+
+    envs = ['Medium','90th','99th','99.9th'];methods = ['Original','Proactive', 'REACTIQ']
+    y = np.array(metrics_results).reshape(3,4).T
+    groupedbar(y,None,'Latency (s)', 
+    '/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_vs_metrics.eps',methods=methods,labelsize=24,xlabel='Metrics',
+    envs=envs,ncol=1,width=.25,sep=1,legloc='upper left',lgsize=20,latency_met_annot=True)
+
+    N = 4
+    envs = [f'{2**i}' for i in range(N)];methods = ['Original','Proactive', 'REACTIQ']
+    y = np.array(latency_results).reshape(7,3)
+    y = y[:N,:]
+    groupedbar(y,None,'Latency (s)', 
+    '/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_vs_batch.eps',methods=methods,labelsize=24,xlabel='Batch Size',
+    envs=envs,ncol=1,width=.25,sep=1,legloc='upper left',lgsize=20,latency_met_annot=True)
+
+    linestyles_ = ['solid']*10
+    x = [[f'{2**i}' for i in range(N)] for _ in range(3)]
+    y = np.array(throughput).reshape(7,3).T
+    y = y[:,:N]
+    print(y[2]/y[0])
+    line_plot(x,y,methods,colors,
+    '/home/bo/Dropbox/Research/NSDI24fFaultless/images/throughput_vs_batch.eps',
+    'Batch Size','Query Per Second',lbsize=24,linewidth=2,markersize=8,linestyles=linestyles_,
+    lgsize=20,legloc='best',markevery=1,use_throughput_annot=False)
+
+# This metric records the average downstream throughput for the entire duration of the test. 
+# This average is calculated by taking the mean average of the speed of 
+# completing each of the blocks downloaded (as specified with the –css client parameter) in bytes/sec
+# A measure of the standard deviation of the speed each block was downloaded at in microseconds
+# The mean of all of the ping round-trip-times sent from client to server in microseconds
+
+# 244 KB => 3.3 ms, 605Mbps
+# 64 + 256 + 512 + 1024 + 2048
+# 3840*43/64*7*7*2*8 = 2Mbits
+
+# Clients send 100-thousand queries to the frontend using a variety of Poisson arrival rates.
 num_samples = 50000
 comp_time = [[0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945],
 			[0.010791,0.016995,0.017772,0.019092,0.021050,0.025342,0.033885]]
@@ -1626,7 +1691,7 @@ line_plot(x, y,methods_tmp,colors_tmp,
 # line_plot(x,y,methods_tmp,colors,
 # 		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comm_cost.eps',
 # 		'Partition Ratio (%)','Comm. Cost Reduction Ratio',lbsize=24,linewidth=8,markersize=16,linestyles=linestyles,
-# 		use_prob_annot=True)
+# 		use_throughput_annot=True)
 
 x0 = np.array([0.1*i for i in range(11)])
 x = [(1-x0)*100]

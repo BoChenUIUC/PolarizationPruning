@@ -211,7 +211,7 @@ parser.add_argument('--OFA', action='store_true',
                     help='OFA training')
 parser.add_argument('--ps_batch', default=4, type=int, 
                     help='super batch size')
-parser.add_argument('--partition_ratio', default=0.25, type=float,
+parser.add_argument('--partition_ratio', default=0.5, type=float,
                     help="The partition ratio")
 parser.add_argument('--VLB_conv_type', default=-1, type=int,
                     help="Type of vlb conv")
@@ -476,9 +476,10 @@ def main_worker(gpu, ngpus_per_node, args):
                 model = vgg11()
         elif args.arch == "resnet50":
             model = resnet50(aux_fc=False,
-                             width_multiplier=args.width_multiplier,
+                             width_multiplier=43./64,#args.width_multiplier,
                              gate=args.gate,
                              bridge_type=args.VLB_conv_type)
+            print('Model width:',43./64)
         elif args.arch == "mobilenetv2":
             model = mobilenet_v2(width_mult=args.width_multiplier,
                                  use_gate=args.gate,
@@ -512,13 +513,14 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/resnet/model_best.pth.tar'
         else:
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
-        args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+        # args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
     if args.loss in {LossType.PARTITION}:
         if args.arch == "resnet50":
             args.teacher_model = resnet50(aux_fc=False,
-                             width_multiplier=args.width_multiplier,
+                             width_multiplier=45./64,#args.width_multiplier,
                              gate=args.gate)
+            print('Teacher width:',45/64)
         elif args.arch == "mobilenetv2":
             args.teacher_model = mobilenet_v2(width_mult=args.width_multiplier,
                                  use_gate=args.gate)
@@ -542,7 +544,7 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/resnet/model_best.pth.tar'
         else:
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
-        # args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+        args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
     if len(torch.nonzero(torch.tensor(args.alphas)))>1:
         args.ps_batch = len(args.alphas)*4
@@ -1829,31 +1831,12 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
     np.random.seed(0)
     print('Simulation with test batch size:',args.batch_size)
 
-    num_query = 6250
-    # inter-node latency
-    num_dcn_conns = args.split_num**2
-    dcnlatency_list = [[] for _ in range(num_dcn_conns)]
-    # actually need only 1/4
-    with open(f'DCN/{244*args.batch_size:06d}','r') as f:
-        record_latency_list = []
-        for l in f.readlines():
-            l = l.strip().split(' ')
-            record_latency_list += [float(l[0])/1000.]
-        for i in range(4):
-            dcnlatency_list[i] += np.random.permutation(record_latency_list).tolist()[:num_query]
-    with open(f'dcn.log','a+') as f:
-        for latency_list in dcnlatency_list:
-            for latency  in latency_list:
-                f.write(f'{latency}\n')
-    print('Traces loaded ok.')
-
     # run originial model
     print('Running original ML service')
     infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
     # evaluate standalone running time
     infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
-    exit(0)
 
     all_map_time = []
     all_reduce_time = []
@@ -1887,6 +1870,24 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
         for sn_idx in range(args.split_num*2):
             reduce_mean,reduce_std = np.array(all_reduce_time[sn_idx]).mean(),np.array(all_reduce_time[sn_idx]).std()
             print(f'Reduce time{sn_idx}: {reduce_mean:.6f}({reduce_std:.6f})')
+
+    num_query = 6250
+    # inter-node latency
+    num_dcn_conns = args.split_num**2
+    dcnlatency_list = [[] for _ in range(num_dcn_conns)]
+    # actually need only 1/4
+    with open(f'DCN/{244*args.batch_size:06d}','r') as f:
+        record_latency_list = []
+        for l in f.readlines():
+            l = l.strip().split(' ')
+            record_latency_list += [float(l[0])/1000.]
+        for i in range(4):
+            dcnlatency_list[i] += np.random.permutation(record_latency_list).tolist()[:num_query]
+    with open(f'dcn.log','a+') as f:
+        for latency_list in dcnlatency_list:
+            for latency  in latency_list:
+                f.write(f'{latency}\n')
+    print('Traces loaded ok.')
 
     rep = 10
     if args.split_num in {2}:

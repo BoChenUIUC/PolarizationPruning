@@ -1219,9 +1219,6 @@ def simulate():
 # 3840*43/64*7*7*2*8 = 2Mbits
 
 # Clients send 100-thousand queries to the frontend using a variety of Poisson arrival rates.
-num_samples = 50000
-comp_time = [[0.004653,0.005051,0.005240,0.005663,0.005940,0.006688,0.006945],
-			[0.010791,0.016995,0.017772,0.019092,0.021050,0.025342,0.033885]]
 # split
 [0.005436,0.000215]
 # @8

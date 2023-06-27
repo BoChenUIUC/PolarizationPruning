@@ -513,7 +513,7 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/resnet/model_best.pth.tar'
         else:
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
-        # args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+        args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
     if args.loss in {LossType.PARTITION}:
         if args.arch == "resnet50":
@@ -544,7 +544,7 @@ def main_worker(gpu, ngpus_per_node, args):
             teacher_path = './original/resnet/model_best.pth.tar'
         else:
             teacher_path = './original/mobilenetv2/model_best.pth.tar'
-        args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
+        # args.teacher_model.load_state_dict(torch.load(teacher_path)['state_dict'])
 
     if len(torch.nonzero(torch.tensor(args.alphas)))>1:
         args.ps_batch = len(args.alphas)*4

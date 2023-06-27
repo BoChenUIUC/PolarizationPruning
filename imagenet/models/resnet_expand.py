@@ -535,7 +535,6 @@ class ResNetExpand(nn.Module):
             x = self.avgpool(x)
             x = x.view(x.size(0), -1)
             x = self.fc(x)
-            print('......')
             return x,None
 
     def prune_model(self, **kwargs):

@@ -2201,7 +2201,8 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                     output, out_aux = output
                 # evaluation stuff
                 infer_time_lst.append(time.time()-end)
-                batch_time.update(time.time() - end)
+                if i>0:
+                    batch_time.update(time.time() - end)
             # stuff end
 
             # measure accuracy and record loss

@@ -520,6 +520,10 @@ def main_worker(gpu, ngpus_per_node, args):
             args.teacher_model = resnet50(aux_fc=False,
                              width_multiplier=45./64,#args.width_multiplier,
                              gate=args.gate)
+            # test
+            args.teacher_model_full = resnet50(aux_fc=False,
+                             width_multiplier=1,#args.width_multiplier,
+                             gate=args.gate).cuda()
             print('Teacher width:',45/64)
         elif args.arch == "mobilenetv2":
             args.teacher_model = mobilenet_v2(width_mult=args.width_multiplier,
@@ -1833,10 +1837,11 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
 
     # run originial model
     print('Running original ML service')
+    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model_full, criterion, epoch=epoch, args=args, writer=None,standalone=True)
     infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
     # evaluate standalone running time
-    infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
-    print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
+    # infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
+    # print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
 
     all_map_time = []
     all_reduce_time = []
@@ -1856,6 +1861,7 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
                 map_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, standalone=True)
             all_map_time += [map_time_lst]
             all_correct += [correct_lst]
+            exit(0)
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")

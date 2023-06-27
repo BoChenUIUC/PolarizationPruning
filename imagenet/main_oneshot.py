@@ -380,8 +380,8 @@ def main():
             raise ValueError(f"Conflict option: --layerwise and --arch {args.arch}")
         if args.bn3_sparsity != "unified":
             raise ValueError(f"Conflict option: --layerwise and --bn3-sparsity {args.bn3_sparsity}")
-    print(args)
-    print(f"Current git hash: {common.get_git_id()}")
+    # print(args)
+    # print(f"Current git hash: {common.get_git_id()}")
     if args.debug:
         print("*****WARNING! DEBUG MODE IS ENABLED!******")
         print("******The model will NOT be trained!******")
@@ -1837,8 +1837,9 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
 
     # run originial model
     print('Running original ML service')
-    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model_full, criterion, epoch=epoch, args=args, writer=None,standalone=True)
+    infer_time_lst,correct_lst = validate(val_loader, model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
     infer_time_lst,correct_lst = validate(val_loader, args.teacher_model, criterion, epoch=epoch, args=args, writer=None,standalone=True)
+    infer_time_lst,correct_lst = validate(val_loader, args.teacher_model_full, criterion, epoch=epoch, args=args, writer=None,standalone=True)
     # evaluate standalone running time
     # infer_time_mean,infer_time_std = np.array(infer_time_lst).mean(),np.array(infer_time_lst).std()
     # print(f'Standalone inference time:{infer_time_mean:.6f}({infer_time_std:.6f})')
@@ -1861,7 +1862,6 @@ def simulation(model, arch, prune_mode, val_loader, criterion, epoch, args):
                 map_time_lst,correct_lst = validate(val_loader, masked_model, criterion, epoch=epoch, args=args, writer=None, standalone=True)
             all_map_time += [map_time_lst]
             all_correct += [correct_lst]
-            exit(0)
     else:
         # not available
         raise NotImplementedError(f"do not support arch {arch}")

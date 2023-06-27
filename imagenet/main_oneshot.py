@@ -2201,7 +2201,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                     output, out_aux = output
                 # evaluation stuff
                 infer_time_lst.append(time.time()-end)
-                if i>0:
+                if i>0 and i<len(val_loader)-1:
                     batch_time.update(time.time() - end)
             # stuff end
 
@@ -2219,6 +2219,7 @@ def validate(val_loader, model, criterion, epoch, args, writer=None, map_reduce=
                   'Prec@1 {top1.val:.3f} ({top1.avg:.3f}). '
                   'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                 batch_time=batch_time, map_time=map_time, reduce_time=reduce_time, top1=top1, top5=top5))
+    print('---',batch_time.avg,'---')
     if map_reduce:
         return map_time_lst,reduce_time_lst,correct_lst
     elif standalone:

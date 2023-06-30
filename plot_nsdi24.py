@@ -207,15 +207,20 @@ def plot_latency_breakdown(latency_breakdown_mean,latency_breakdown_std,latency_
 	# colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
 	y_pos = np.arange(len(labels))
 	latency_breakdown_mean = np.array(latency_breakdown_mean).transpose((1,0))*1000
-	latency_breakdown_std = np.array(latency_breakdown_std).transpose((1,0))*1000
+	if latency_breakdown_std is not None:
+		latency_breakdown_std = np.array(latency_breakdown_std).transpose((1,0))*1000
 	width = 0.8
 	plt.rcdefaults()
 	fig, (ax1,ax2) = plt.subplots(1,2,sharey=True)
 	for ax in [ax1,ax2]:
 		left = np.array([0.0]*len(labels))
 		for i in range(len(latency_types)):
-			ax.barh(y_pos, latency_breakdown_mean[i], width, color=colors[i], xerr=latency_breakdown_std[i], left=left, 
-				label=latency_types[i], align='center')
+			if latency_breakdown_std is not None:
+				ax.barh(y_pos, latency_breakdown_mean[i], width, color=colors[i], xerr=latency_breakdown_std[i], left=left, 
+					label=latency_types[i], align='center')
+			else:
+				ax.barh(y_pos, latency_breakdown_mean[i], width, color=colors[i], left=left, 
+					label=latency_types[i], align='center')
 			left += latency_breakdown_mean[i]
 	ax1.set_xlim(0,lim1)
 	ax2.set_xlim(lim1,lim2)
@@ -498,7 +503,7 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 			if i<=1:
 				for k,xdx in enumerate(x_index):
 					mult = -data_mean[k,i]
-					ax.text(xdx-0.06,data_mean[k,i]-1.5,'$\downarrow$'+f'{mult:.1f}%',fontsize = labelsize,rotation='vertical')
+					ax.text(xdx-0.06,data_mean[k,i]-8,'$\downarrow$'+f'{mult:.1f}%',fontsize = labelsize,rotation='vertical')
 	if ncol>0:
 		if legloc is None:
 			plt.legend(bbox_to_anchor=bbox_to_anchor, fancybox=True,
@@ -1195,6 +1200,7 @@ def simulate():
     lateency_qps = []; qps = []
     metrics_results = []
     latency_breakdown_mean = []; latency_breakdown_std = []
+    latency_breakdown_batch_mean = []; latency_breakdown_batch_std = []
     infl = [[],[]]
     random.seed(0)
     for i in range(10):
@@ -1218,11 +1224,12 @@ def simulate():
 
         tail99 = list_to_tail(m2m_latency_list,tail_options=[0.99])[0]
 
-        original_latency = [[a,c,b] for a,b,c in zip(f2m_latency_list, m2f_latency_list, original_comp_list)]
-        proactive_latency = [[a,d,b] if b+d<c+e else [a,e,c] for a,b,c,d,e in zip(f2m_latency_list,\
+        original_latency = [[a,c,b,0] for a,b,c in zip(f2m_latency_list, m2f_latency_list, original_comp_list)]
+        proactive_latency = [[a,d,b,0] if b+d<c+e else [a,e,c,0] for a,b,c,d,e in zip(f2m_latency_list,\
         											m2f_latency_list,shuffled_m2f_latency_list,\
         											proactive_comp_list, shuffled_proactive_comp_list)]
-        reactiq_latency = [[a,min(f+tail99,d+g),b] if b+min(f+tail99,d+g)<c+min(g+tail99,e+f) else [a,min(g+tail99,e+f),c] for a,b,c,d,e,f,g in zip(f2m_latency_list,\
+        reactiq_latency = [([a,f,b,tail99] if f+tail99<d+g else [a,g,b,d]) if b+min(f+tail99,d+g)<c+min(g+tail99,e+f) else ([a,g,c,tail99] if g+tail99<e+f else [a,f,c,e]) for a,b,c,d,e,f,g in zip(\
+        																f2m_latency_list,\
         																m2f_latency_list,shuffled_m2f_latency_list,\
         																m2m_latency_list,shuffled_m2m_latency_list,\
         																reactiq_comp_list,shuffled_reactiq_comp_list)]
@@ -1232,8 +1239,8 @@ def simulate():
         	latency_list = np.array(reactiq_latency).sum(axis=1)
         	latency_min,latency_max = latency_list.min(),latency_list.max()
         	N = 100; x = [];y = [[],[],[],];uu = [[],[],[],];ux = [[],[],[]]
-        	for i in range(N):
-        		latency = (i+1)/(N)*(latency_max-latency_min) + latency_min
+        	for j in range(N):
+        		latency = (j+1)/(N)*(latency_max-latency_min) + latency_min
         		x += [latency]
         		p = sum(latency_list<latency)/len(latency_list)
         		y[0] += [p*p+2*p*(1-p)]
@@ -1261,7 +1268,6 @@ def simulate():
 					'Success Rate (%)','Underutilization Rate (%)',lbsize=24,linewidth=2,markersize=8,linestyles=linestyles_,
 					lgsize=24,legloc='best',
 					)
-        	exit(0)
 
         infl_tmp = [[],[]]
         for f2m,m2f_0,m2f_1,m2m_0,m2m_1,comp_0,comp_1 in zip(f2m_latency_list,m2f_latency_list,shuffled_m2f_latency_list,\
@@ -1288,10 +1294,16 @@ def simulate():
         infl[1] += [np.mean(reactiq_comp_list)/ np.mean(original_comp_list)-1]
 
         if i == 0:
-        	for latency in [original_latency,proactive_latency,reactiq_latency]:
+        	for k,latency in enumerate([original_latency,proactive_latency,reactiq_latency]):
         		metrics_results += [list_to_tail(np.array(latency).sum(axis=1),tail_options=[0.9,0.95,0.99,0.999])]
-        		latency_breakdown_mean += [np.array(latency).mean(axis=0).tolist()]
-        		latency_breakdown_std += [np.array(latency).mean(axis=0).tolist()]
+        		if k==0:
+        			start,end = [2000,10000]
+        		elif k == 1:
+        			start,end = [1000,9000]
+        		else:
+        			start,end = [0,8000]
+        		latency_breakdown_mean += [np.array(latency)[start:end].mean(axis=0).tolist()]
+        		latency_breakdown_std += [np.array(latency)[start:end].std(axis=0).tolist()]
 
 	        shuffled_m2f_latency_list2 = m2f_latency_list.copy()
 	        random.shuffle(shuffled_m2f_latency_list2)
@@ -1315,8 +1327,8 @@ def simulate():
 
 
         for latency in [original_latency,proactive_latency,reactiq_latency]:
-        	latency_breakdown_mean += [np.array(latency).mean(axis=0).tolist()]
-        	latency_breakdown_std += [np.array(latency).mean(axis=0).tolist()]
+        	latency_breakdown_batch_mean += [np.array(latency).mean(axis=0).tolist()]
+        	latency_breakdown_batch_std += [np.array(latency).std(axis=0).tolist()]
 
         for latency in [original_latency,proactive_latency,reactiq_latency]:
         	latency_results += [list_to_tail(np.array(latency).sum(axis=1),tail_options=[0.99])[0]]
@@ -1337,19 +1349,19 @@ def simulate():
     line_plot(x, y,labels,colors,'/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_cost.eps','Batche Size','Latency Inflation (%)',
     	lbsize=24,linewidth=2,markersize=8,markevery=1,linestyles=linestyles_,xticks=[1,2,4,8,16])	
 
-    envs = ['M-F','C','F-M']
+    envs = ['M-F','Comp','M-M','F-M']
     labels = ['1','2','4','8','16']
-    y = np.array(latency_breakdown_mean)[2:15:3,[2,1,0]]
-    yerr = np.array(latency_breakdown_std)[2:15:3,[2,1,0]]
-    plot_latency_breakdown(y,yerr,envs,labels,
-    '/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown_vs_batch.eps',2,(0.77,0.64),title_posy=0.29,lim1=40,ratio=.48,lim2=1000)
+    y = np.array(latency_breakdown_batch_mean)[2:15:3,[2,1,3,0]]
+    yerr = np.array(latency_breakdown_batch_std)[2:15:3,[2,1,3,0]]
+    plot_latency_breakdown(y,None,envs,labels,
+    '/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown_vs_batch.eps',2,(0.77,0.64),title_posy=0.29,lim1=50,ratio=.48,lim2=1000)
 
     methods = ['Original','Proactive', 'REACTIQ']
-    y = np.array(latency_breakdown_mean)[:3,[2,1,0]].reshape(3,3).T
-    yerr = np.array(latency_breakdown_std)[:3,[2,1,0]].reshape(3,3).T
-    groupedbar(y,None,'Latency (s)', 
+    y = np.array(latency_breakdown_mean)[:3,[2,1,3,0]].reshape(3,4).T
+    yerr = np.array(latency_breakdown_std)[:3,[2,1,3,0]].reshape(3,4).T
+    groupedbar(y,yerr,'Latency (s)', 
     '/home/bo/Dropbox/Research/NSDI24fFaultless/images/latency_breakdown.eps',methods=methods,labelsize=24,xlabel='Latency Type',
-    envs=envs,ncol=1,width=.25,sep=1,legloc=None,bbox_to_anchor=(0.4, 1.02),lgsize=20,latency_met_annot=False)
+    envs=envs,ncol=1,width=.25,sep=1,legloc='best',lgsize=20,latency_met_annot=False)
 
     envs = ['90th','95th','99th','99.9th'];methods = ['Original','Proactive', 'REACTIQ']
     y = np.array(metrics_results).reshape(3,4).T
@@ -1391,11 +1403,11 @@ def simulate():
 # Clients send 100-thousand queries to the frontend using a variety of Poisson arrival rates.
 # split
 [0.005436,0.000215]
+simulate()
+exit(0)
 plot_comp_vs_model()
 exit(0)
 plot_acc_n_failure_response()
-simulate()
-exit(0)
 analyze_all_recorded_traces()
 plot_reactive_varywait(keyword='adaptive_wait')
 

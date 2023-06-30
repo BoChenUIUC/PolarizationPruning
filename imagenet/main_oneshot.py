@@ -476,10 +476,10 @@ def main_worker(gpu, ngpus_per_node, args):
                 model = vgg11()
         elif args.arch == "resnet50":
             model = resnet50(aux_fc=False,
-                             width_multiplier=43./64,#args.width_multiplier,
+                             width_multiplier=args.width_multiplier,
                              gate=args.gate,
                              bridge_type=args.VLB_conv_type)
-            print('Model width:',43./64)
+            # print('Model width:',43./64)
         elif args.arch == "mobilenetv2":
             model = mobilenet_v2(width_mult=args.width_multiplier,
                                  use_gate=args.gate,
@@ -518,13 +518,13 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.loss in {LossType.PARTITION}:
         if args.arch == "resnet50":
             args.teacher_model = resnet50(aux_fc=False,
-                             width_multiplier=45./64,#args.width_multiplier,
+                             width_multiplier=args.width_multiplier,
                              gate=args.gate)
-            # test
-            args.teacher_model_full = resnet50(aux_fc=False,
-                             width_multiplier=1,#args.width_multiplier,
-                             gate=args.gate).cuda()
-            print('Teacher width:',45/64)
+            # # test
+            # args.teacher_model_full = resnet50(aux_fc=False,
+            #                  width_multiplier=1,#args.width_multiplier,
+            #                  gate=args.gate).cuda()
+            # print('Teacher width:',45/64)
         elif args.arch == "mobilenetv2":
             args.teacher_model = mobilenet_v2(width_mult=args.width_multiplier,
                                  use_gate=args.gate)

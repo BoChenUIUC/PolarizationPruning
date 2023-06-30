@@ -533,17 +533,17 @@ def main_worker(gpu, ngpus_per_node, args):
         args.teacher_model.cuda()
         # args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
-        # N = 64
-        # for i in range(0,N):
-        #     flops_ratio = compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/N)/args.BASEFLOPS
-        #     if flops_ratio<0.5:break
-        # print(i,flops_ratio)
-        # for i in range(0,N):
-        #     flops,aggr_ratio = compute_conv_flops_par(model, cuda=True, ratio=1-1.0*i/N)
-        #     flops_ratio = flops/args.BASEFLOPS
-        #     if flops_ratio<0.5:break
-        # print(i,flops_ratio, aggr_ratio)
-        # exit(0)
+        N = 64
+        for i in range(0,N):
+            flops_ratio = compute_conv_flops_par(args.teacher_model, cuda=True, ratio=1-1.0*i/N)/args.BASEFLOPS
+            if flops_ratio<0.5:break
+        print(i,flops_ratio)
+        for i in range(0,N):
+            flops,aggr_ratio = compute_conv_flops_par(model, cuda=True, ratio=1-1.0*i/N)
+            flops_ratio = flops/args.BASEFLOPS
+            if flops_ratio<0.5:break
+        print(i,flops_ratio, aggr_ratio)
+        exit(0)
         if args.arch == 'resnet50':
             teacher_path = './original/resnet/model_best.pth.tar'
         else:

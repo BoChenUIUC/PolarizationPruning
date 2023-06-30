@@ -415,7 +415,7 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 				methods=['Ours','Standalone','Optimal','Ours*','Standalone*','Optimal*'],use_barlabel_x=False,use_barlabe_y=False,
 				ncol=3,bbox_to_anchor=(0.46, 1.28),sep=1.25,width=0.15,xlabel=None,legloc=None,labelsize=labelsize_b,ylim=None,
 				use_downarrow=False,rotation=None,lgsize=None,yticklabel=None,latency_annot=False,bandwidth_annot=False,latency_met_annot=False,
-				showaccbelow=False):
+				showaccbelow=False,showcompbelow=False):
 	if lgsize is None:
 		lgsize = labelsize
 	fig = plt.figure()
@@ -491,6 +491,11 @@ def groupedbar(data_mean,data_std,ylabel,path,yticks=None,envs = [2,3,4],
 			if i<=1:
 				ax.text(2.3,-3, "Better", ha="center", va="center", rotation=90, size=labelsize,
 				    bbox=dict(boxstyle="rarrow,pad=0.3", fc="white", ec="black", lw=2))
+				for k,xdx in enumerate(x_index):
+					mult = -data_mean[k,i]
+					ax.text(xdx-0.06,data_mean[k,i]-1.5,'$\downarrow$'+f'{mult:.1f}%',fontsize = labelsize,rotation='vertical')
+		if showcompbelow:
+			if i<=1:
 				for k,xdx in enumerate(x_index):
 					mult = -data_mean[k,i]
 					ax.text(xdx-0.06,data_mean[k,i]-1.5,'$\downarrow$'+f'{mult:.1f}%',fontsize = labelsize,rotation='vertical')
@@ -941,8 +946,8 @@ def plot_metrics():
 def plot_comp_vs_model():
 	latency = [[1,0.4877350051600989,0.4842981426839224, 0.0981940241180258],
 				[1,0.4772859694677207,0.4816118024089462, 0.00898199113806668],
-				[1,0.4883683402282493,0.4931303416137934, 0.28606033891261035],
-				[1,0.49477564147949954,0.49501848582754915, 0.08724856076480889]]
+				[1,0.49477564147949954,0.49501848582754915, 0.08724856076480889],
+				[1,0.4883683402282493,0.4931303416137934, 0.28606033891261035]]
 	y = np.array(latency)
 	y[:,1] *= 2
 	y[:,2] *= 2
@@ -966,7 +971,7 @@ def plot_comp_vs_model():
 	methods_tmp = ['Proactive','REACTIQ-Runtime','REACTIQ-Full','REACTIQ-Degraded']
 	groupedbar(y,None,'Relative Computation (%)', 
 		'/home/bo/Dropbox/Research/NSDI24fFaultless/images/comp_vs_model.eps',methods=methods_tmp,labelsize=20,xlabel='Network Architecture',
-		envs=envs,ncol=1,width=.16,sep=1,legloc='best',lgsize=18)
+		envs=envs,ncol=1,width=.16,sep=1,legloc='best',lgsize=18,showcompbelow=True)
 
 
 def plot_cost():

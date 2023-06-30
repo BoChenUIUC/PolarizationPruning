@@ -532,6 +532,7 @@ def main_worker(gpu, ngpus_per_node, args):
             raise NotImplementedError("model {} is not supported".format(args.arch))
         args.teacher_model.cuda()
         # args.teacher_model = torch.nn.DataParallel(args.teacher_model).cuda()
+        print(model)
         args.BASEFLOPS = compute_conv_flops_par(args.teacher_model, cuda=True)
         N = 64
         for i in range(0,N):

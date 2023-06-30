@@ -1001,6 +1001,16 @@ def plot_cost():
 
 	# required communication / input communication
 	# print('Required to input ratio:',2.03125/(32*32*3*4/1024/1024),40.099609375/(224*224*3*4/1024/1024))
+
+	# channel_ratio = 1-np.array([28,10,21,27])/64
+
+	# channel_num = np.array([128+ 256+ 512+ 1024,256 + 512 + 1024 + 1024,256 + 512 + 1024 + 2048,32 + 16 + 24 + 32 + 64 + 96 + 160 + 320 + 1280])
+
+	# image_size = 224*224*3
+	# after_save = channel_num * 7 * 7 * 2 * channel_ratio / 2
+
+	before_save = np.array([2.03125,80.19921875])
+
 	ratio_method_model = [[174.33,6.33],[140.67,3.54]]#96%,97
 	envs = ['ResNet-56','ResNet-50']
 	methods = ['w/o Selective Neural Sharing','w/ Selective Neural Sharing']
